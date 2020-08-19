@@ -20,16 +20,27 @@ int main() {
 	Eigen::MatrixXd d(2,2);
 	d << 2,3,1,3;
 
-	Eigen::Tensor<double,3> m(3,10,10);            //Initialize
-	m.setRandom();                                 //Set random values 
+	Eigen::Tensor<double,3> m;
+	m.resize(3,5,4);            				   //Initialize
+	m.setZero();                                 //Set random values 
 
-	Eigen::array<long,3> offset = {1,0,0};         //Starting point
-	Eigen::array<long,3> extent = {1,2,2};       //Finish point 
+	int k = 0;
+	for (int i = 0; i < 5;i++) {
+		for (int j = 0; j < 3;j++) {
+			k++;
+			m(j, i, 0) = k;
+		} 
+	}
 
 
-	// Eigen::Tensor<double,2> n = m.slice(offset, extent);
 
-	std::cout <<  m.slice(offset, extent).reshape(Eigen::array<long,2>{2,2}) << std::endl;  //Reshape the slice into a 10x10 matrix.
+	// Eigen::array<long,3> offset = {0,0,0};         //Starting point
+	// Eigen::array<long,3> extent = {1,4,4};         //Finish point 
+
+
+	// // Eigen::Tensor<double,2> n = m.slice(offset, extent);
+
+	// std::cout <<  m.slice(offset, extent).reshape(Eigen::array<int, 2>{4,4}) << std::endl;  //Reshape the slice into a 10x10 matrix.
 
 	// std::cout << "a" << std::endl << a << std::endl;
 	// std::cout << "slice" << std::endl << slice << std::endl;
@@ -46,5 +57,5 @@ int main() {
     memcpy(data.data(), mat.data(), sizeof(double) * 9);
 
     //save it to file
-    cnpy::npy_save("./standalone⁩arr1.npy",m.data(),{3,10,10},"w");
+    cnpy::npy_save("../data/3dtest.npy", m.data(), {4,5,3}, "w");
 }

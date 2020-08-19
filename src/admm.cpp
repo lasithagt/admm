@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 
+
 /* ADMM trajectory generation */
 #include "admm.hpp"
 
@@ -76,6 +77,12 @@ ADMM::ADMM(const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& I
 
     robotIK = models::KUKA();
 
+    // initialize the tensor to save data
+    #ifdef DEBUG
+    data_store.resize(N + 1, 6, ADMM_opt.ADMMiterMax + 1); 
+    #endif 
+
+
 
 }
 
@@ -129,14 +136,30 @@ void ADMM::run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, 
     IK_solve.getTrajectory(cartesianTrack, xnew.col(0).head(7), xnew.col(0).segment(7, 7), xbar.block(0, 0, 7, N + 1), xbar.block(0, 0, 7, N + 1), 0 * rho, &joint_positions_IK);
     X_curve = IK_solve.getFKCurrentPos(); 
 
+    Eigen::MatrixXd temp_fk(4, 4);
+    temp_fk.setZero();
 
     /* ------------------------------------------------------------------------------------------------------- */
     double error_fk = 0.0;
 
     /* ----------------------------------------------- TESTING ----------------------------------------------- */
     for (int i = 0;i < cartesianTrack.size()-1;i++) {
+        temp_fk  = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, joint_positions_IK.col(i));
         error_fk = error_fk + (cartesianTrack.at(i) - mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, joint_positions_IK.col(i))).norm();
+
+        // save data
+        #ifdef DEBUG
+        for (int k = 0;k < 3;k++) {
+            data_store(i, k, 0) = temp_fk(k, 3);
+
+            // Force data
+            Eigen::VectorXd force = xnew.col(i).tail(3);
+            data_store(i, k+3, 0) = force(k);
+        }
+
+        #endif
     }
+
     std::cout << error_fk << std::endl; 
     /* ----------------------------------------- END TESTING ----------------------------------------- */
 
@@ -156,8 +179,6 @@ void ADMM::run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, 
 
 
     Eigen::MatrixXd temp(4, 4);
-    Eigen::MatrixXd temp4(4, 4);
-    temp4 << 1 ,0 ,0 ,0, 0, 0,0,0,2,0,0,0,3,0,0,0;
 
     double cost = 0.0;
 
@@ -185,11 +206,26 @@ void ADMM::run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, 
         /* ----------------------------------------------- TESTING ----------------------------------------------- */
         temp.setZero();
         error_fk = 0.0;
-        for (int i = 0;i < cartesianTrack.size()-1;i++) {
-            temp = mr::TransInv(cartesianTrack.at(i)) * mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, xnew.col(i).head(7));
+
+        for (int j = 0;j < cartesianTrack.size() - 1; j++) {
+            temp_fk   = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, xnew.col(j).head(7));
+            temp      = mr::TransInv(cartesianTrack.at(j)) * temp_fk;
             error_fk += temp.col(3).head(3).norm();
+
+            // save data
+            #ifdef DEBUG
+            for (int k = 0;k < 3;k++) {
+
+                data_store(j, k, i + 1) = temp_fk(k, 3);
+                // Force data
+                Eigen::VectorXd force   = xnew.col(j).tail(3);
+                data_store(j, k+3, 0) = force(k);
+
+            }
+            #endif
         }
         std::cout << "DDP: " << error_fk << std::endl; 
+
         /* --------------------------------------------- END TESTING --------------------------------------------- */
 
         
@@ -230,12 +266,6 @@ void ADMM::run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, 
 
 
         xubar = projection(x_temp, c_temp, u_temp, L);
-        // std::cout << xubar.col(1).transpose() << std::endl;
-        // std::cout << "\n" << std::endl;
-        // std::cout << x_temp.col(1).transpose() << std::endl;
-        // std::cout << "\n" << std::endl;
-        // std::cout << u_temp.col(1).transpose() << std::endl;
-
 
         /* Dual variables update */
         for (unsigned int j = 0;j < N; j++) {
@@ -243,10 +273,6 @@ void ADMM::run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, 
             cbar.col(j) = xubar.col(j).segment(stateSize, 2);
             xbar.col(j) = xubar.col(j).head(stateSize);
             ubar.col(j) = xubar.col(j).tail(commandSize);
-
-            // cbar.col(j) = c_temp.col(j);
-            // xbar.col(j) = x_temp.col(j);
-            // ubar.col(j) = u_temp.col(j);           
 
             c_lambda.col(j) += cnew.col(j) - cbar.col(j);
             x_lambda.col(j) += xnew.col(j) - xbar.col(j);
@@ -259,10 +285,6 @@ void ADMM::run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, 
             res_u[i] += (unew.col(j) - ubar.col(j)).norm();
             res_q[i] += (joint_positions_IK.col(j) - xbar.col(j).head(7)).norm();
 
-            // res_xlambda[i] += vel_weight*(xbar.col(j) - xbar_old.col(j)).norm();
-            // res_clambda[i] += 0*(cbar.col(j) - cbar_old.col(j)).norm();
-            // res_xlambda[i] += 0*(xbar.col(j) - xbar_old.col(j)).norm();
-            // res_ulambda[i] += 0*(ubar.col(j) - ubar_old.col(j)).norm();
         }
 
         // xbar.col(N) = xubar.col(N - 1).head(stateSize); // 
@@ -293,12 +315,16 @@ void ADMM::run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, 
     xnew = lastTraj.xList;
     unew = lastTraj.uList;
 
+    #ifdef DEBUG
+    cnpy::npy_save("../data/cartesian_trajectory_admm.npy", data_store.data(), {static_cast<unsigned long>(ADMM_OPTS.ADMMiterMax + 1), 
+        6, static_cast<unsigned long>(N + 1)}, "w");
+    #endif
 
     cout << endl;
     // cout << "Number of iterations: " << lastTraj.iter + 1 << endl;
     cout << "Final cost: " << lastTraj.finalCost << endl;
-    // cout << "Final gradient: " << lastTraj.finalGrad << endl;
-    // cout << "Final lambda: " << lastTraj.finalLambda << endl;
+    cout << "Final gradient: " << lastTraj.finalGrad << endl;
+    cout << "Final lambda: " << lastTraj.finalLambda << endl;
     // cout << "Execution time by time step (second): " << texec/N << endl;
     // cout << "Execution time per iteration (second): " << texec/lastTraj.iter << endl;
     cout << "Total execution time of the solver (second): " << texec << endl;
@@ -322,7 +348,7 @@ void ADMM::run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, 
     for(unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
       cout << "res_x[" << i << "]:" << res_x[i] << endl;
       // cout << "res_xlambda[" << i << "]:" << res_xlambda[i] << " ";
-      // cout << "res_u[" << i << "]:" << res_u[i] << endl;
+      cout << "res_u[" << i << "]:" << res_u[i] << endl;
       // cout << "res_xlambda[" << i << "]:" << res_xlambda[i] << " ";
       cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
     }
@@ -371,7 +397,6 @@ Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixX
 
         }
     }
-    // std::cout << "projection end" << std::endl;
     return xubar;
 }
 

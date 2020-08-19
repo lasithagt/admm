@@ -25,6 +25,9 @@
 #include "kuka_robot.hpp"
 
 #include "curvature.hpp"
+#include "cnpy.h"
+
+#include <unsupported/Eigen/CXX11/Tensor>
 
 
 /* ADMM trajectory generation */
@@ -141,6 +144,8 @@ protected:
   Eigen::MatrixXd X_curve;
 
   IKTrajectory<IK_FIRST_ORDER> IK_solve;
+
+  Eigen::Tensor<double, 3> data_store;
 
 };
 

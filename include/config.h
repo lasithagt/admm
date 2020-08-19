@@ -18,6 +18,7 @@
 #define CARTESIAN_FRAME 10
 #define SOFT_CONTACT 1
 #define CONTACT_EN 1
+#define DEBUG 1
 
 #define MULTI_THREAD 0
 #if MULTI_THREAD
@@ -42,8 +43,6 @@
 #define InterpolationScale 10 
 const int32_t kNumJoints = 7;
 
-// #define UDP_TRAJ_DIR "/home/zzhou387/drake/DDP_traj_gen/trajectory/"
-// const char* const kLcmQueryResultsChannel = "TREE_SEARCH_QUERY_RESULTS";
 
 #define BOXWEIGHT 0.122
 
