@@ -64,8 +64,22 @@ class IK_SECOND_ORDER : public IK {
 public:
 	IK_SECOND_ORDER();
 
-	IK_SECOND_ORDER(const Eigen::MatrixXd& Slist, const Eigen::MatrixXd& M, const Eigen::VectorXd& joint_limits, const double& eomg, const double& ev, const Eigen::VectorXd& rho);
+	IK_SECOND_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::MatrixXd& M_, const Eigen::MatrixXd& joint_limits_, const double& eomg_, const double& ev_, const Eigen::VectorXd& rho_);
 
+	void getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& thetalist0, const Eigen::VectorXd& thetalistd0, const Eigen::VectorXd& q_bar, const Eigen::VectorXd& qd_bar, 
+		bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd* thetalist);
+	
+	void getRedundancyResolution(const Eigen::VectorXd& thetalist, Eigen::VectorXd* q_grad_ret);
+	
+	int maxIterations;
+	Eigen::Matrix<double, 4, 4> Tsb;
+	Eigen::Vector<double, 6> Vs;
+	Eigen::VectorXd rho;
+	Eigen::Matrix<double, 2, NDOF> joint_limits;
+	Eigen::Vector<double, NDOF> q_range;
+	Eigen::Vector<double, NDOF> q_mid;
+
+	Eigen::CompleteOrthogonalDecomposition<Eigen::Matrix<double, 6, NDOF> > cod;
 };
 
 #endif //IK_SOLVER_HPP
