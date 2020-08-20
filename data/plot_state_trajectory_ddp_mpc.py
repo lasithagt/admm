@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
-	b = np.load('./state_trajectory_ddp.npy')
-	data_des = np.load('./state_trajectory_ddp_desired.npy')
+	b = np.load('./state_trajectory_mpc.npy')
+	data_des = np.load('./state_trajectory_mpc_desired.npy')
 
 	b = b.squeeze()
 	b = b.T
@@ -35,15 +35,6 @@ if __name__ == "__main__":
 
 	plt.legend()
 
-	# axs[0].plot(t, s1, t, s2)
-	# axs[0].set_xlim(0, 2)
-	# axs[0].set_xlabel('time')
-	# axs[0].set_ylabel('s1 and s2')
-	# axs[0].grid(True)
 
-	# cxy, f = axs[1].cohere(s1, s2, 256, 1. / dt)
-	# axs[1].set_ylabel('coherence')
-
-	# fig.tight_layout()
 
 	plt.show()
