@@ -18,8 +18,7 @@ ILQRSolver::ILQRSolver(KukaArm& iiwaDynamicModel, CostFunction& iiwaCostFunction
 
     dynamicModel  = &iiwaDynamicModel;
     costFunction  = &iiwaCostFunction;
-    // stateNb       = iiwaDynamicModel.getStateNb();
-    // commandNb     = iiwaDynamicModel.getCommandNb();
+
     enableQPBox   = QPBox;
     enableFullDDP = fullDDP;
 
@@ -85,13 +84,24 @@ ILQRSolver::ILQRSolver(KukaArm& iiwaDynamicModel, CostFunction& iiwaCostFunction
 
 }
 
-void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
+
+/**
+ * @brief               Instantiate the receding horizon wrapper for the trajectory optimizer.
+ * @param dt            Time step
+ * @param time_steps    Number of time steps over which to optimize
+ * @param iterations    The number of iterations to perform per time step
+ * @param logger        util::Logger to use for informational, warning, and error messages
+ * @param verbose       True if informational and warning messages should be passed to the logger; error messages are always passed
+ * @param args          Arbitrary arguments to pass to the trajectory optimizer at initialization time
+ */
+void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &xtrack)
 {
     //==============
     // Checked!!v
     //==============
 
-    initializeTraj(x_0, u_0);
+    initializeTraj(x_0, u_0, xtrack);
+
 
     Op.lambda = Op.lambdaInit;
     Op.dlambda = Op.dlambdaInit;
@@ -100,19 +110,14 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
 
     for (iter = 0; iter < Op.max_iter; iter++)
     {
-        //==============
-        // Check TODO
-        //==============
-        // TRACE("STEP 1: differentiate dynamics and cost along new trajectory\n");
-        if (newDeriv)
-        {
-            for (unsigned int i = 0; i < commandSize; i++)
-            {
+
+        // differentiate dynamics and cost along nominal trajectory
+        if (newDeriv) {
+            for (unsigned int i = 0; i < commandSize; i++) {
                 u_NAN(i) = sqrt(-1.0); // control vector = Nan for last time step
             }
             
-            for (unsigned int i = 0; i < uList.cols(); i++) 
-            {
+            for (unsigned int i = 0; i < uList.cols(); i++) {
                 uListFull.col(i) = uList.col(i);
             }
             uListFull.rightCols(1) = u_NAN;
@@ -126,7 +131,7 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
             
 
             /* -------------- compute cx, cu, cxx, cuu ------------ */
-            costFunction->computeDerivatives(xList, uListFull);
+            costFunction->computeDerivatives(xList, uListFull, xtrack);
 
             gettimeofday(&tend_time_deriv,NULL);
             Op.time_derivative(iter) = (static_cast<double>(1000*(tend_time_deriv.tv_sec-tbegin_time_deriv.tv_sec)+((tend_time_deriv.tv_usec-tbegin_time_deriv.tv_usec)/1000)))/1000.0;
@@ -134,10 +139,8 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
             newDeriv = 0;
         }
 
-        //==============
-        // Check TODO
-        //==============
-        // TRACE("====== STEP 2: backward pass, compute optimal control law and cost-to-go\n");
+
+        //  backward pass, compute optimal control law and cost-to-go
         backPassDone = 0;
         while (!backPassDone)
         {
@@ -174,30 +177,26 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
 
         //====== STEP 3: line-search to find new control sequence, trajectory, cost
         fwdPassDone = 0;
-        if (backPassDone)
-        {
+        if (backPassDone) {
             gettimeofday(&tbegin_time_fwd,NULL);
             //only implement serial backtracking line-search
-            for (int alpha_index = 0; alpha_index < Op.alphaList.size(); alpha_index++)
-            {
+            for (int alpha_index = 0; alpha_index < Op.alphaList.size(); alpha_index++) {
+
                 alpha = Op.alphaList[alpha_index];
-                doForwardPass(x_0);
+                doForwardPass(x_0, xtrack);
                 Op.dcost = accumulate(costList.begin(), costList.end(), 0.0) - accumulate(costListNew.begin(), costListNew.end(), 0.0);
                 Op.expected = -alpha*(dV(0) + alpha*dV(1));
 
 
                 double z;
-                if (Op.expected > 0) 
-                {
+                if (Op.expected > 0) {
                     z = Op.dcost / Op.expected;
-                }
-                else 
-                {
+                } else {
                     z = static_cast<double>(-signbit(Op.dcost)); //[TODO:doublecheck]
                     TRACE("non-positive expected reduction: should not occur \n"); //warning
                 }
-                if(z > Op.zMin)
-                { 
+
+                if(z > Op.zMin) { 
                     fwdPassDone = 1;
                     break;
                 }
@@ -208,15 +207,12 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
         }
         
         //====== STEP 4: accept step (or not), draw graphics, print status
-        if (Op.debug_level > 1 && Op.last_head == Op.print_head)
-        {
+        if (Op.debug_level > 1 && Op.last_head == Op.print_head) {
             Op.last_head = 0;
             TRACE("iteration,\t cost, \t reduction, \t expected, \t gradient, \t log10(lambda) \n");
         }
         
-        if (fwdPassDone)
-        {
-            // print status
+        if (fwdPassDone) {
             if (Op.debug_level > 1)
             {
                 if(!debugging_print) printf("%-14d%-12.6g%-15.3g%-15.3g%-19.3g%-17.1f\n", iter+1, accumulate(costList.begin(), costList.end(), 0.0), Op.dcost, Op.expected, Op.g_norm, log10(Op.lambda));
@@ -234,24 +230,21 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
 
             // terminate ?
             // TODO: add constraint tolerance check
-            if(Op.dcost < Op.tolFun) 
-            {
-                if(Op.debug_level >= 1) 
-                {
-                    TRACE(("\nSUCCESS: cost change < tolFun\n"));
+            if(Op.dcost < Op.tolFun) {
+                if(Op.debug_level >= 1) {
+                    TRACE(("\n SUCCESS: cost change < tolFun \n"));
                 }
             
                 break;
             }
-        }
-        else 
-        { // no cost improvement
-            // increase lambda
+        } else { 
+
+            // if no cost improvement, increase lambda
             Op.dlambda= max(Op.dlambda * Op.lambdaFactor, Op.lambdaFactor);
             Op.lambda= max(Op.lambda * Op.dlambda, Op.lambdaMin);
 
             // print status
-            if(Op.debug_level >= 1){
+            if(Op.debug_level >= 1) {
                 if(!debugging_print) printf("%-14d%-12.9s%-15.3g%-15.3g%-19.3g%-17.1f\n", iter+1, "No STEP", Op.dcost, Op.expected, Op.g_norm, log10(Op.lambda));
                 Op.last_head = Op.last_head+1;
             }
@@ -267,7 +260,7 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
 
     Op.iterations = iter;
 
-    if(!backPassDone) {
+    if (!backPassDone) {
         if(Op.debug_level >= 1)
             TRACE(("\nEXIT: no descent direction found.\n"));
         
@@ -280,7 +273,16 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0)
     }
 }
 
-void ILQRSolver::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_0)
+/**
+ * @brief               Instantiate the receding horizon wrapper for the trajectory optimizer.
+ * @param dt            Time step
+ * @param time_steps    Number of time steps over which to optimize
+ * @param iterations    The number of iterations to perform per time step
+ * @param logger        util::Logger to use for informational, warning, and error messages
+ * @param verbose       True if informational and warning messages should be passed to the logger; error messages are always passed
+ * @param args          Arbitrary arguments to pass to the trajectory optimizer at initialization time
+ */
+void ILQRSolver::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track)
 {
     xList.col(0) = x_0;
     commandVec_t zeroCommand;
@@ -292,8 +294,7 @@ void ILQRSolver::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_
     initFwdPassDone = 0;
     diverge = 1;
     
-    for (int i = 0; i < N; i++)
-    {
+    for (int i = 0; i < N; i++) {
         uList.col(i) = u_0.col(i);
     }
 
@@ -303,15 +304,15 @@ void ILQRSolver::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_
     u_NAN_loc(0) = sqrt(-1.0);
     isUNan = 0;
 
-    for (unsigned int i = 0; i < N; i++) 
-    {
+    for (unsigned int i = 0; i < N; i++) {
         updateduList.col(i)     = uList.col(i);
-
-        costList[i]             = costFunction->cost_func_expre(i, updatedxList.col(i), updateduList.col(i));
+        costList[i]             = costFunction->cost_func_expre(i, updatedxList.col(i), updateduList.col(i), x_track.col(i));
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
+
     }
     // getting final cost, state, input=NaN
-    costList[N] = costFunction->cost_func_expre(N, updatedxList.col(N), u_NAN_loc);
+
+    costList[N] = costFunction->cost_func_expre(N, updatedxList.col(N), u_NAN_loc, x_track.col(N));
 
 
     // simplistic divergence test, check for the last time step if it has diverged.
@@ -324,7 +325,6 @@ void ILQRSolver::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_
         }
     }
     
-    
     initFwdPassDone = 1;
     xList = updatedxList;
 
@@ -336,15 +336,20 @@ void ILQRSolver::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_
     Op.print_head = 6;
     Op.last_head = Op.print_head;
 
-    // for (unsigned int i = 0;i <= N; i++)
-    // {
-    //   cout << "init traj xList[" << i << "]:" << updatedxList[i].transpose() << endl;
-    // }
 
     if(Op.debug_level > 0) {TRACE("\n =========== begin iLQR =========== \n");}
 }
 
-void ILQRSolver::doForwardPass(const stateVec_t& x_0)
+/**
+ * @brief               Instantiate the receding horizon wrapper for the trajectory optimizer.
+ * @param dt            Time step
+ * @param time_steps    Number of time steps over which to optimize
+ * @param iterations    The number of iterations to perform per time step
+ * @param logger        util::Logger to use for informational, warning, and error messages
+ * @param verbose       True if informational and warning messages should be passed to the logger; error messages are always passed
+ * @param args          Arbitrary arguments to pass to the trajectory optimizer at initialization time
+ */
+void ILQRSolver::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x_track)
 {
 
     updatedxList.col(0) = x_0;
@@ -357,11 +362,11 @@ void ILQRSolver::doForwardPass(const stateVec_t& x_0)
     for (unsigned int i = 0; i < N; i++) 
     {
         updateduList.col(i)     = uList.col(i) + alpha * kList.col(i) + KList[i] * (updatedxList.col(i) - xList.col(i));
-        costListNew[i]          = costFunction->cost_func_expre(i, updatedxList.col(i), updateduList.col(i));
+        costListNew[i]          = costFunction->cost_func_expre(i, updatedxList.col(i), updateduList.col(i), x_track.col(i));
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
     }
 
-    costListNew[N] = costFunction->cost_func_expre(N, updatedxList.col(N), u_NAN_loc);
+    costListNew[N] = costFunction->cost_func_expre(N, updatedxList.col(N), u_NAN_loc, x_track.col(N));
 }
 
 /* 4th-order Runge-Kutta step */
@@ -402,11 +407,11 @@ void ILQRSolver::doBackwardPass()
 
     for (int i = static_cast<int>(N-1); i >= 0; i--)
     {
-        Qx  = costFunction->getcx().col(i)  + dynamicModel->getfxList()[i].transpose() *  Vx.col(i + 1);
-        Qu  = costFunction->getcu().col(i)  + dynamicModel->getfuList()[i].transpose() *  Vx.col(i + 1);
-        Qxx = costFunction->getcxx()[i] + dynamicModel->getfxList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
-        Quu = costFunction->getcuu()[i] + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfuList()[i];
-        Qux = costFunction->getcux()[i] + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
+        Qx  = costFunction->getcx().col(i)  + dynamicModel->getfxList()[i].transpose() * Vx.col(i + 1);
+        Qu  = costFunction->getcu().col(i)  + dynamicModel->getfuList()[i].transpose() * Vx.col(i + 1);
+        Qxx = costFunction->getcxx()[i]     + dynamicModel->getfxList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
+        Quu = costFunction->getcuu()[i]     + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfuList()[i];
+        Qux = costFunction->getcux()[i]     + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
  
 
         if (Op.regType == 1)
@@ -460,7 +465,6 @@ void ILQRSolver::doBackwardPass()
         if (!enableQPBox)
         {
             // Cholesky decomposition by using upper triangular matrix
-            // TRACE("Use Cholesky decomposition");
             Eigen::LLT<MatrixXd> lltOfQuuF(QuuF);
             Eigen::MatrixXd L = lltOfQuuF.matrixU(); 
             // assume QuuF is positive definite
@@ -499,7 +503,7 @@ void ILQRSolver::doBackwardPass()
         }
         g_norm_sum += g_norm_max;
     }
-    Op.g_norm = g_norm_sum/(static_cast<double>(Op.n_hor));
+    Op.g_norm = g_norm_sum / (static_cast<double>(Op.n_hor));
 }
 
 
@@ -507,7 +511,6 @@ void ILQRSolver::doBackwardPass()
 ILQRSolver::traj ILQRSolver::getLastSolvedTrajectory()
 {
     lastTraj.xList = xList;
-    // for(unsigned int i=0;i<N+1;i++)lastTraj.xList[i] += xgoal;//retrieve original state with xgoal
     lastTraj.uList = uList;
     lastTraj.iter = iter;
     lastTraj.finalCost = accumulate(costList.begin(), costList.end(), 0.0);

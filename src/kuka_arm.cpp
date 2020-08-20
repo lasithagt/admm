@@ -2,17 +2,17 @@
 #include <Eigen/Geometry>
 
 
-KukaArm::KukaArm(double& iiwa_dt, unsigned int& iiwa_N, std::shared_ptr<KUKAModelKDL>& kukaRobot, ContactModel::SoftContactModel& contact_model) 
+KukaArm::KukaArm(double& dt_, unsigned int& N_, std::shared_ptr<KUKAModelKDL>& kukaRobot, ContactModel::SoftContactModel& contact_model) 
 : diff_([this](const stateVec_t& x, const commandVec_t& u) -> stateVec_t{ return this->kuka_arm_dynamics(x, u); }),
-      num_diff_(diff_) 
+      num_diff_(diff_), dt(dt_), N(N_)
 {
     globalcnt = 0;
 
     q.resize(NDOF);
     qd.resize(NDOF);
 
-    dt = iiwa_dt;
-    N = iiwa_N;
+    // dt = iiwa_dt;
+    // N = iiwa_N;
     fxList.resize(N);
     fuList.resize(N);
 

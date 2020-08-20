@@ -34,11 +34,11 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
     struct timeval tbegin,tend;
     double texec = 0.0;
 
-    double dt = TimeStep;
-    unsigned int N = NumberofKnotPt;
-    double tolFun = 1e-7; // 1e-5;//relaxing default value: 1e-10; - reduction exit crieria
-    double tolGrad = 1e-10; // relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 15; // 100;
+    double dt            = TimeStep;
+    unsigned int N       = NumberofKnotPt;
+    double tolFun        = 1e-7;       // 1e-5;//relaxing default value: 1e-10; - reduction exit crieria
+    double tolGrad       = 1e-10;     // relaxing default value: 1e-10; - gradient exit criteria
+    unsigned int iterMax = 15;  // 100;
 
 
     /* -------------------- orocos kdl robot initialization-------------------------*/
@@ -53,91 +53,34 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
 
     //======================================
 
-    #if WHOLE_BODY
-        ContactModel::ContactParams cp_;
-        cp_.E = 1000;
-        cp_.mu = 0.5;
-        cp_.nu = 0.4;
-        cp_.R  = 0.005;
-        cp_.R_path = 1000;
-        cp_.Kd = 10;
-        ContactModel::SoftContactModel contactModel(cp_);
-        kukaRobot->initRobot();
-
-    #endif
-
-    Eigen::VectorXd q_pos_init( (stateSize-3) / 2);
-    Eigen::VectorXd q_vel_init( (stateSize-3) / 2);
-    Eigen::VectorXd q_pos_goal( (stateSize-3) / 2);
-    Eigen::VectorXd q_vel_goal( (stateSize-3) / 2);
-
-    q_pos_init.setZero();
-    q_pos_goal.setZero();
-    q_vel_goal.setZero();
-    q_vel_init.setZero();
-
-    q_pos_init = xinit.head((stateSize-3)/2);
-    q_vel_init = xinit.segment((stateSize-3)/2, (stateSize-3)/2);
-
-    // std::cout << q_pos_init.transpose().format(CleanFmt) << std::endl;
-
-    q_pos_goal = xgoal.head(stateSize/2);
-    q_vel_goal = xgoal.segment((stateSize-3)/2, (stateSize-3)/2); 
-
-
-
-    /*-----------------------------initial cartesian poses----------------------------------------------*/
-    Eigen::Matrix<double,6,1> fkinit, fkgoal, fkstep;
-
-    Eigen::Matrix<double,3,3> poseM;
-    Eigen::Vector3d poseP;
-    Eigen::Vector3d vel;
-    Eigen::Vector3d accel;
-    Eigen::VectorXd qdd(7);
-    qdd.setZero();
+    ContactModel::ContactParams cp_;
+    cp_.E = 1000;
+    cp_.mu = 0.5;
+    cp_.nu = 0.4;
+    cp_.R  = 0.005;
+    cp_.R_path = 1000;
+    cp_.Kd = 10;
+    ContactModel::SoftContactModel contactModel(cp_);
+    kukaRobot->initRobot();
 
     // get the initial goal pose
-    kukaRobot->getForwardKinematics(q_pos_init.data(), q_vel_init.data(), qdd.data(), poseM, poseP, vel, accel, false);
-    Eigen::Matrix3d m;
-    m = Eigen::AngleAxisd(poseM);
-    Eigen::Vector3d ea = m.eulerAngles(2, 1, 0); 
+    // kukaRobot->getForwardKinematics(q_pos_init.data(), q_vel_init.data(), qdd.data(), poseM, poseP, vel, accel, false);
+    // Eigen::Matrix3d m;
+    // m = Eigen::AngleAxisd(poseM);
+    // Eigen::Vector3d ea = m.eulerAngles(2, 1, 0); 
 
-    fkinit << poseP(0), poseP(1), poseP(2), ea(0), ea(1), ea(2);
-
-    // std::cout << fkinit.transpose().format(CleanFmt) << std::endl;
-
-    // get the final goal pose
-    kukaRobot->getForwardKinematics(q_pos_goal.data(), q_vel_goal.data(), qdd.data(), poseM, poseP, vel, accel, false);
-    m = Eigen::AngleAxisd(poseM);
-    ea = m.eulerAngles(2, 1, 0); 
-
-    fkgoal << poseP(0), poseP(1), poseP(2), ea(0), ea(1), ea(2);
-
-    // std::cout << fkgoal.transpose().format(CleanFmt) << std::endl;
-
-    std::vector<Eigen::Matrix<double,6,1> > fk_ref(N+1);
-    fk_ref[0] = fkinit;
-    fk_ref[N] = fkgoal;
-
-    /* Linear interpolation between two cartesian points */
-    fkstep = (fkgoal - fkinit) / N;
-    
-    for(unsigned int i = 1; i < N; i++) 
-    {
-      fk_ref[i] = fk_ref[i-1] + fkstep;
-    }
+    // // get the final goal pose
+    // kukaRobot->getForwardKinematics(q_pos_goal.data(), q_vel_goal.data(), qdd.data(), poseM, poseP, vel, accel, false);
+    // m = Eigen::AngleAxisd(poseM);
+    // ea = m.eulerAngles(2, 1, 0); 
 
 
     /*----------------------warm-start-control-----------------------------*/
     // Get the gravity compensation for warm-start
-    VectorXd q(9);
-    VectorXd qd(9);
-    q.setZero();
 
-
-    qd.setZero();
-    Eigen::VectorXd gravityTorque(7);
-    kukaRobot->getGravityVector(q_pos_init.data(), gravityTorque);
+    // qd.setZero();
+    // Eigen::VectorXd gravityTorque(7);
+    // kukaRobot->getGravityVector(q_pos_init.data(), gravityTorque);
 
 
     /*------------------initialize control input----------------------- */
@@ -145,17 +88,12 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
     u_0.resize(commandSize, N);
     u_0.setZero();
 
-    // for (unsigned i = 0; i < N; i++)
-    // {
-    //   u_0.col(i).head(7) = 0*gravityTorque;
-    // }
 
     // robot model
     KukaArm KukaArmModel(dt, N, kukaRobot, contactModel);
 
     // cost function 
-    CostFunction costKukaArm(xgoal, xtrack);
-
+    CostFunction costKukaArm(N);
 
     /* -------------------- Optimizer Params ------------------------ */
     optimizer::ILQRSolver::OptSet solverOptions;
@@ -173,8 +111,7 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
     
 
     // Run iLQR 
-    // testSolverKukaArm.initializeTraj();
-    solver.solve(xinit, u_0);
+    solver.solve(xinit, u_0, xtrack);
     
 
     /* ------------------------------------------------------------------- */
@@ -186,7 +123,7 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
 
     /* post processing and save data */
     joint_state_traj.resize(stateSize, N + 1);
-    joint_state_traj_interp.resize(stateSize, N*InterpolationScale + 1);
+    joint_state_traj_interp.resize(stateSize, N * InterpolationScale + 1);
 
     for(unsigned int i=0; i <= N; i++)
     {
@@ -198,6 +135,7 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
     const int Nx = joint_state_traj.cols();
 
     cnpy::npy_save("../data/state_trajectory_ddp.npy", joint_state_traj.data(),{1, static_cast<unsigned long>(Nx), static_cast<unsigned long>(Ny)}, "w");
+    cnpy::npy_save("../data/state_trajectory_ddp_desired.npy", xtrack.data(),{1, static_cast<unsigned long>(Nx), static_cast<unsigned long>(Ny)}, "w");
 
 
     torque_traj = lastTraj.uList;

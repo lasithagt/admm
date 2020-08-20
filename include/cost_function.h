@@ -8,8 +8,11 @@
 
 using namespace Eigen;
 
-
-// template <class DynamicsT, class PlantT, class costFunctionT, class OptimizerT, class OptimizerResultT>
+/**
+ * @brief                               Run the trajectory optimizer in MPC mode.
+ * @param initial_state                 Initial state to pass to the optimizer
+ * @param args                          Arbitrary arguments to pass to the trajectory optimizer at run time
+ */
 class CostFunction
 {
 	using Jacobian = Eigen::Matrix<double, 1, stateSize + commandSize>;
@@ -19,11 +22,8 @@ class CostFunction
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    CostFunction() = default;
-    ~CostFunction() = default;
-
-    CostFunction(const stateVec_t &x_goal, const stateVecTab_t &x_track) : x_track_(x_track) {
-
+    // TODO : make weights passable
+    CostFunction(int TimeSteps) : N(TimeSteps)  {
 
         Eigen::VectorXd x_w(stateSize);
         Eigen::VectorXd xf_w(stateSize);
@@ -33,13 +33,11 @@ public:
         xf_w << 1000, 1000, 1000, 1000, 1000, 1000, 1000, 100, 100, 100, 100, 100, 100, 100, 0, 0, 1000;
         u_w  << 0.05, 0.05, 0.07, 0.07, 0.05, 0.05, 0.05;
 
-        
         Q  = x_w.asDiagonal();
         Qf = xf_w.asDiagonal();
         R  = u_w.asDiagonal();
         
-
-        N = TimeHorizon / TimeStep;
+        // N = TimeHorizon / TimeStep;
         cx_new.resize(stateSize, N + 1);
         cu_new.resize(commandSize, N + 1);
         cxx_new.resize(N + 1);
@@ -48,19 +46,26 @@ public:
 
     }
 
+    ~CostFunction() = default;
+
     /* return the cost regular quadratic cost*/
-    scalar_t cost_func_expre(const unsigned int& index_k, const stateVec_t& xList_k, const commandVec_t& uList_k)
+    /**
+     * @brief                               Run the trajectory optimizer in MPC mode.
+     * @param initial_state                 Initial state to pass to the optimizer
+     * @param args                          Arbitrary arguments to pass to the trajectory optimizer at run time
+     */
+    scalar_t cost_func_expre(const unsigned int& index_k, const stateVec_t& xList_k, const commandVec_t& uList_k, const stateVec_t &x_track)
     {
         scalar_t cost_;
-        unsigned int Nl = NumberofKnotPt;
+        // unsigned int Nl = NumberofKnotPt;
 
-        if (index_k == Nl)
+        if (index_k == N)
         {
-            cost_  = 0.5 * (xList_k.transpose() - x_track_.col(index_k).transpose()) * Qf * (xList_k - x_track_.col(index_k));
+            cost_  = 0.5 * (xList_k.transpose() - x_track.transpose()) * Qf * (xList_k - x_track);
         }
         else
         {
-            cost_  = 0.5 * (xList_k.transpose() - x_track_.col(index_k).transpose()) * Q * (xList_k - x_track_.col(index_k));
+            cost_  = 0.5 * (xList_k.transpose() - x_track.transpose()) * Q * (xList_k - x_track);
             cost_ += 0.5 * uList_k.transpose() * R * uList_k;
         }
 
@@ -69,7 +74,12 @@ public:
 
 
     /* compute derivatives */
-    void computeDerivatives(const stateVecTab_t& xList, const commandVecTab_t& uList)
+    /**
+     * @brief                               Run the trajectory optimizer in MPC mode.
+     * @param initial_state                 Initial state to pass to the optimizer
+     * @param args                          Arbitrary arguments to pass to the trajectory optimizer at run time
+    */
+    void computeDerivatives(const stateVecTab_t& xList, const commandVecTab_t& uList, const stateVecTab_t &x_track)
     {
         // TODO : get the state size from the dynamics class
         unsigned int Nl = xList.cols();
@@ -82,7 +92,7 @@ public:
         {
 
             // Analytical derivatives given quadratic cost
-            cx_new.col(k) = Q * (xList.col(k) - x_track_.col(k));
+            cx_new.col(k) = Q * (xList.col(k) - x_track.col(k));
             cu_new.col(k) = R * uList.col(k);
 
             cxx_new[k] = Q;
@@ -98,7 +108,7 @@ public:
         c_new = 0;
     }
 
-	const Eigen::Matrix<double,6,6>& getT() const {return T;};
+	const Eigen::Matrix<double, 6, 6>& getT() const {return T;};
 
 	const stateMat_t& getQ() const {return Q;};
 
@@ -132,9 +142,9 @@ protected:
 	commandR_stateC_tab_t cux_new; 
 	commandMatTab_t cuu_new;
 	double c_new;
-    unsigned int N;
+    int N;
 
-    stateVecTab_t x_track_;
+    // stateVecTab_t x_track_;
 
 };
 

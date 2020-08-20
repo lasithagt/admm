@@ -10,15 +10,19 @@
 #include <cstdarg>
 
 #define UDP_BACKWARD_INTEGRATION_METHOD 0 // 1: 4^th-order RK, 2: simple Euler method, 3: 3^rd-order RK with FOH on u (same as dircol)
+
 #define ENABLE_QPBOX 0
 #define DISABLE_QPBOX 1
 #define ENABLE_FULLDDP 0
 #define DISABLE_FULLDDP 1
+
 #define WHOLE_BODY 1
 #define CARTESIAN_FRAME 10
+
 #define SOFT_CONTACT 1
 #define CONTACT_EN 1
 #define DEBUG 1
+#define TRACK 1
 
 #define MULTI_THREAD 0
 #if MULTI_THREAD
