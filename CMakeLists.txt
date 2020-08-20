@@ -55,7 +55,7 @@ set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/plant-models/KukaModel.cpp ${CMAKE_CURRE
 target_sources(kuka-models PUBLIC ${SOURCES})
 
 add_library(ddp-solver)
-target_include_directories(ddp-solver PUBLIC include ${CMAKE_CURRENT_SOURCE_DIR}/cnpy)
+target_include_directories(ddp-solver PUBLIC include ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/cnpy)
 set(SOURCES_DDP ${CMAKE_CURRENT_SOURCE_DIR}/src/ilqrsolver.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/kuka_arm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/ddp.cpp)
 target_link_libraries(ddp-solver PUBLIC kuka-models cnpy)
 target_sources(ddp-solver PUBLIC ${SOURCES_DDP})
@@ -98,12 +98,13 @@ target_link_libraries(ddp-admm-contact orocos-kdl ddp-admm-solver kuka-models Mo
 
 add_executable(ddp-optim src/ddp_main.cpp)
 target_include_directories(ddp-optim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(ddp-optim orocos-kdl ddp-solver kuka-models cnpy)
+target_link_libraries(ddp-optim orocos-kdl ddp-solver kuka-models cnpy ModernRoboticsCpp ik-solvers)
 
 
 add_executable(mpc-optim src/mpc_main.cpp)
 target_include_directories(mpc-optim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(mpc-optim orocos-kdl ddp-solver kuka-models)
+target_link_libraries(mpc-optim orocos-kdl ddp-solver kuka-models cnpy ModernRoboticsCpp ik-solvers)
+
 
 add_executable(ik-test ik-solvers/ik_test.cpp)
 target_include_directories(ik-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/include)
