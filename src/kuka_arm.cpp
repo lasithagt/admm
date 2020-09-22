@@ -8,13 +8,9 @@ KukaArm::KukaArm(double& dt_, unsigned int& N_, std::shared_ptr<KUKAModelKDL>& k
 {
     globalcnt = 0;
 
-    q.resize(NDOF);
-    qd.resize(NDOF);
+    q.resize(NDOF), qd.resize(NDOF);
 
-    // dt = iiwa_dt;
-    // N = iiwa_N;
-    fxList.resize(N);
-    fuList.resize(N);
+    fxList.resize(N + 1), fuList.resize(N);
 
     tau_ext.resize(NDOF);
     manip_jacobian.resize(6, NDOF);
@@ -24,21 +20,11 @@ KukaArm::KukaArm(double& dt_, unsigned int& N_, std::shared_ptr<KUKAModelKDL>& k
     Bu.setZero();
     xdot_new.setZero();
 
-    
-    debugging_print = 0;
-    finalTimeProfile.counter0_ = 0;
-    finalTimeProfile.counter1_ = 0;
-    finalTimeProfile.counter2_ = 0;
+    debugging_print = 0, finalTimeProfile.counter0_ = 0, finalTimeProfile.counter1_ = 0, finalTimeProfile.counter2_ = 0;
+    finalTimeProfile.time_period1 = 0, finalTimeProfile.time_period2 = 0, finalTimeProfile.time_period3 = 0, finalTimeProfile.time_period4 = 0;
 
     initial_phase_flag_ = 1;
-    q.resize(NDOF);
-    qd.resize(NDOF);
-
-
-    finalTimeProfile.time_period1 = 0;
-    finalTimeProfile.time_period2 = 0;
-    finalTimeProfile.time_period3 = 0;
-    finalTimeProfile.time_period4 = 0;
+    q.resize(NDOF), qd.resize(NDOF);
 
     // initialize contact model and the manipulator model
     contact_model0 = &contact_model;
@@ -74,7 +60,6 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
     tau_ext = tau; // + manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
 
     kukaRobot_->getForwardDynamics(q.data(), qd.data(), tau_ext, qdd);
-    // std::cout << "qdd\n" << qdd << std::endl;
 
     /*  contact model dynamics */
     if (CONTACT_EN)
@@ -120,11 +105,11 @@ void KukaArm::compute_dynamics_jacobian(const stateVecTab_t& xList, const comman
 
     // // for a positive-definite quadratic, no control cost (indicated by the iLQG function using nans), is equivalent to u=0
     if(debugging_print) TRACE_KUKA_ARM("initialize dimensions\n");
-    unsigned int Nl = xList.cols();
+    // unsigned int Nl = xList.cols();
 
     if(debugging_print) TRACE_KUKA_ARM("compute cost function\n");
 
-    for (unsigned int k=0; k < Nl - 1; k++) 
+    for (unsigned int k=0; k < N; k++) 
     {
         /* Numdiff Eigen */
         num_diff_.df((typename Differentiable<double, stateSize, commandSize>::InputType() << xList.col(k), uList.col(k)).finished(), j_);

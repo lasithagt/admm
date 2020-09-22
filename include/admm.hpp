@@ -11,7 +11,6 @@
 #include <Eigen/Dense>
 
 #include "config.h"
-#include "spline.h"
 #include "ilqrsolver_admm.hpp"
 #include "kuka_arm.h"
 #include "SoftContactModel.h"
@@ -58,18 +57,22 @@ public:
     int ADMMiterMax;
   };
   
-  ADMM(const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt);
+  ADMM(std::shared_ptr<KUKAModelKDL>& kukaModel, const CostFunctionADMM& costFunction, 
+    const optimizer::ILQRSolverADMM& solverDDP, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps);
 
-  // template<class T>
-  void run(std::shared_ptr<KUKAModelKDL>& kukaRobot, KukaArm& KukaArmModel, const stateVec_t& xinit, const stateVecTab_t& xtrack, 
+  void solve(const stateVec_t& xinit, const commandVecTab_t& u_0, const stateVecTab_t& xtrack, 
     const std::vector<Eigen::MatrixXd>& cartesianTrack, const Eigen::VectorXd& rho, const Saturation& L);
 
   Eigen::MatrixXd projection(const stateVecTab_t& xnew, const Eigen::MatrixXd& cnew, const commandVecTab_t& unew, const Saturation& L);
   void contact_update(std::shared_ptr<KUKAModelKDL>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew);
 
+  optimizer::ILQRSolverADMM::traj getLastSolvedTrajectory();
 
 protected:
   models::KUKA robotIK;
+  std::shared_ptr<KUKAModelKDL> kukaRobot_;
+  CostFunctionADMM costFunction_;
+  optimizer::ILQRSolverADMM solver_;
 
   Curvature curve;
   Saturation projectionLimits;
@@ -88,8 +91,7 @@ protected:
 
   // primal parameters
   stateVecTab_t xnew;
-  Eigen::MatrixXd qnew;
-  Eigen::MatrixXd cnew;
+  Eigen::MatrixXd qnew, cnew;
   commandVecTab_t unew;
 
   // stateVecTab_t x_avg;
@@ -121,16 +123,10 @@ protected:
   Eigen::MatrixXd xubar; // for projection
 
   // primal residual
-  std::vector<double> res_x;
-  std::vector<double> res_q;
-  std::vector<double> res_u;
-  std::vector<double> res_c;
+  std::vector<double> res_x, res_q, res_u, res_c;
 
   // dual residual
-  std::vector<double> res_xlambda;
-  std::vector<double> res_qlambda;
-  std::vector<double> res_ulambda;
-  std::vector<double> res_clambda;
+  std::vector<double> res_xlambda, res_qlambda, res_ulambda, res_clambda;
 
   std::vector<double> final_cost;
 

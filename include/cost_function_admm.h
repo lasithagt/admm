@@ -22,7 +22,7 @@ public:
     CostFunctionADMM() = default;
     ~CostFunctionADMM() = default;
 
-    CostFunctionADMM(const stateVec_t &x_goal, const stateVecTab_t &x_track) : x_track_(x_track) {
+    CostFunctionADMM(int time_steps) : N(time_steps) {
 
         Eigen::VectorXd x_w(stateSize);
         Eigen::VectorXd xf_w(stateSize);
@@ -38,8 +38,6 @@ public:
         Qf = xf_w.asDiagonal();
         R  = u_w.asDiagonal();
         
-
-        N = TimeHorizon / TimeStep;
         cx_new.resize(stateSize, N + 1);
         cu_new.resize(commandSize, N + 1);
         cxx_new.resize(N + 1);
@@ -49,18 +47,18 @@ public:
     }
 
     /* return the cost without admm terms */
-    scalar_t cost_func_expre(const unsigned int& index_k, const stateVec_t& xList_k, const commandVec_t& uList_k)
+    scalar_t cost_func_expre(const unsigned int& index_k, const stateVec_t& xList_k, const commandVec_t& uList_k, const stateVec_t &x_track)
     {
         scalar_t cost_;
-        unsigned int Nl = NumberofKnotPt;
+        // unsigned int Nl = NumberofKnotPt;
 
-        if (index_k == Nl)
+        if (index_k == N)
         {
-            cost_ = 0.5 * (xList_k.transpose() - x_track_.col(index_k).transpose()) * Qf * (xList_k - x_track_.col(index_k));
+            cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Qf * (xList_k - x_track);
         }
         else
         {
-            cost_ = 0.5 * (xList_k.transpose() - x_track_.col(index_k).transpose()) * Q * (xList_k - x_track_.col(index_k));
+            cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Q * (xList_k - x_track);
             cost_ += 0.5 * uList_k.transpose() * R * uList_k;
         }
         return cost_;
@@ -68,19 +66,19 @@ public:
     }
 
     /* return the cost with admm */
-    scalar_t cost_func_expre_admm(const unsigned int& index_k, const stateVec_t& xList_k, const commandVec_t& uList_k,
+    scalar_t cost_func_expre_admm(const unsigned int& index_k, const stateVec_t& xList_k, const commandVec_t& uList_k, const stateVec_t &x_track,
      const Eigen::MatrixXd& cList_bar, const stateVec_t& xList_bar, const commandVec_t& uList_bar, const Eigen::VectorXd& thetaList_bar, const Eigen::VectorXd& rho)
     {
         scalar_t cost_;
-        unsigned int Nl = NumberofKnotPt;
+        // unsigned int Nl = NumberofKnotPt;
 
-        if (index_k == Nl) 
+        if (index_k == N) 
         {
-            cost_ = 0.5 * (xList_k.transpose() - x_track_.col(index_k).transpose()) * Qf * (xList_k - x_track_.col(index_k)); 
+            cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Qf * (xList_k - x_track); 
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
 
         } else {
-            cost_ = 0.5 * (xList_k.transpose() - x_track_.col(index_k).transpose()) * Q * (xList_k - x_track_.col(index_k));
+            cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Q * (xList_k - x_track);
             cost_ += 0.5 * rho(0) * (xList_k.head(7).transpose() - xList_bar.head(7).transpose()) * (xList_k - xList_bar).head(7);
             
             // TODO: contact cost term
@@ -96,7 +94,7 @@ public:
     }
 
     /* compute derivatives */
-    void computeDerivatives(const stateVecTab_t& xList, const commandVecTab_t& uList, 
+    void computeDerivatives(const stateVecTab_t& xList, const commandVecTab_t& uList, const stateVecTab_t &x_track,
         const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho)
     {
         // TODO : get the state size from the dynamics class
@@ -113,14 +111,14 @@ public:
         {
             // Analytical derivatives given quadratic cost
             temp.head(7)  = (xList.col(k).head(7) - thetaList_bar.col(k));
-            cx_new.col(k) = Q * (xList.col(k) - x_track_.col(k)) + m_ * (xList.col(k) - xList_bar.col(k)) + n_ *  temp;
+            cx_new.col(k) = Q * (xList.col(k) - x_track.col(k)) + m_ * (xList.col(k) - xList_bar.col(k)) + n_ *  temp;
             cu_new.col(k) = R * uList.col(k) + rho(1) * (uList.col(k) - uList_bar.col(k));
 
             cxx_new[k] = Q;
             // TODO: contact cost term derivative. Needs num diff
             cxx_new[k] += m_;
             cxx_new[k] += n_;
-            cuu_new[k] = R + rho(1) * Eigen::MatrixXd::Identity(7, 7); 
+            cuu_new[k]  = R + rho(1) * Eigen::MatrixXd::Identity(7, 7); 
 
             //Note that cu , cux and cuu at the final time step will never be used (see ilqrsolver::doBackwardPass)
             cux_new[k].setZero();
@@ -128,9 +126,9 @@ public:
 
         temp.head(7)     = (xList.col(Nl-1).head(7) - thetaList_bar.col(Nl-1));
         cx_new.col(Nl-1) = Q * xList.col(Nl-1) + m_ * (xList.col(Nl-1) - xList_bar.col(Nl-1)) + n_ *  temp; // + rho(0) * (xList.col(Nl) - xList_bar.col(Nl));
-        cxx_new[Nl-1] = Q;
-        cxx_new[Nl-1] += m_;
-        cxx_new[Nl-1] += n_;
+        cxx_new[Nl-1]    = Q;
+        cxx_new[Nl-1]   += m_;
+        cxx_new[Nl-1]   += n_;
         // cuu_new[Nl-1]    = R ; //+ rho(1) * Eigen::MatrixXd::Identity(7, 7); 
 
         // c_new = 0; // TODO: move this to somewhere.
@@ -175,9 +173,9 @@ protected:
 	commandR_stateC_tab_t cux_new; 
 	commandMatTab_t cuu_new;
 	double c_new;
-    unsigned int N;
+    int N;
 
-    stateVecTab_t x_track_;
+    // stateVecTab_t x_track_;
 
 };
 

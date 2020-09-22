@@ -74,35 +74,35 @@ int main() {
 	stateVecTab_t x_track(stateSize, 1);
 	x_track.col(0) = x_goal;
 
-	CostFunctionADMM costFunction = CostFunctionADMM(x_goal, x_track);
+	// CostFunctionADMM costFunction = CostFunctionADMM(x_goal, x_track);
 
-	std::cout << costFunction.cost_func_expre(0, x, u) << std::endl;
+	// std::cout << costFunction.cost_func_expre(0, x, u) << std::endl;
 
-	stateVecTab_t xList;
-	xList.resize(stateSize, 1);
-	xList.col(0) = x;
+	// stateVecTab_t xList;
+	// xList.resize(stateSize, 1);
+	// xList.col(0) = x;
 
-	commandVecTab_t uList;
-	uList.resize(commandSize, 1);
-	uList.col(0) = u;
+	// commandVecTab_t uList;
+	// uList.resize(commandSize, 1);
+	// uList.col(0) = u;
 
-	Eigen::MatrixXd cList_bar;
-	cList_bar.resize(2,1);
+	// Eigen::MatrixXd cList_bar;
+	// cList_bar.resize(2,1);
 
-	stateVecTab_t xList_bar;
-	xList_bar.resize(stateSize, 1);
+	// stateVecTab_t xList_bar;
+	// xList_bar.resize(stateSize, 1);
 
-	commandVecTab_t uList_bar;
-	uList_bar.resize(commandSize, 1);
+	// commandVecTab_t uList_bar;
+	// uList_bar.resize(commandSize, 1);
 
-	Eigen::MatrixXd thetaList_bar;
-	thetaList_bar.resize(7,1);
+	// Eigen::MatrixXd thetaList_bar;
+	// thetaList_bar.resize(7,1);
 
-	Eigen::VectorXd rho(5);
-	rho << 1,2,3,0,4;
+	// Eigen::VectorXd rho(5);
+	// rho << 1,2,3,0,4;
 
 
-	costFunction.computeDerivatives(xList, uList, cList_bar, xList_bar, uList_bar, thetaList_bar, rho);
+	// costFunction.computeDerivatives(xList, uList, cList_bar, xList_bar, uList_bar, thetaList_bar, rho);
 
 
 	// // ----------------------------------------------------------------------------------------------------------

@@ -4,6 +4,8 @@
 
 #include "admm.hpp"
 
+
+
 /* ------------- Eigen print arguments ------------------- */
   Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
  /* ------------------------------------------------------- */
@@ -14,7 +16,7 @@ int main(int argc, char *argv[])
   int ADMMiterMax = 5;
   double dt = TimeStep;
 
-  ADMM::ADMMopt ADMMopts(dt, 1e-7, 1e-7, 15, ADMMiterMax);
+  ADMM::ADMMopt ADMM_OPTS(dt, 1e-7, 1e-7, 15, ADMMiterMax);
 
   Eigen::MatrixXd joint_lims(2,7);
   double eomg = 0.00001;
@@ -34,20 +36,31 @@ int main(int argc, char *argv[])
   IK_OPT.Slist = Slist;
   IK_OPT.M = M;
 
+  unsigned int N = NumberofKnotPt;
 
-  ADMM optimizerADMM(ADMMopts, IK_OPT);
-  stateVec_t xinit, xgoal;
-  stateVecTab_t xtrack;
-  xtrack.resize(stateSize, NumberofKnotPt + 1);
-
-  xinit << 0, 0.5, 0, 1.0, 0, 0.5, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0;
-  xgoal << 1.14, 1.93, -1.48, -1.78, 0.31, 0.13, 1.63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1;
+  
+  unsigned int iterMax = 10; // DDP iteration max
 
 
+  /* -------------------- orocos kdl robot initialization-------------------------*/
   KUKAModelKDLInternalData robotParams;
-  robotParams.numJoints = 7;
+  robotParams.numJoints = NDOF;
   robotParams.Kv = Eigen::MatrixXd(7,7);
   robotParams.Kp = Eigen::MatrixXd(7,7);
+
+
+  /*------------------initialize control input-----------------------*/
+
+  // cost function. TODO: make this updatable
+  CostFunctionADMM costFunction_admm(N);
+
+  /* -------------------- Optimizer Params ------------------------ */
+  optimizer::ILQRSolverADMM::OptSet solverOptions;
+  solverOptions.n_hor    = N;
+  solverOptions.tolFun   = ADMM_OPTS.tolFun;
+  solverOptions.tolGrad  = ADMM_OPTS.tolGrad;
+  solverOptions.max_iter = iterMax;
+
 
   /* ---------------------------------- Define the robot and contact model ---------------------------------- */
   KDL::Chain robot = KDL::KukaDHKdl();
@@ -65,8 +78,22 @@ int main(int argc, char *argv[])
 
 
   // dynamic model of the manipulator and the contact model
-  unsigned int N = NumberofKnotPt + 1;
   KukaArm KukaArmModel(dt, N, kukaRobot, contactModel);
+
+
+  // TODO: make this updatable, for speed
+  optimizer::ILQRSolverADMM solverDDP(KukaArmModel, costFunction_admm, solverOptions, N, ADMM_OPTS.dt, ENABLE_FULLDDP, ENABLE_QPBOX);
+
+
+  // admm optimizer
+  ADMM optimizerADMM(kukaRobot, costFunction_admm, solverDDP, ADMM_OPTS, IK_OPT, N);
+
+
+  stateVec_t xinit, xgoal;
+  stateVecTab_t xtrack;
+  xtrack.resize(stateSize, NumberofKnotPt + 1);
+
+  // xgoal << 1.14, 1.93, -1.48, -1.78, 0.31, 0.13, 1.63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1;
 
 
   /* ------------------------------------------------------------------------------------------------------ */
@@ -90,10 +117,10 @@ int main(int argc, char *argv[])
   /* ----------------------------------------------------------------------------------------------- */
 
   /* State Tracking. Force tracking */
-  Eigen::MatrixXd F(3, N);
+  Eigen::MatrixXd F(3, N + 1);
   F.setZero();
   // F.row
-  xtrack.block(14, 0, 3, xtrack.cols()) = F;
+  // xtrack.block(14, 0, 3, xtrack.cols()) = F;
  
 
   // parameters for ADMM, penelty terms. initial
@@ -131,9 +158,12 @@ int main(int argc, char *argv[])
 
   Eigen::VectorXd rho(5);
   rho << 20, 0.01, 0, 0, 1;
+
+  commandVecTab_t u_0;
+  u_0.resize(commandSize, N);
+  u_0.setZero();
   
-  // std::cout << xinit << std::endl;
-  optimizerADMM.run(kukaRobot, KukaArmModel, xinit, xtrack, cartesianPoses, rho, LIMITS);
+  optimizerADMM.solve(xinit, u_0, xtrack, cartesianPoses, rho, LIMITS);
 
   // TODO : saving data file
 

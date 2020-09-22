@@ -106,6 +106,11 @@ target_include_directories(mpc-optim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(mpc-optim orocos-kdl ddp-solver kuka-models cnpy ModernRoboticsCpp ik-solvers)
 
 
+add_executable(admm-mpc src/admm_mpc_main.cpp)
+target_include_directories(admm-mpc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(admm-mpc orocos-kdl ddp-admm-solver kuka-models ModernRoboticsCpp ik-solvers cnpy)
+
+
 add_executable(ik-test ik-solvers/ik_test.cpp)
 target_include_directories(ik-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(ik-test ModernRoboticsCpp ik-solvers)

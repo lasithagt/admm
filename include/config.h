@@ -9,8 +9,6 @@
 #include <sys/time.h>
 #include <cstdarg>
 
-#define UDP_BACKWARD_INTEGRATION_METHOD 0 // 1: 4^th-order RK, 2: simple Euler method, 3: 3^rd-order RK with FOH on u (same as dircol)
-
 #define ENABLE_QPBOX 0
 #define DISABLE_QPBOX 1
 #define ENABLE_FULLDDP 0
@@ -20,29 +18,24 @@
 #define CARTESIAN_FRAME 10
 
 #define SOFT_CONTACT 1
-#define CONTACT_EN 1
+#define CONTACT_EN 0
 #define DEBUG 1
-#define TRACK 1
+#define TRACK 1 // for tracking vs goal
 
 #define MULTI_THREAD 0
 #if MULTI_THREAD
 #include <thread>
-#define NUMBER_OF_THREAD 1 //12
+#define NUMBER_OF_THREAD 1 
 #endif
 
-#if SOFT_CONTACT
 #define stateSize 17 
 #define commandSize 7 
 #define fullstatecommandSize 24
 #define NDOF 7
-#else
-#define stateSize 14
-#define commandSize 7
-#define fullstatecommandSize 21
-#endif
 
 #define TimeHorizon 10
-#define TimeStep 0.01
+#define TimeStep 0.01 // 0.01s works for soft contact dynamics
+
 #define NumberofKnotPt TimeHorizon / TimeStep
 #define InterpolationScale 10 
 const int32_t kNumJoints = 7;
@@ -76,16 +69,9 @@ typedef Eigen::Matrix<double, stateSize + commandSize, 1> stateAug_t;           
 typedef Eigen::Matrix<double, stateSize + commandSize, 1> projStateAndCommand_t;                    // 21 x 1
 typedef double scalar_t;
 
-// typedef for half commandSize and stateSize types
-#if SOFT_CONTACT
-    typedef Eigen::Matrix<double, (stateSize-3)/2, 1> stateVec_half_t;                                    // stateSize/2 x 1
-    typedef Eigen::Matrix<double, (stateSize-3)/2, (stateSize-3)/2> stateMat_half_t;                      // stateSize/2 x stateSize/2
-    typedef Eigen::Matrix<double, (stateSize-3)/2, commandSize> stateR_half_commandC_t;                   // stateSize/2 x commandSize
-#else
-    typedef Eigen::Matrix<double, stateSize/2, 1> stateVec_half_t;                                    // stateSize/2 x 1
-    typedef Eigen::Matrix<double, stateSize/2, stateSize/2> stateMat_half_t;                          // stateSize/2 x stateSize/2
-    typedef Eigen::Matrix<double, stateSize/2, commandSize> stateR_half_commandC_t;                   // stateSize/2 x commandSize
-#endif
+typedef Eigen::Matrix<double, NDOF, 1> stateVec_half_t;                      // stateSize/2 x 1
+typedef Eigen::Matrix<double, NDOF, NDOF> stateMat_half_t;                   // stateSize/2 x stateSize/2
+typedef Eigen::Matrix<double, NDOF, commandSize> stateR_half_commandC_t;     // stateSize/2 x commandSize
 
 
 /* --------------------------------------------------------------------------------------------------------------------------- */
@@ -100,7 +86,6 @@ typedef std::vector<stateR_commandC_t, Eigen::aligned_allocator<stateR_commandC_
 typedef std::vector<commandR_stateC_t, Eigen::aligned_allocator<commandR_stateC_t> > commandR_stateC_tab_t;
 
 typedef Eigen::Matrix<double, (stateSize-3)/2, Eigen::Dynamic> stateVecTab_half_t;
-// typedef std::vector<projStateAndCommand_t, Eigen::aligned_allocator<projStateAndCommand_t> > projStateAndCommandTab_t;
 typedef Eigen::Matrix<double, stateSize + commandSize, Eigen::Dynamic> projStateAndCommandTab_t;
 
 typedef std::vector<std::vector<stateMat_t, Eigen::aligned_allocator<stateMat_t> > > stateTensTab_t;
