@@ -22,7 +22,7 @@ public:
     CostFunctionADMM() = default;
     ~CostFunctionADMM() = default;
 
-    CostFunctionADMM(int time_steps) : N(time_steps) {
+    CostFunctionADMM(int time_steps,  std::shared_ptr<KUKAModelKDL>& kukaRobot_) : N(time_steps), kukaRobot(kukaRobot_) {
 
         Eigen::VectorXd x_w(stateSize);
         Eigen::VectorXd xf_w(stateSize);
@@ -50,7 +50,7 @@ public:
     scalar_t cost_func_expre(const unsigned int& index_k, const stateVec_t& xList_k, const commandVec_t& uList_k, const stateVec_t &x_track)
     {
         scalar_t cost_;
-        // unsigned int Nl = NumberofKnotPt;
+
 
         if (index_k == N)
         {
@@ -70,7 +70,9 @@ public:
      const Eigen::MatrixXd& cList_bar, const stateVec_t& xList_bar, const commandVec_t& uList_bar, const Eigen::VectorXd& thetaList_bar, const Eigen::VectorXd& rho)
     {
         scalar_t cost_;
-        // unsigned int Nl = NumberofKnotPt;
+
+        // calculate forward kinematics
+
 
         if (index_k == N) 
         {
@@ -78,17 +80,20 @@ public:
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
 
         } else {
+            // 
             cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Q * (xList_k - x_track);
             cost_ += 0.5 * rho(0) * (xList_k.head(7).transpose() - xList_bar.head(7).transpose()) * (xList_k - xList_bar).head(7);
             
             // TODO: contact cost term
-            // cost_ += 0.5 * rho(2) * (xList_k.segment(7,2).transpose() - cList_bar.transpose()) * (xList_k.segment(7,2) - cList_bar);
+            // compute the contact term
+
+            cost_ += 0.5 * rho(2) * (xList_k.segment(7,2).transpose() - cList_bar.transpose()) * (xList_k.segment(7,2) - cList_bar); // temp
+
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
 
             cost_ += 0.5 * uList_k.transpose() * R * uList_k; 
             cost_ += 0.5 * rho(1) * (uList_k.transpose() - uList_bar.transpose()) * (uList_k - uList_bar);
        }
-        // std::cout << cost_ << std::endl;
         return cost_;
 
     }
@@ -113,12 +118,14 @@ public:
             temp.head(7)  = (xList.col(k).head(7) - thetaList_bar.col(k));
             cx_new.col(k) = Q * (xList.col(k) - x_track.col(k)) + m_ * (xList.col(k) - xList_bar.col(k)) + n_ *  temp;
             cu_new.col(k) = R * uList.col(k) + rho(1) * (uList.col(k) - uList_bar.col(k));
+            cxx_new[k]    = Q;
 
-            cxx_new[k] = Q;
             // TODO: contact cost term derivative. Needs num diff
-            cxx_new[k] += m_;
-            cxx_new[k] += n_;
-            cuu_new[k]  = R + rho(1) * Eigen::MatrixXd::Identity(7, 7); 
+            // compute the first derivative. ignore the second term of te second derivative.
+
+            cxx_new[k]   += m_;
+            cxx_new[k]   += n_;
+            cuu_new[k]    = R + rho(1) * Eigen::MatrixXd::Identity(7, 7); 
 
             //Note that cu , cux and cuu at the final time step will never be used (see ilqrsolver::doBackwardPass)
             cux_new[k].setZero();
@@ -129,6 +136,7 @@ public:
         cxx_new[Nl-1]    = Q;
         cxx_new[Nl-1]   += m_;
         cxx_new[Nl-1]   += n_;
+
         // cuu_new[Nl-1]    = R ; //+ rho(1) * Eigen::MatrixXd::Identity(7, 7); 
 
         // c_new = 0; // TODO: move this to somewhere.
@@ -174,6 +182,9 @@ protected:
 	commandMatTab_t cuu_new;
 	double c_new;
     int N;
+
+    // kuka model to get forward kinematics for te cost
+    std::shared_ptr<KUKAModelKDL> kukaRobot;
 
     // stateVecTab_t x_track_;
 

@@ -16,7 +16,7 @@
 #include <memory>
 
 #include "config.h"
-#include "spline.h"
+// #include "spline.h"
 #include "ilqrsolver.h"
 #include "kuka_arm.h"
 #include "SoftContactModel.h"

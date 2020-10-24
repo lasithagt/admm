@@ -51,8 +51,7 @@ int main(int argc, char *argv[])
 
   /*------------------initialize control input-----------------------*/
 
-  // cost function. TODO: make this updatable
-  CostFunctionADMM costFunction_admm(N);
+
 
   /* -------------------- Optimizer Params ------------------------ */
   optimizer::ILQRSolverADMM::OptSet solverOptions;
@@ -65,6 +64,10 @@ int main(int argc, char *argv[])
   /* ---------------------------------- Define the robot and contact model ---------------------------------- */
   KDL::Chain robot = KDL::KukaDHKdl();
   std::shared_ptr<KUKAModelKDL> kukaRobot = std::shared_ptr<KUKAModelKDL>(new KUKAModelKDL(robot, robotParams));
+
+
+  // cost function. TODO: make this updatable
+  CostFunctionADMM costFunction_admm(N, kukaRobot);
 
   ContactModel::ContactParams cp_;
   cp_.E = 1000;

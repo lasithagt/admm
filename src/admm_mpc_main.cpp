@@ -48,7 +48,7 @@ public:
 
         double dt      = TimeStep;
         unsigned int N = NumberofKnotPt;
-        double tolFun  = 1e-5;                 // 1e-5;//relaxing default value: 1e-10; - reduction exit crieria
+        double tolFun  = 1e-5;                 // 1e-5; //relaxing default value: 1e-10; - reduction exit crieria
         double tolGrad = 1e-10;                // relaxing default value: 1e-10; - gradient exit criteria
         unsigned int iterMax = 5;              // 100;
         Logger* logger = new DefaultLogger();
@@ -155,7 +155,7 @@ public:
         KukaArm KukaArmModel(dt, temp_N, kukaRobot, contactModel);
 
         // Initialize Cost Function 
-        CostFunctionADMM costFunction_admm(horizon_mpc);
+        CostFunctionADMM costFunction_admm(horizon_mpc, kukaRobot);
 
         // initialize iLQR solver
         optimizer::ILQRSolverADMM solver(KukaArmModel, costFunction_admm, solverOptions, horizon_mpc, dt, ENABLE_FULLDDP, ENABLE_QPBOX);
