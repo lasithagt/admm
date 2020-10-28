@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(DDP-SQP-ADMM)
+project(DDP-ADMM)
 SET (CMAKE_CXX_COMPILER "/usr/bin/g++")
 
 
@@ -9,7 +9,7 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 option(DDP_SYSTEM_EIGEN "Use system-installed version of Eigen" OFF)
-option(DDP_BUILD_EXAMPLES "Build examples" ON)
+# option(DDP_BUILD_EXAMPLES "Build examples" ON)
 
 set(EIGEN_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -49,22 +49,23 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${OROCOS_KDL_INCLUDE_DIR
 
 message(STATUS ${OROCOS_KDL_INCLUDE_DIR})
 
-add_library(kuka-models)
-target_include_directories(kuka-models PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/plant-models/include)
 set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/plant-models/KukaModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/plant-models/models.ccp)
-target_sources(kuka-models PUBLIC ${SOURCES})
+add_library(kuka-models ${SOURCES})
+target_include_directories(kuka-models PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/plant-models/include)
+# set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/plant-models/KukaModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/plant-models/models.ccp)
+# target_sources(kuka-models PUBLIC ${SOURCES})
 
-add_library(ddp-solver)
-target_include_directories(ddp-solver PUBLIC include ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/cnpy)
 set(SOURCES_DDP ${CMAKE_CURRENT_SOURCE_DIR}/src/ilqrsolver.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/kuka_arm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/ddp.cpp)
+add_library(ddp-solver ${SOURCES_DDP})
+target_include_directories(ddp-solver PUBLIC include ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/cnpy)
 target_link_libraries(ddp-solver PUBLIC kuka-models cnpy)
-target_sources(ddp-solver PUBLIC ${SOURCES_DDP})
+# target_sources(ddp-solver PUBLIC ${SOURCES_DDP})
 
-add_library(ddp-admm-solver)
-target_include_directories(ddp-admm-solver PUBLIC include ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/cnpy)
 set(SOURCES_DDP_ADMM ${CMAKE_CURRENT_SOURCE_DIR}/src/ilqrsolver_admm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/kuka_arm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/admm.cpp)
+add_library(ddp-admm-solver ${SOURCES_DDP_ADMM})
+target_include_directories(ddp-admm-solver PUBLIC include ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/cnpy)
 target_link_libraries(ddp-admm-solver PUBLIC kuka-models cnpy)
-target_sources(ddp-admm-solver PUBLIC ${SOURCES_DDP_ADMM})
+# target_sources(ddp-admm-solver PUBLIC ${SOURCES_DDP_ADMM})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -78,11 +79,11 @@ install (TARGETS ModernRoboticsCpp
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)
 
-add_library(ik-solvers)
-target_include_directories(ik-solvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/ik-solvers/include/)
 set(SOURCES_IK ${CMAKE_CURRENT_SOURCE_DIR}/ik-solvers/ik_solver.cpp)
+add_library(ik-solvers ${SOURCES_IK})
+target_include_directories(ik-solvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ModernRobotics/include/ ${CMAKE_CURRENT_SOURCE_DIR}/ik-solvers/include/)
 target_link_libraries(ik-solvers ModernRoboticsCpp)
-target_sources(ik-solvers PUBLIC ${SOURCES_IK})
+# target_sources(ik-solvers PUBLIC ${SOURCES_IK})
 
 add_library(cnpy STATIC ${CMAKE_CURRENT_SOURCE_DIR}/cnpy/cnpy.cpp)
 target_include_directories(cnpy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cnpy)
