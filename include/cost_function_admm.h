@@ -15,6 +15,71 @@ class CostFunctionADMM
 	using Jacobian = Eigen::Matrix<double, 1, stateSize + commandSize>;
 	using Hessian = Eigen::Matrix<double, 1, stateSize + commandSize>;
 
+    /* numerical derivative computation*/
+    template <class T, int S, int C>
+    struct Differentiable
+    {
+        /*****************************************************************************/
+        /*** Replicate Eigen's generic functor implementation to avoid inheritance ***/
+        /*** We only use the fixed-size functionality ********************************/
+        /*****************************************************************************/
+        enum { InputsAtCompileTime = S + C, ValuesAtCompileTime = S };
+        using Scalar        = T;
+        using InputType     = Eigen::Matrix<T, InputsAtCompileTime, 1>;
+        using ValueType     = Eigen::Matrix<T, ValuesAtCompileTime, 1>;
+        using JacobianType  = Eigen::Matrix<T, ValuesAtCompileTime, InputsAtCompileTime>;
+        int inputs() const { return InputsAtCompileTime; }
+        int values() const { return ValuesAtCompileTime; }
+        int operator()(const Eigen::Ref<const InputType> &xu, Eigen::Ref<ValueType> dx) const
+        {
+            dx =  dynamics_(xu.template head<S>(), xu.template tail<C>());
+            return 0;
+        }
+        /*****************************************************************************/
+
+        using DiffFunc = std::function<Eigen::Matrix<T, S, 1>(const Eigen::Matrix<T, S, 1>&, const Eigen::Matrix<T, C, 1>&)>;
+        Differentiable(const DiffFunc &dynamics) : dynamics_(dynamics) {}
+        Differentiable() = default;
+
+    private:
+        DiffFunc dynamics_;
+    };
+
+    /* structure to compute contraints terms */
+    template <class T, int S, int C>
+    struct ComputeContactTerms
+    {
+        Jacobian J_;
+        Differentiable<T, S, C> diff_;
+        Eigen::NumericalDiff<Differentiable<T, S, C>, Eigen::Forward> num_diff_;
+
+        /* --------------------------------------- calculate forward kinematics --------------------------------------------- */
+        double* q;
+        Eigen::Matrix<double, 3, 3> poseM;
+        Eigen::Matrix<double, 3, 3> massMatrix;
+        Eigen::Vector3d poseP;
+        Eigen::Vector3d vel;
+        Eigen::Vector3d accel;
+
+        // ComputeContactTerms() : diff_([this](const stateVec_t& x, const commandVec_t& u) -> stateVec_t{ return this->kuka_arm_dynamics(x, u); }), num_diff_(diff_) {}
+
+
+        Eigen::Vector3d operator()(std::shared_ptr<KUKAModelKDL>& plant_, stateVec_t x)
+        {
+            // plant.getForwardKinematics(q, qd, qdd, poseM, poseP, vel, accel, true);
+            return vel;
+
+        }
+
+        // compute the mass matrix at the end-effector. 
+        Eigen::Matrix3d CartesianMassMatrix()
+        {
+            return massMatrix;
+        }   
+
+        /* ------------------------------------------------------------------------------------------------------------------- */
+    };
+
 
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -22,13 +87,13 @@ public:
     CostFunctionADMM() = default;
     ~CostFunctionADMM() = default;
 
-    CostFunctionADMM(int time_steps,  std::shared_ptr<KUKAModelKDL>& kukaRobot_) : N(time_steps), kukaRobot(kukaRobot_) {
+    CostFunctionADMM(int time_steps,  std::shared_ptr<KUKAModelKDL>& plant_) : N(time_steps), plant(plant_) {
 
         Eigen::VectorXd x_w(stateSize);
         Eigen::VectorXd xf_w(stateSize);
         Eigen::VectorXd u_w(commandSize);
 
-        // for consensus admm
+        /* for consensus admm. read it from te main file as a dynamic parameters passing */
         x_w  << 0, 0, 0, 0, 0, 0, 0, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0, 0, 0.05;
         xf_w << 0, 0, 0, 0, 0, 0, 0, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0, 0, 0.05;
         u_w  << 1E-2, 1E-2, 1E-2, 1E-2, 1E-2, 1E-2, 1E-2;
@@ -51,7 +116,6 @@ public:
     {
         scalar_t cost_;
 
-
         if (index_k == N)
         {
             cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Qf * (xList_k - x_track);
@@ -71,8 +135,8 @@ public:
     {
         scalar_t cost_;
 
-        // calculate forward kinematics
-
+        // compute the contact terms.
+        Eigen::Vector3d contact_terms = ComputeContact(plant, xList_k);
 
         if (index_k == N) 
         {
@@ -80,14 +144,14 @@ public:
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
 
         } else {
-            // 
             cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Q * (xList_k - x_track);
             cost_ += 0.5 * rho(0) * (xList_k.head(7).transpose() - xList_bar.head(7).transpose()) * (xList_k - xList_bar).head(7);
             
             // TODO: contact cost term
-            // compute the contact term
+            /* -------------------------- compute the contact term ----------------------------------*/
 
-            cost_ += 0.5 * rho(2) * (xList_k.segment(7,2).transpose() - cList_bar.transpose()) * (xList_k.segment(7,2) - cList_bar); // temp
+            // cost_ += 0.5 * rho(2) * (contact_terms.head(2).transpose() - cList_bar.transpose()) * (contact_terms.head(2) - cList_bar); // temp
+            /* --------------------------------------------------------------------------------------*/
 
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
 
@@ -98,7 +162,7 @@ public:
 
     }
 
-    /* compute derivatives */
+    /* compute analytical derivatives */
     void computeDerivatives(const stateVecTab_t& xList, const commandVecTab_t& uList, const stateVecTab_t &x_track,
         const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho)
     {
@@ -142,6 +206,8 @@ public:
         // c_new = 0; // TODO: move this to somewhere.
     }
 
+
+
 	const Eigen::Matrix<double,6,6>& getT() const {return T;};
 
 	const stateMat_t& getQ() const {return Q;};
@@ -184,9 +250,11 @@ protected:
     int N;
 
     // kuka model to get forward kinematics for te cost
-    std::shared_ptr<KUKAModelKDL> kukaRobot;
+    std::shared_ptr<KUKAModelKDL> plant;
 
-    // stateVecTab_t x_track_;
+    // structure to compute contact terms
+    ComputeContactTerms<double, stateSize, commandSize> ComputeContact;
+
 
 };
 
