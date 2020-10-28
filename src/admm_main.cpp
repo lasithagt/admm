@@ -95,6 +95,8 @@ int main(int argc, char *argv[])
   stateVec_t xinit, xgoal;
   stateVecTab_t xtrack;
   xtrack.resize(stateSize, NumberofKnotPt + 1);
+  xtrack.row(16) = -20 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+
 
   // xgoal << 1.14, 1.93, -1.48, -1.78, 0.31, 0.13, 1.63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1;
 
@@ -165,6 +167,8 @@ int main(int argc, char *argv[])
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);
   u_0.setZero();
+
+  std::cout << xtrack << std::endl;
   
   optimizerADMM.solve(xinit, u_0, xtrack, cartesianPoses, rho, LIMITS);
 

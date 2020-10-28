@@ -158,6 +158,13 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     u_lambda.setZero();
     q_lambda.setZero();
 
+    for (int i = 0;i < ADMM_OPTS.ADMMiterMax; i++)
+    {
+        res_c[i] = 0;
+        res_x[i] = 0;
+        res_u[i] = 0;
+        res_q[i] = 0;
+    }
 
     Eigen::MatrixXd temp(4, 4);
 
@@ -189,7 +196,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         temp.setZero();
         error_fk = 0.0;
 
-        for (int j = 0;j < cartesianTrack.size() - 1; j++) {
+        for (int j = 0;j < cartesianTrack.size() ; j++) {
             temp_fk   = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, xnew.col(j).head(7));
             temp      = mr::TransInv(cartesianTrack.at(j)) * temp_fk;
             error_fk += temp.col(3).head(3).norm();
@@ -197,10 +204,11 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
             // save data
             #ifdef DEBUG
             for (int k = 0;k < 3;k++) {
-                data_store(j, k, i + 1) = temp_fk(k, 3);
+                data_store(j, k, i ) = temp_fk(k, 3);
+
                 // Force data
                 Eigen::VectorXd force   = xnew.col(j).tail(3);
-                data_store(j, k+3, 0) = force(k);
+                data_store(j, k + 3, i ) = force(k);
             }
             #endif
         }
@@ -213,12 +221,12 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         /* ----------------------------- update cnew. TODO: variable path curves -----------------------------  */
         contact_update(kukaRobot_, xnew, &cnew);
 
-        /* ---------------------------------------- IK block update ----------------------------------------   */ // test this
+        /* ------------------------------------------- IK block update -----------------------------------------   */ 
         std::cout << "\n ================================= begin IK =================================" << std::endl;
         joint_positions_IK.setZero();
-        IK_solve.getTrajectory(cartesianTrack, xnew.col(0).head(7), xnew.col(0).segment(7, 7), xbar.block(0, 0, 7, N + 1) - q_lambda, 
-            xbar.block(7, 0, 7, N + 1), rho,  &joint_positions_IK);
+        IK_solve.getTrajectory(cartesianTrack, xnew.col(0).head(7), xnew.col(0).segment(7, 7), xbar.block(0, 0, 7, N + 1) - q_lambda, xbar.block(7, 0, 7, N + 1), rho,  &joint_positions_IK);
         std::cout << "\n ================================= End IK =================================" << std::endl;
+        
         /* ----------------------------------------------- TESTING ----------------------------------------------- */
 
         error_fk = 0;
@@ -231,18 +239,20 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         /* --------------------------------------------- END TESTING --------------------------------------------- */
 
 
+
         /* ------------------------------------- Average States ------------------------------------   */
 
         q_avg = (qnew  + joint_positions_IK) / 2;
         // q_lambda = x_lambda.block(0, 0, 7, x_lambda.cols());
+
         x_lambda_avg.block(0, 0, 7, N + 1) = (q_lambda + x_lambda.block(0, 0, 7, x_lambda.cols())) / 2;
+
         /* ---------------------------------------- Projection --------------------------------------  */
         // Projection block to feasible sets (state and control contraints)
         x_temp = xnew + x_lambda;
         x_temp.block(0, 0, 7, xnew.cols()) = q_avg  + x_lambda_avg.block(0, 0, 7, N + 1);// test this line
         c_temp = cnew + c_lambda;
         u_temp = unew + u_lambda;
-            std::cout << "here" << std::endl;
 
         xubar = projection(x_temp, c_temp, u_temp, L);
 
@@ -283,7 +293,6 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         for (int i = 0;i < N;i++) {
             cost = cost + costFunction_.cost_func_expre(i, xnew.col(i), unew.col(i), xtrack.col(i));
         }
-
 
 
         final_cost[i + 1] = cost;
