@@ -144,6 +144,8 @@ public:
 	    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 	    std::chrono::duration<float, std::milli> elapsed;
 
+
+
  	    int64_t i = 0;
 	    while(!terminate(i, x))
 	    {
@@ -160,7 +162,6 @@ public:
 	        }
 
 	        // Run the optimizer to obtain the next control
-
 	        opt_.solve(xold, control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
 
 	        result = opt_.getLastSolvedTrajectory();
@@ -204,16 +205,20 @@ public:
 
 	        // control_trajectory.leftCols(H_ - 2) = result.uList.rightCols(H_ - 2);
 
-	        control_trajectory = result.uList;
-	        if(verbose_) logger_->info("Slide down the control trajectory\n");
 
+	        if(verbose_) logger_->info("Slide down the control trajectory\n");
+	        control_trajectory = result.uList;
+	        
 	        xold = x;
 
+
+	        // slide down the control for state and cartesian state
 	        x_track_mpc = x_track_.block(0, i, stateSize, H_ + 1);
 
 	        for (int k = 0;k < H_ + 1;k++) {
 	    		cartesianTrack_mpc[k] = cartesianTrack_[i + k];
 	    	}
+	    	
 
 	        if(verbose_) logger_->info("Slide down the desired trajectory\n");
 
