@@ -69,7 +69,6 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
 
         // contact model dynamics
         contact_model0->df(H_c, poseP, poseM_vec, vel, accel, force_current, force_dot);
-        // std::cout << "Force_dot\n" << force_dot << std::endl;
     } else 
     {   
         // for testing
