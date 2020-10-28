@@ -25,9 +25,9 @@ if __name__ == "__main__":
 	# Plot data for force
 	x_time = np.arange(0, data.shape[2], 1)
 
-	xline = data[5,3,::]
-	yline = data[5,4,::]
-	zline = data[5,5,::]
+	xline = data[4,3,::]
+	yline = data[4,4,::]
+	zline = data[4,5,::]
 	plt.plot(x_time, xline, label='Force X')
 	plt.plot(x_time, yline, label='Force Y')
 	plt.plot(x_time, zline, label='Force Z')
