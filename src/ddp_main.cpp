@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 
   /* initialize xinit, xgoal, xtrack - for the hozizon */
   KDL::Chain robot = KDL::KukaDHKdl();
-  std::shared_ptr<KUKAModelKDL> kukaRobot = std::shared_ptr<KUKAModelKDL>(new KUKAModelKDL(robot, robotParams));
+  std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
 
   // kukaRobot->getForwardKinematics(double* q, double* qd, double *qdd, Eigen::Matrix<double,3,3>& poseM, Eigen::Vector3d& poseP, Eigen::Vector3d& vel, Eigen::Vector3d& accel, false);
 

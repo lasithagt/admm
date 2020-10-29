@@ -98,7 +98,7 @@ private:
 public:
     static const double mc, mp, l, g;
     unsigned int globalcnt;
-    std::shared_ptr<KUKAModelKDL> kukaRobot_;
+    std::shared_ptr<RobotAbstract> kukaRobot_;
 
 private:
     
@@ -127,7 +127,7 @@ public:
     KukaArm() {}
 
     ~KukaArm(){};
-    KukaArm(double& iiwa_dt, unsigned int& iiwa_N,  std::shared_ptr<KUKAModelKDL>& kukaRobot, ContactModel::SoftContactModel& contact_model);
+    KukaArm(double& iiwa_dt, unsigned int& iiwa_N,  std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::SoftContactModel& contact_model);
     stateVec_t kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau);
     void compute_dynamics_jacobian(const stateVecTab_t& xList, const commandVecTab_t& uList);
     struct timeprofile getFinalTimeProfile();

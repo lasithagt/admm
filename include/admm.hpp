@@ -57,20 +57,20 @@ public:
     int ADMMiterMax;
   };
   
-  ADMM(std::shared_ptr<KUKAModelKDL>& kukaModel, const CostFunctionADMM& costFunction, 
+  ADMM(std::shared_ptr<RobotAbstract>& kukaModel, const CostFunctionADMM& costFunction, 
     const optimizer::ILQRSolverADMM& solverDDP, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps);
 
   void solve(const stateVec_t& xinit, const commandVecTab_t& u_0, const stateVecTab_t& xtrack, 
     const std::vector<Eigen::MatrixXd>& cartesianTrack, const Eigen::VectorXd& rho, const Saturation& L);
 
   Eigen::MatrixXd projection(const stateVecTab_t& xnew, const Eigen::MatrixXd& cnew, const commandVecTab_t& unew, const Saturation& L);
-  void contact_update(std::shared_ptr<KUKAModelKDL>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew);
+  void contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew);
 
   optimizer::ILQRSolverADMM::traj getLastSolvedTrajectory();
 
 protected:
   models::KUKA robotIK;
-  std::shared_ptr<KUKAModelKDL> kukaRobot_;
+  std::shared_ptr<RobotAbstract> kukaRobot_;
   CostFunctionADMM costFunction_;
   optimizer::ILQRSolverADMM solver_;
 

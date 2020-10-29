@@ -21,7 +21,7 @@ public:
     }
     ~FULL_ADMM() {}
 
-    void run(std::shared_ptr<KUKAModelKDL>& kukaRobot, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMM::ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT) 
+    void run(std::shared_ptr<RobotAbstract>& kukaRobot, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMM::ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT) 
     {
       
       // parameters for ADMM, penelty terms. initial
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 
   /* ---------------------------------- Define the robot and contact model ---------------------------------- */
   KDL::Chain robot = KDL::KukaDHKdl();
-  std::shared_ptr<KUKAModelKDL> kukaRobot = std::shared_ptr<KUKAModelKDL>(new KUKAModelKDL(robot, robotParams));
+  std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
 
   FULL_ADMM admm = FULL_ADMM(N, TimeStep);
   admm.run(kukaRobot, solverOptions, ADMM_OPTS, IK_OPT);

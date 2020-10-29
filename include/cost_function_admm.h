@@ -64,7 +64,7 @@ class CostFunctionADMM
         // ComputeContactTerms() : diff_([this](const stateVec_t& x, const commandVec_t& u) -> stateVec_t{ return this->kuka_arm_dynamics(x, u); }), num_diff_(diff_) {}
 
 
-        Eigen::Vector3d operator()(std::shared_ptr<KUKAModelKDL>& plant_, stateVec_t x)
+        Eigen::Vector3d operator()(std::shared_ptr<RobotAbstract>& plant_, stateVec_t x)
         {
             // plant.getForwardKinematics(q, qd, qdd, poseM, poseP, vel, accel, true);
             return vel;
@@ -87,7 +87,7 @@ public:
     CostFunctionADMM() = default;
     ~CostFunctionADMM() = default;
 
-    CostFunctionADMM(int time_steps,  std::shared_ptr<KUKAModelKDL>& plant_) : N(time_steps), plant(plant_) {
+    CostFunctionADMM(int time_steps,  std::shared_ptr<RobotAbstract>& plant_) : N(time_steps), plant(plant_) {
 
         Eigen::VectorXd x_w(stateSize);
         Eigen::VectorXd xf_w(stateSize);
@@ -250,7 +250,7 @@ protected:
     int N;
 
     // kuka model to get forward kinematics for te cost
-    std::shared_ptr<KUKAModelKDL> plant;
+    std::shared_ptr<RobotAbstract> plant;
 
     // structure to compute contact terms
     ComputeContactTerms<double, stateSize, commandSize> ComputeContact;

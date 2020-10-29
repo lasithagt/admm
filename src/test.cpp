@@ -19,7 +19,7 @@ int main() {
 
 	/* ---------------------------------- Define the robot and contact model ---------------------------------- */
 	KDL::Chain robot = KDL::KukaDHKdl();
-	std::shared_ptr<KUKAModelKDL> kukaRobot = std::shared_ptr<KUKAModelKDL>(new KUKAModelKDL(robot, robotParams));
+	std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
 
 	ContactModel::ContactParams cp_;
 	cp_.E = 300;

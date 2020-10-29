@@ -8,7 +8,7 @@
 
 using namespace Eigen;
 
-ADMM::ADMM(std::shared_ptr<KUKAModelKDL>& kukaRobot, const CostFunctionADMM& costFunction, 
+ADMM::ADMM(std::shared_ptr<RobotAbstract>& kukaRobot, const CostFunctionADMM& costFunction, 
     const optimizer::ILQRSolverADMM& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) : N(Time_steps), kukaRobot_(kukaRobot), 
 ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(costFunction), solver_(solver) 
 {
@@ -398,7 +398,7 @@ Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixX
 
 /* Computes contact terms
 */
-void ADMM::contact_update(std::shared_ptr<KUKAModelKDL>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew) {
+void ADMM::contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew) {
     double vel = 0.0;
     double m = 0.3; 
     double R = 0.4;

@@ -2,7 +2,7 @@
 #include <Eigen/Geometry>
 
 
-KukaArm::KukaArm(double& dt_, unsigned int& N_, std::shared_ptr<KUKAModelKDL>& kukaRobot, ContactModel::SoftContactModel& contact_model) 
+KukaArm::KukaArm(double& dt_, unsigned int& N_, std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::SoftContactModel& contact_model) 
 : diff_([this](const stateVec_t& x, const commandVec_t& u) -> stateVec_t{ return this->kuka_arm_dynamics(x, u); }),
       num_diff_(diff_), dt(dt_), N(N_)
 {
