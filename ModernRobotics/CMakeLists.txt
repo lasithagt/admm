@@ -89,7 +89,7 @@ endif()
 
 
 
-add_library(ModernRoboticsCpp SHARED src/modern_robotics.cpp include/modern_robotics.h)
+add_library(ModernRoboticsCpp STATIC src/modern_robotics.cpp include/modern_robotics.h)
 
 set(LIB_TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/lib_test.cpp
@@ -101,6 +101,59 @@ target_link_libraries( lib_test ModernRoboticsCpp gtest_main)
 
 
 install (TARGETS ModernRoboticsCpp
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin)
+        EXPORT ModernRoboticsCppTargets
+        ARCHIVE DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/config/MR/lib
+        LIBRARY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/config/MR/lib
+        RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/config/MR/bin
+        INCLUDES DESTINATION include)
+
+# include CMakePackageConfigHelpers macro
+include(CMakePackageConfigHelpers)
+
+# set version
+set(version 3.4.1)
+
+set_property(TARGET ModernRoboticsCpp PROPERTY VERSION ${version})
+set_property(TARGET ModernRoboticsCpp PROPERTY SOVERSION 3)
+set_property(TARGET ModernRoboticsCpp PROPERTY
+  INTERFACE_ModernRoboticsCpp_MAJOR_VERSION 3)
+set_property(TARGET ModernRoboticsCpp APPEND PROPERTY
+  COMPATIBLE_INTERFACE_STRING ModernRoboticsCpp_MAJOR_VERSION
+)
+
+# generate the version file for the config file
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/ModernRoboticsCppConfigVersion.cmake"
+  VERSION "${version}"
+  COMPATIBILITY AnyNewerVersion
+)
+
+# create config file
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/ModernRoboticsCppConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/ModernRoboticsCppConfig.cmake"
+  INSTALL_DESTINATION lib/cmake
+)
+
+install(FILES include/modern_robotics.h DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/config/MR/include)
+
+
+# install config files
+install(FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/ModernRoboticsCppConfig.cmake"
+          "${CMAKE_CURRENT_BINARY_DIR}/ModernRoboticsCppConfigVersion.cmake"
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/config/MR/cmake
+)
+
+# generate the export targets for the build tree
+export(EXPORT ModernRoboticsCppTargets
+       FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/ModernRoboticsCppTargets.cmake"
+       
+
+)
+
+
+# generate and install export file
+install(EXPORT ModernRoboticsCppTargets
+        FILE ModernRoboticsCppTargets.cmake
+        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/config/MR/cmake
+)

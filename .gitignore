@@ -338,3 +338,6 @@ ENV/
 # Kamil
 /.idea/
 */.idea/*
+
+# install
+**/install
