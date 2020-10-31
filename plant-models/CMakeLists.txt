@@ -14,17 +14,17 @@ target_include_directories(kuka-models
 # install the target and create export-set
 install(TARGETS kuka-models
         EXPORT PlantModelTargets
-        LIBRARY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/lib
-        ARCHIVE DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/lib
-        RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
         INCLUDES DESTINATION include
 )
 
 # install header file
-# install(FILES Addition.h DESTINATION include)
+install(FILES include/KukaModel.h include/models.h include/kuka_robot.hpp DESTINATION include)
 
 # generate and install export file
 install(EXPORT PlantModelTargets
-        FILE PlantModelTargets.cmake
-        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/cmake
+        FILE ADMMPlantModelTargets.cmake
+        DESTINATION cmake
 )

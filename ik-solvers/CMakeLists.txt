@@ -1,9 +1,8 @@
 # create library
 set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ik_solver.cpp)
 add_library(ik-solvers STATIC ${SOURCES})
+target_link_libraries(ik-solvers PUBLIC ModernRoboticsCpp)
 
-
-# add_library(MathFunctions::Addition ALIAS Addition)
 
 # add include directories
 target_include_directories(ik-solvers
@@ -15,17 +14,17 @@ target_include_directories(ik-solvers
 # install the target and create export-set
 install(TARGETS ik-solvers
         EXPORT IKSolversTargets
-        LIBRARY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/lib
-        ARCHIVE DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/lib
-        RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
         INCLUDES DESTINATION include
 )
 
 # install header file
-install(FILES include/ik_solver.hpp include/ik_trajectory.hpp DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/include)
+install(FILES include/ik_solver.hpp include/ik_trajectory.hpp DESTINATION include)
 
 # generate and install export file
 install(EXPORT IKSolversTargets
-        FILE IKSolversTargets.cmake
-        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/cmake
+        FILE ADMMIKSolversTargets.cmake
+        DESTINATION cmake
 )

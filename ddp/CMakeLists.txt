@@ -17,17 +17,17 @@ target_link_libraries(ddp-solver PUBLIC kuka-models cnpy)
 # install the target and create export-set
 install(TARGETS ddp-solver
         EXPORT DDPSolverTargets
-        LIBRARY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/lib
-        ARCHIVE DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/lib
-        RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
         INCLUDES DESTINATION include
 )
 
 # install header file
-install(FILES include/mpc.hpp include/ddp.h include/cost_function.h include/ilqrsolver.h DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/include)
+install(FILES include/mpc.hpp include/ddp.h include/cost_function.h include/ilqrsolver.h DESTINATION include)
 
 # generate and install export file
 install(EXPORT DDPSolverTargets
-        FILE DDPSolverTargets.cmake
-        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/cmake
+        FILE ADMMDDPSolverTargets.cmake
+        DESTINATION cmake
 )
