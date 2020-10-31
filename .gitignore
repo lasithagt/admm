@@ -341,3 +341,5 @@ ENV/
 
 # install
 **/install
+**/cmake
+
