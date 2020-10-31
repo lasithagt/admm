@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+set(_supported_components DDPSolver PlantModel IKSolvers)
+
+foreach(_comp ${ADMM_FIND_COMPONENTS})
+  if (NOT _comp IN_LIST _supported_components)
+    set(ADMM_FOUND False)
+    set(ADMM_NOT_FOUND_MESSAGE "Unsupported component: ${_comp}")
+  endif()
+  include("${CMAKE_CURRENT_LIST_DIR}/ADMM${_comp}Targets.cmake")
+endforeach()
