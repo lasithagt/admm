@@ -1,14 +1,18 @@
 cmake_minimum_required(VERSION 3.15)
-include(GenerateExportHeader)
 
 project(DDP-ADMM)
 SET (CMAKE_CXX_COMPILER "/usr/bin/g++")
 
+include(GenerateExportHeader)
 
-if(NOT CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif()
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# specify the C++ standard
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
+
+
+# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 option(DDP_SYSTEM_EIGEN "Use system-installed version of Eigen" OFF)
 # option(DDP_BUILD_EXAMPLES "Build examples" ON)
@@ -27,15 +31,9 @@ endif()
 
 
 find_package(OROCOS_KDL)
-if (OROCOS_KDL)
-endif()
-
-# find_package(ZLIB REQUIRED)
 find_package(ModernRoboticsCpp)
 find_package(CNPY)
 
-
-# set(OROCOS_KDL_INCLUDE_DIR ${OROCOS_KDL_INCLUDE_DIR})
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -49,23 +47,22 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 
 
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${OROCOS_KDL_INCLUDE_DIR} ${ModernRoboticsCpp_INCLUDE_DIR} /usr/local/include ${CMAKE_CURRENT_SOURCE_DIR}/ik-solvers/include/)
-
-message(STATUS ${OROCOS_KDL_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${OROCOS_KDL_INCLUDE_DIR})
 
 # find ModernRobotics package
-message(STATUS ${ModernRoboticsCpp_INCLUDE_DIR})
-
-
 add_subdirectory(plant-models)
-add_subdirectory(ik-solvers)
 add_subdirectory(ddp)
+add_subdirectory(ik-solvers)
 
 
-set(SOURCES_DDP_ADMM ${CMAKE_CURRENT_SOURCE_DIR}/src/ilqrsolver_admm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/kuka_arm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/admm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/admm_main.cpp)
-add_library(ddp-admm-solver ${SOURCES_DDP_ADMM})
-target_include_directories(ddp-admm-solver PUBLIC include ${ModernRoboticsCpp_INCLUDE_DIR} ${CNPY_INCLUDE_DIR})
-target_link_libraries(ddp-admm-solver PUBLIC kuka-models cnpy)
+
+set(SOURCES_DDP_ADMM src/ilqrsolver_admm.cpp src/kuka_arm.cpp src/admm.cpp src/admm_main.cpp)
+add_library(ddp-admm-solver STATIC src/ilqrsolver_admm.cpp src/kuka_arm.cpp src/admm.cpp)
+target_include_directories(ddp-admm-solver PUBLIC include)
+target_link_libraries(ddp-admm-solver PUBLIC kuka-models ik-solvers cnpy ModernRoboticsCpp)
+
+
+
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -73,9 +70,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # EXECUTABLES
 #######################################################################################
 
-add_executable(admm-contact src/OPT_solvers.cpp)
-target_include_directories(admm-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(admm-contact orocos-kdl ddp-admm-solver kuka-models ModernRoboticsCpp ik-solvers)
+# add_executable(admm-contact src/OPT_solvers.cpp)
+# target_include_directories(admm-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# target_link_libraries(admm-contact orocos-kdl ddp-admm-solver kuka-models ModernRoboticsCpp ik-solvers)
 
 
 add_executable(ddp-optim src/ddp_main.cpp)
@@ -110,14 +107,23 @@ target_link_libraries(test_hdf5 cnpy)
 
 
 
-############################################INSTALL AND EXPORT##############################################
+###########################################INSTALL AND EXPORT##############################################
 include(CMakePackageConfigHelpers)
-install (TARGETS ddp-admm-solver kuka-models
+install (TARGETS ddp-admm-solver kuka-models ik-solvers
         EXPORT ADMMTargets
-        ARCHIVE DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/lib/static
-        LIBRARY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/lib
-        RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/bin
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
         INCLUDES DESTINATION include)
+# add include directories
+target_include_directories(ddp-admm-solver
+                           PUBLIC
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                           $<INSTALL_INTERFACE:include>
+)
+
+# install header file
+install(FILES include/curvature.hpp include/cost_function_admm.h include/ilqrsolver_admm.hpp include/admm.hpp include/admm_main.hpp include/config.h include/kuka_arm.h  include/RobotAbstract.h DESTINATION include)
 
 # # set version
 set(version 3.4.1)
@@ -143,15 +149,22 @@ write_basic_package_version_file(
 )
 
 # create config file
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/ADMMConfig.cmake.in
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/ADMMConfig.cmake"
-  INSTALL_DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/cmake
+  INSTALL_DESTINATION cmake
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO
+
 )
 
 # install config files
 install(FILES
           "${CMAKE_CURRENT_BINARY_DIR}/ADMMConfig.cmake"
           "${CMAKE_CURRENT_BINARY_DIR}/ADMMConfigVersion.cmake"
-        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/install/cmake
+        DESTINATION cmake
 )
 
+# generate and install export file
+# install(EXPORT ADMMTargets
+#         FILE ADMMTargets.cmake
+#         DESTINATION cmake
+# )
