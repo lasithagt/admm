@@ -2,12 +2,12 @@
 #include <Eigen/Dense>
 
 
-#include "admm.hpp"
+#include "admm_main.hpp"
 #include "config.h"
 
 void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses);
 void admm_mpc();
-void admm();
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot);
 
 
 /* Generate cartesian trajectory */
@@ -74,27 +74,27 @@ void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecT
 void admm_mpc()
 {
 
-    MPC_ADMM optimizerADMM;
-    stateVec_t xinit, xgoal;
-    stateVecTab_t xtrack;
-    xtrack.resize(stateSize, NumberofKnotPt + 1);
+    // MPC_ADMM optimizerADMM;
+    // stateVec_t xinit, xgoal;
+    // stateVecTab_t xtrack;
+    // xtrack.resize(stateSize, NumberofKnotPt + 1);
 
-    std::vector<Eigen::MatrixXd> cartesianPoses;
-    generateCartesianTrajectory(xinit, xgoal, xtrack, cartesianPoses);
+    // std::vector<Eigen::MatrixXd> cartesianPoses;
+    // generateCartesianTrajectory(xinit, xgoal, xtrack, cartesianPoses);
 
-    // xtrack.row(16) = 5 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+    // // xtrack.row(16) = 5 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
-    KUKAModelKDLInternalData robotParams;
-    robotParams.numJoints = 7;
-    robotParams.Kv = Eigen::MatrixXd(7,7);
-    robotParams.Kp = Eigen::MatrixXd(7,7);
+    // KUKAModelKDLInternalData robotParams;
+    // robotParams.numJoints = 7;
+    // robotParams.Kv = Eigen::MatrixXd(7,7);
+    // robotParams.Kp = Eigen::MatrixXd(7,7);
     
-    // optimizerADMM.run(xinit, xgoal, xtrack, cartesianPoses);
-    optimizerADMM.run();
+    // // optimizerADMM.run(xinit, xgoal, xtrack, cartesianPoses);
+    // optimizerADMM.run();
 }
 
 /* input robot model */
-void admm(std::shared_ptr<KUKAModelKDL>& kukaRobot)
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot)
 {
 
   unsigned int N = NumberofKnotPt;
@@ -134,26 +134,26 @@ void admm(std::shared_ptr<KUKAModelKDL>& kukaRobot)
   solverOptions.max_iter = iterMax;
 
 
-  FULL_ADMM admm = FULL_ADMM(N, TimeStep);
-  admm.run(kukaRobot, solverOptions, ADMM_OPTS, IK_OPT);
+  FULL_ADMM admm_full = FULL_ADMM(N, TimeStep);
+  admm_full.run(kukaRobot, solverOptions, ADMM_OPTS, IK_OPT);
 
 
 
 }
 
 // For testing 
-int main(int argc, char *argv[]) {
+// int main(int argc, char *argv[]) {
 
-    /* -------------------- orocos kdl robot initialization-------------------------*/
-  KUKAModelKDLInternalData robotParams;
-  robotParams.numJoints = NDOF;
-  robotParams.Kv = Eigen::MatrixXd(7,7);
-  robotParams.Kp = Eigen::MatrixXd(7,7);
+//     /* -------------------- orocos kdl robot initialization-------------------------*/
+//   KUKAModelKDLInternalData robotParams;
+//   robotParams.numJoints = NDOF;
+//   robotParams.Kv = Eigen::MatrixXd(7,7);
+//   robotParams.Kp = Eigen::MatrixXd(7,7);
 
   /* ---------------------------------- Define the robot and contact model ---------------------------------- */
-  KDL::Chain robot = KDL::KukaDHKdl();
-  std::shared_ptr<KUKAModelKDL> kukaRobot = std::shared_ptr<KUKAModelKDL>(new KUKAModelKDL(robot, robotParams));
+//   KDL::Chain robot = KDL::KukaDHKdl();
+//   std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
 
-  admm(kukaRobot);
+//   admm(kukaRobot);
 
-}
+// }
