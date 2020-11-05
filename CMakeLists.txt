@@ -57,7 +57,7 @@ add_subdirectory(ik-solvers)
 
 
 set(SOURCES_DDP_ADMM src/ilqrsolver_admm.cpp src/kuka_arm.cpp src/admm.cpp src/admm_main.cpp)
-add_library(ddp-admm-solver STATIC src/ilqrsolver_admm.cpp src/kuka_arm.cpp src/admm.cpp)
+add_library(ddp-admm-solver STATIC ${SOURCES_DDP_ADMM})
 target_include_directories(ddp-admm-solver PUBLIC include)
 target_link_libraries(ddp-admm-solver PUBLIC kuka-models ik-solvers cnpy ModernRoboticsCpp)
 
