@@ -106,7 +106,7 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
 
 
 
-   force_next = F_f_dot - F_n_dot + 0*F_normal_dot;
+   force_next = 0*F_f_dot - 0*F_n_dot + 0*F_normal_dot;
    // Eigen::Vector3d temp_test;
    // temp_test.setZero();
    // force_next = temp_test;

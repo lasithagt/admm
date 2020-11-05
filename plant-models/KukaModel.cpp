@@ -35,6 +35,10 @@ void KUKAModelKDL::getForwardKinematics(double* q, double* qd, double *qdd, Eige
     memcpy(qd_.data.data(), qd, 7 * sizeof(double));
     memcpy(qdd_.data.data(), qdd, 7 * sizeof(double));
 
+    // TODO: make it updatable
+    Eigen::MatrixXd T(3,3);
+    T << -1, 0, 0, 0, -1, 0, 0, 0, 1;
+
     if (computeOther)
     {
         // compute pose, vel
@@ -44,7 +48,11 @@ void KUKAModelKDL::getForwardKinematics(double* q, double* qd, double *qdd, Eige
         memcpy(poseM.data(), frame_vel_.M.R.data, 9 * sizeof(double));
         memcpy(poseP.data(), frame_vel_.p.p.data, 3 * sizeof(double));
         memcpy(vel.data(), frame_vel_.p.v.data, 3 * sizeof(double));
-        
+        poseM.transposeInPlace();
+
+        poseM = poseM.eval() * T; 
+        // poseP = T * poseP.eval();
+
         // compute accel
         KDL::ChainJntToJacSolver jacSolver(robotChain_);
         jacSolver.JntToJac(q_, jacobian_);
@@ -62,6 +70,10 @@ void KUKAModelKDL::getForwardKinematics(double* q, double* qd, double *qdd, Eige
         fksolver_pos.JntToCart(q_, frame_, -1); 
         memcpy(poseM.data(), frame_.M.data, 9 * sizeof(double));
         memcpy(poseP.data(), frame_.p.data, 3 * sizeof(double));
+        poseM.transposeInPlace();
+
+        poseM = poseM.eval() * T; 
+        // poseP = T * poseP.eval();
     }
 }
 

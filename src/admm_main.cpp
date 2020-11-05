@@ -12,7 +12,7 @@ FULL_ADMM::FULL_ADMM(unsigned int N_, double dt_) : N(N_), dt(dt_) {
 
 FULL_ADMM::~FULL_ADMM() {}
 
-void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMM::ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT) 
+void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMM::ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT) 
 {
   
   // parameters for ADMM, penelty terms. initial
@@ -50,7 +50,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, optimizer::ILQRSo
   stateVec_t xinit, xgoal;
   stateVecTab_t xtrack;
   xtrack.resize(stateSize, NumberofKnotPt + 1);
-  xtrack.row(16) = -20 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+  xtrack.row(16) = -0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
 
   /* ------------------------------------------------------------------------------------------------------ */
@@ -84,7 +84,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, optimizer::ILQRSo
   double Tf = 2 * M_PI;
 
 
-  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, 0.8, 1, 3, 0.08, 0.08, N, Tf);
+  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, 1.19, 1, 3, 0.05, 0.05, N, Tf);
 
   /* initialize xinit, xgoal, xtrack - for the hozizon*/
   Eigen::VectorXd thetalist0(7);
@@ -92,7 +92,10 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, optimizer::ILQRSo
   Eigen::VectorXd q_bar(7);
   Eigen::VectorXd qd_bar(7);
   Eigen::VectorXd thetalist_ret(7);
-  thetalist0 << 0.1, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1;
+  // thetalist0 << 0.1, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1;
+
+  for (int i = 0;i < 7; i++) { thetalist0(i) = init_state(i);}
+
   thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
   q_bar << 0, 0, 0, 0, 0, 0, 0;
   qd_bar << 0, 0, 0, 0, 0, 0, 0;
@@ -103,6 +106,8 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, optimizer::ILQRSo
   IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, q_bar, qd_bar, initial, rho_init, &thetalist_ret);
   xinit.head(7) = thetalist_ret;
 
+  xinit = init_state;
+
   Eigen::VectorXd rho(5);
   rho << 20, 0.01, 0, 0, 1;
 
@@ -110,76 +115,14 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, optimizer::ILQRSo
   u_0.resize(commandSize, N);
   u_0.setZero();
 
-  std::cout << xtrack << std::endl;
-
   optimizerADMM.solve(xinit, u_0, xtrack, cartesianPoses, rho, LIMITS);
 
 
+  resultTrajectory = optimizerADMM.getLastSolvedTrajectory();
+
 }
 
-
-
-
-
-// int main(int argc, char *argv[]) 
-// {
- 
-//   unsigned int N = NumberofKnotPt;
-//   int ADMMiterMax = 5;
-//   double dt = TimeStep;
-
-//   ADMM::ADMMopt ADMM_OPTS(dt, 1e-7, 1e-7, 15, ADMMiterMax);
-
-//   Eigen::MatrixXd joint_lims(2,7);
-//   double eomg = 0.00001;
-//   double ev   = 0.00001;
-
-//   /* Cartesian Tracking. IKopt */
-//   IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT(7);
-//   models::KUKA robotIK = models::KUKA();
-//   Eigen::MatrixXd Slist(6,7);
-//   Eigen::MatrixXd M(4,4);
-//   robotIK.getSlist(&Slist); 
-//   robotIK.getM(&M);
-
-//   IK_OPT.joint_limits = joint_lims;
-//   IK_OPT.ev = ev;
-//   IK_OPT.eomg = eomg;
-//   IK_OPT.Slist = Slist;
-//   IK_OPT.M = M;
-
-
-  
-//   unsigned int iterMax = 10; // DDP iteration max
-
-
-//   /* -------------------- orocos kdl robot initialization-------------------------*/
-//   KUKAModelKDLInternalData robotParams;
-//   robotParams.numJoints = NDOF;
-//   robotParams.Kv = Eigen::MatrixXd(7,7);
-//   robotParams.Kp = Eigen::MatrixXd(7,7);
-
-
-//   /*------------------initialize control input-----------------------*/
-
-
-
-//   /* -------------------- Optimizer Params ------------------------ */
-//   optimizer::ILQRSolverADMM::OptSet solverOptions;
-//   solverOptions.n_hor    = N;
-//   solverOptions.tolFun   = ADMM_OPTS.tolFun;
-//   solverOptions.tolGrad  = ADMM_OPTS.tolGrad;
-//   solverOptions.max_iter = iterMax;
-
-
-//   /* ---------------------------------- Define the robot and contact model ---------------------------------- */
-//   KDL::Chain robot = KDL::KukaDHKdl();
-//   std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
-
-//   FULL_ADMM admm = FULL_ADMM(N, TimeStep);
-//   admm.run(kukaRobot, solverOptions, ADMM_OPTS, IK_OPT);
-
-
-
-//   return 0;
-//}
+optimizer::ILQRSolverADMM::traj FULL_ADMM::getOptimizerResult() 
+{
+  return resultTrajectory;
+}

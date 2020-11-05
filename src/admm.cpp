@@ -140,7 +140,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         #endif
     }
 
-    std::cout << error_fk << std::endl; 
+    std::cout << "error " << error_fk << std::endl; 
     /* ----------------------------------------- END TESTING ----------------------------------------- */
 
 
@@ -304,11 +304,12 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
     lastTraj = solver_.getLastSolvedTrajectory();
     xnew = lastTraj.xList;
+
     unew = lastTraj.uList;
 
 
     #ifdef DEBUG
-    cnpy::npy_save("../data/cartesian_trajectory_admm.npy", data_store.data(), {static_cast<unsigned long>(ADMM_OPTS.ADMMiterMax + 1), 
+    cnpy::npy_save("./cartesian_trajectory_admm.npy", data_store.data(), {static_cast<unsigned long>(ADMM_OPTS.ADMMiterMax + 1), 
         6, static_cast<unsigned long>(N + 1)}, "w");
     #endif
 
@@ -337,11 +338,14 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     std::cout << "================================= ADMM Trajectory Generation Finished! =================================" << std::endl;
 
 
-    for(unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
+    for (unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
       cout << "res_x[" << i << "]:" << res_x[i] << endl;
       cout << "res_u[" << i << "]:" << res_u[i] << endl;
       cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
     }
+        std::cout << lastTraj.xList.cols() << std::endl;
+        lastTraj = solver_.getLastSolvedTrajectory();
+
 
 }
 
@@ -353,9 +357,7 @@ optimizer::ILQRSolverADMM::traj ADMM::getLastSolvedTrajectory() {
 
 
 /* Projection Block 
-
 Projects the states and commands to be within bounds
-
 */
 Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixXd& cnew, const commandVecTab_t& unew, const ADMM::Saturation& L) {
 

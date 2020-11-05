@@ -238,19 +238,21 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             }
         }
         else 
-        { // no cost improvement
+        {   // no cost improvement
             // increase lambda
             Op.dlambda= max(Op.dlambda * Op.lambdaFactor, Op.lambdaFactor);
             Op.lambda= max(Op.lambda * Op.dlambda, Op.lambdaMin);
 
             // print status
-            if(Op.debug_level >= 1){
+            if (Op.debug_level >= 1)
+            {
                 if(!debugging_print) printf("%-14d%-12.9s%-15.3g%-15.3g%-19.3g%-17.1f\n", iter+1, "No STEP", Op.dcost, Op.expected, Op.g_norm, log10(Op.lambda));
                 Op.last_head = Op.last_head+1;
             }
 
             // terminate ?
-            if(Op.lambda > Op.lambdaMax) {
+            if (Op.lambda > Op.lambdaMax) 
+            {
                 if(Op.debug_level >= 1)
                     TRACE(("\nEXIT: lambda > lambdaMax\n"));
                 break;
@@ -303,6 +305,7 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
         // costList[i]             = costFunction->cost_func_expre(i, updatedxList.col(i), updateduList.col(i));
         costList[i]             = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho);
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
+
     }
 
     // getting final cost, state, input = NaN
@@ -367,10 +370,15 @@ inline stateVec_t ILQRSolverADMM::forward_integration(const stateVec_t& x, const
 
     // gettimeofday(&tbegin_period4, NULL);
 
+
     stateVec_t x_dot1 = dynamicModel->kuka_arm_dynamics(x, u);
+
     stateVec_t x_dot2 = dynamicModel->kuka_arm_dynamics(x + 0.5 * dt * x_dot1, u);
+
     stateVec_t x_dot3 = dynamicModel->kuka_arm_dynamics(x + 0.5 * dt * x_dot2, u);
+
     stateVec_t x_dot4 = dynamicModel->kuka_arm_dynamics(x + dt * x_dot3, u);
+
 
     stateVec_t x_new;
     x_new = x + (dt/6) * (x_dot1 + 2 * x_dot2 + 2 * x_dot3 + x_dot4);

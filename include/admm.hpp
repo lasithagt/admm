@@ -68,6 +68,8 @@ public:
 
   optimizer::ILQRSolverADMM::traj getLastSolvedTrajectory();
 
+  struct optimizer::ILQRSolverADMM::traj lastTraj;
+
 protected:
   models::KUKA robotIK;
   std::shared_ptr<RobotAbstract> kukaRobot_;
@@ -79,7 +81,6 @@ protected:
   ADMMopt ADMM_OPTS;
   IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
 
-  optimizer::ILQRSolverADMM::traj lastTraj;
   stateVecTab_t joint_state_traj;
   commandVecTab_t torque_traj;
   stateVecTab_t joint_state_traj_interp;

@@ -7,7 +7,7 @@
 
 void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses);
 void admm_mpc();
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot);
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result);
 
 
 /* Generate cartesian trajectory */
@@ -41,7 +41,7 @@ void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecT
     R << 1, 0, 0, 0, 1, 0, 0, 0, 1;
     double Tf = 2 * M_PI;
 
-    cartesianPoses = IK_traj.generateLissajousTrajectories(R, 0.8, 1, 3, 0.08, 0.08, N, Tf);
+    cartesianPoses = IK_traj.generateLissajousTrajectories(R, 0.9, 1, 3, 0.08, 0.08, N, Tf);
 
 
     /* initialize xinit, xgoal, xtrack - for the hozizon*/
@@ -94,7 +94,7 @@ void admm_mpc()
 }
 
 /* input robot model */
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot)
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result)
 {
 
   unsigned int N = NumberofKnotPt;
@@ -121,7 +121,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot)
   IK_OPT.Slist = Slist;
   IK_OPT.M = M;
 
-  unsigned int iterMax = 10; // DDP iteration max
+  unsigned int iterMax = 5; // DDP iteration max
 
   /*------------------initialize control input-----------------------*/
 
@@ -135,13 +135,14 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot)
 
 
   FULL_ADMM admm_full = FULL_ADMM(N, TimeStep);
-  admm_full.run(kukaRobot, solverOptions, ADMM_OPTS, IK_OPT);
+  admm_full.run(kukaRobot, init_state, solverOptions, ADMM_OPTS, IK_OPT);
 
+  result = admm_full.getOptimizerResult();
 
 
 }
 
-// For testing 
+// // For testing 
 // int main(int argc, char *argv[]) {
 
 //     /* -------------------- orocos kdl robot initialization-------------------------*/
@@ -150,10 +151,11 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot)
 //   robotParams.Kv = Eigen::MatrixXd(7,7);
 //   robotParams.Kp = Eigen::MatrixXd(7,7);
 
-  /* ---------------------------------- Define the robot and contact model ---------------------------------- */
+//   // ---------------------------------- Define the robot and contact model ---------------------------------- 
 //   KDL::Chain robot = KDL::KukaDHKdl();
 //   std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
 
-//   admm(kukaRobot);
+//   optimizer::ILQRSolverADMM::traj result;
+//   admm(kukaRobot, result);
 
 // }
