@@ -172,6 +172,7 @@ public:
         unsigned int n = stateSize;
         unsigned int m = commandSize;
 
+
         Eigen::DiagonalMatrix<double, stateSize> m_(rho(0), rho(0), rho(0), rho(0), rho(0), rho(0), rho(0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         Eigen::DiagonalMatrix<double, stateSize> n_(rho(4), rho(4), rho(4), rho(4), rho(4), rho(4), rho(4), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         Eigen::VectorXd temp(stateSize);

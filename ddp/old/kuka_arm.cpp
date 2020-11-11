@@ -56,23 +56,30 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
     poseM_vec.setZero();
 
     // compute manipualator dynamics
-
     kukaRobot_->getSpatialJacobian(q.data(), manip_jacobian);
     tau_ext = tau; // + manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
-
 
     kukaRobot_->getForwardDynamics(q.data(), qd.data(), tau_ext, qdd);
 
     /*  contact model dynamics */
     if (CONTACT_EN)
     {
-
         // compute forward kinematics, velocity and accleration
-        kukaRobot_->getForwardKinematics(q.data(), qd.data(), qdd.data(), poseM, poseP, vel, accel, true);
+            double* q_   = new double[7];
+    double* qd_  = new double[7];
+    double* qdd_ = new double[7];
+        Eigen::Vector3d poseP_;
+    Eigen::Vector3d vel_;
+    Eigen::Vector3d accel_;
+
+    for (int i = 0; i < 7; i++) {q_[i] = 0.0;};
+    for (int i = 0; i < 7; i++) {qd_[i] = 0.1; qdd_[i] = 0.0;}
+
+        // kukaRobot_->getForwardKinematics(q.data(), qd.data(), qdd.data(), poseM, poseP, vel, accel, true);
+        kukaRobot_->getForwardKinematics(q_, qd_, qdd_, poseM, poseP_, vel_, accel_, true);
 
         // contact model dynamics
         contact_model0->df(H_c, poseP, poseM_vec, vel, accel, force_current, force_dot);
-
     } else 
     {   
         // for testing

@@ -19,6 +19,7 @@
 
 #define SOFT_CONTACT 1
 #define CONTACT_EN 1
+#define NUM_COST 1
 #define DEBUG 1
 #define TRACK 1 // for tracking vs goal
 
