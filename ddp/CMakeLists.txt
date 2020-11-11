@@ -1,5 +1,5 @@
 # create library
-set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ilqrsolver.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kuka_arm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ddp.cpp)
+set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ilqrsolver.cpp ../src/kuka_arm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ddp.cpp)
 add_library(ddp-solver STATIC ${SOURCES})
 
 
