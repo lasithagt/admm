@@ -84,7 +84,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   double Tf = 2 * M_PI;
 
 
-  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, 1.19, 1, 3, 0.05, 0.05, N, Tf);
+  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, 1.16, 1, 3, 0.05, 0.05, N, Tf);
 
   /* initialize xinit, xgoal, xtrack - for the hozizon*/
   Eigen::VectorXd thetalist0(7);
