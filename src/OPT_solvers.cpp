@@ -143,19 +143,24 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
 }
 
 // // For testing 
-// int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 
-//     /* -------------------- orocos kdl robot initialization-------------------------*/
-//   KUKAModelKDLInternalData robotParams;
-//   robotParams.numJoints = NDOF;
-//   robotParams.Kv = Eigen::MatrixXd(7,7);
-//   robotParams.Kp = Eigen::MatrixXd(7,7);
+    /* -------------------- orocos kdl robot initialization-------------------------*/
+  KUKAModelKDLInternalData robotParams;
+  robotParams.numJoints = NDOF;
+  robotParams.Kv = Eigen::MatrixXd(7,7);
+  robotParams.Kp = Eigen::MatrixXd(7,7);
 
-//   // ---------------------------------- Define the robot and contact model ---------------------------------- 
-//   KDL::Chain robot = KDL::KukaDHKdl();
-//   std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
+  // ---------------------------------- Define the robot and contact model ---------------------------------- 
+  KDL::Chain robot = KDL::KukaDHKdl();
+  std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
 
-//   optimizer::ILQRSolverADMM::traj result;
-//   admm(kukaRobot, result);
+  optimizer::ILQRSolverADMM::traj result;
+  stateVec_t xinit;
+  xinit.setZero();
 
-// }
+  xinit.head(7) << 0.1, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1;
+
+  admm(kukaRobot, xinit, result);
+
+}

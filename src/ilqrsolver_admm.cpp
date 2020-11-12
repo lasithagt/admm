@@ -85,10 +85,10 @@ ILQRSolverADMM::ILQRSolverADMM(KukaArm& DynamicModel, CostFunctionADMM& CostFunc
 }
 
 void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track,
- const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho)
+ const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
 
-    initializeTraj(x_0, u_0, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho);
+    initializeTraj(x_0, u_0, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
 
     Op.lambda = Op.lambdaInit;
     Op.dlambda = Op.dlambdaInit;
@@ -117,7 +117,7 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             dynamicModel->compute_dynamics_jacobian(xList, uListFull);
             
             /* -------------- compute cx, cu, cxx, cuu ------------ */
-            costFunction->computeDerivatives(xList, uListFull, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho);
+            costFunction->computeDerivatives(xList, uListFull, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
 
 
             gettimeofday(&tend_time_deriv,NULL);
@@ -174,7 +174,7 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             {
                 alpha = Op.alphaList[alpha_index];
 
-                doForwardPass(x_0, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho);
+                doForwardPass(x_0, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
                 Op.dcost = accumulate(costList.begin(), costList.end(), 0.0) - accumulate(costListNew.begin(), costListNew.end(), 0.0);
                 Op.expected = -alpha*(dV(0) + alpha*dV(1));
 
@@ -276,7 +276,7 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
 }
 
 void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, 
-    const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho)
+    const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
     xList.col(0) = x_0;
     commandVec_t zeroCommand;
@@ -303,14 +303,14 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     {
         updateduList.col(i)     = uList.col(i);
         // costList[i]             = costFunction->cost_func_expre(i, updatedxList.col(i), updateduList.col(i));
-        costList[i]             = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho);
+        costList[i]             = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho, R_c);
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
 
     }
 
     // getting final cost, state, input = NaN
     // costList[N] = costFunction->cost_func_expre(N, updatedxList.col(N), u_NAN_loc);
-    costList[N]  = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), u_NAN_loc, thetaList_bar.col(N), rho);
+    costList[N]  = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), u_NAN_loc, thetaList_bar.col(N), rho, R_c);
 
 
     // simplistic divergence test, check for the last time step if it has diverged.
@@ -342,7 +342,7 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     if(Op.debug_level > 0) {TRACE("\n =========== begin iLQR =========== \n");}
 }
 
-void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho)
+void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
 
     updatedxList.col(0) = x_0;
@@ -355,12 +355,12 @@ void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x
     for (unsigned int i = 0; i < N; i++) 
     {
         updateduList.col(i)     = uList.col(i) + alpha * kList.col(i) + KList[i] * (updatedxList.col(i) - xList.col(i));
-        costListNew[i]          = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho);
+        costListNew[i]          = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho, R_c);
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
     }
                 
 
-    costListNew[N] = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), uList_bar.col(N-1), thetaList_bar.col(N-1), rho);
+    costListNew[N] = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), uList_bar.col(N-1), thetaList_bar.col(N-1), rho, R_c);
 }
 
 /* 4th-order Runge-Kutta step */

@@ -99,7 +99,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     /* ---------------------------------------- Initial Trajectory ---------------------------------------- */
     // Initialize Trajectory to get xnew with u_0 
     // optimizer::ILQRSolverADMM::traj lastTraj; 
-    solver_.initializeTraj(xinit, u_0, xtrack, cbar, xbar, ubar, qbar, rho);
+    solver_.initializeTraj(xinit, u_0, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 
 
     lastTraj = solver_.getLastSolvedTrajectory();
@@ -185,7 +185,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         std::cout << "\n ================================= ADMM iteration " << i + 1 << " ================================= \n";
 
        /* ---------------------------------------- iLQRADMM solver block ----------------------------------------   */
-        solver_.solve(xinit, unew, xtrack, cbar - c_lambda, xbar - x_lambda, ubar - u_lambda, qbar - q_lambda, rho_ddp);
+        solver_.solve(xinit, unew, xtrack, cbar - c_lambda, xbar - x_lambda, ubar - u_lambda, qbar - q_lambda, rho_ddp, R_c);
 
         lastTraj = solver_.getLastSolvedTrajectory();
         xnew     = lastTraj.xList;
@@ -300,7 +300,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
     gettimeofday(&tend,NULL);    
 
-    solver_.initializeTraj(xinit, unew, xtrack, cbar, xbar, ubar, qbar, rho);
+    solver_.initializeTraj(xinit, unew, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 
     lastTraj = solver_.getLastSolvedTrajectory();
     xnew = lastTraj.xList;

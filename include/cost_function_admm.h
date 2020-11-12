@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include <iostream>
+#include "cost_function_contact.h"
 
 #include <Eigen/Dense>
 
@@ -45,40 +46,7 @@ class CostFunctionADMM
         DiffFunc dynamics_;
     };
 
-    /* structure to compute contraints terms */
-    template <class T, int S, int C>
-    struct ComputeContactTerms
-    {
-        Jacobian J_;
-        Differentiable<T, S, C> diff_;
-        Eigen::NumericalDiff<Differentiable<T, S, C>, Eigen::Forward> num_diff_;
 
-        /* --------------------------------------- calculate forward kinematics --------------------------------------------- */
-        double* q;
-        Eigen::Matrix<double, 3, 3> poseM;
-        Eigen::Matrix<double, 3, 3> massMatrix;
-        Eigen::Vector3d poseP;
-        Eigen::Vector3d vel;
-        Eigen::Vector3d accel;
-
-        // ComputeContactTerms() : diff_([this](const stateVec_t& x, const commandVec_t& u) -> stateVec_t{ return this->kuka_arm_dynamics(x, u); }), num_diff_(diff_) {}
-
-
-        Eigen::Vector3d operator()(std::shared_ptr<RobotAbstract>& plant_, stateVec_t x)
-        {
-            // plant.getForwardKinematics(q, qd, qdd, poseM, poseP, vel, accel, true);
-            return vel;
-
-        }
-
-        // compute the mass matrix at the end-effector. 
-        Eigen::Matrix3d CartesianMassMatrix()
-        {
-            return massMatrix;
-        }   
-
-        /* ------------------------------------------------------------------------------------------------------------------- */
-    };
 
 
 public:
@@ -109,6 +77,8 @@ public:
         cux_new.resize(N + 1);
         cuu_new.resize(N + 1);
 
+        computeContact = ContactTerms<double, stateSize, commandSize>(plant_);
+
     }
 
     /* return the cost without admm terms */
@@ -131,12 +101,12 @@ public:
 
     /* return the cost with admm */
     scalar_t cost_func_expre_admm(const unsigned int& index_k, const stateVec_t& xList_k, const commandVec_t& uList_k, const stateVec_t &x_track,
-     const Eigen::MatrixXd& cList_bar, const stateVec_t& xList_bar, const commandVec_t& uList_bar, const Eigen::VectorXd& thetaList_bar, const Eigen::VectorXd& rho)
+     const Eigen::MatrixXd& cList_bar, const stateVec_t& xList_bar, const commandVec_t& uList_bar, const Eigen::VectorXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
     {
         scalar_t cost_;
 
         // compute the contact terms.
-        Eigen::Vector3d contact_terms = ComputeContact(plant, xList_k);
+        // Eigen::Vector3d contact_terms = ComputeContact(plant, xList_k);
 
         if (index_k == N) 
         {
@@ -164,7 +134,7 @@ public:
 
     /* compute analytical derivatives */
     void computeDerivatives(const stateVecTab_t& xList, const commandVecTab_t& uList, const stateVecTab_t &x_track,
-        const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho)
+        const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
     {
         // TODO : get the state size from the dynamics class
         unsigned int Nl = xList.cols();
@@ -254,7 +224,7 @@ protected:
     std::shared_ptr<RobotAbstract> plant;
 
     // structure to compute contact terms
-    ComputeContactTerms<double, stateSize, commandSize> ComputeContact;
+    ContactTerms<double, stateSize, commandSize> computeContact;
 
 
 };
