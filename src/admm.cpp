@@ -263,27 +263,28 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
             xbar.col(j) = xubar.col(j).head(stateSize);
             ubar.col(j) = xubar.col(j).tail(commandSize);
 
-            c_lambda.col(j) += cnew.col(j) - cbar.col(j);
-            x_lambda.col(j) += xnew.col(j) - xbar.col(j);
-            u_lambda.col(j) += unew.col(j) - ubar.col(j);
-            q_lambda.col(j) += joint_positions_IK.col(j) - xbar.col(j).head(7);
+            c_lambda.col(j) += (cnew.col(j) - cbar.col(j)).eval();
+            x_lambda.col(j) += (xnew.col(j) - xbar.col(j)).eval();
+            u_lambda.col(j) += (unew.col(j) - ubar.col(j)).eval();
+            q_lambda.col(j) += (joint_positions_IK.col(j) - xbar.col(j).head(7)).eval();
 
             // Save residuals for all iterations
-            res_c[i] += (cnew.col(j) - cbar.col(j)).norm();
-            res_x[i] += (xnew.col(j) - xbar.col(j)).norm();
-            res_u[i] += (unew.col(j) - ubar.col(j)).norm();
-            res_q[i] += (joint_positions_IK.col(j) - xbar.col(j).head(7)).norm();
+            res_c[i] = (cnew.col(j) - cbar.col(j)).norm();
+            res_x[i] = (xnew.col(j) - xbar.col(j)).norm();
+            res_u[i] = (unew.col(j) - ubar.col(j)).norm();
+            res_q[i] = (joint_positions_IK.col(j) - xbar.col(j).head(7)).norm();
 
         }
 
+
         // xbar.col(N) = xubar.col(N - 1).head(stateSize); // 
         xbar.col(N) = x_temp.col(N);
-        x_lambda.col(N) += xnew.col(N) - xbar.col(N);
-        q_lambda.col(N) += joint_positions_IK.col(N) - xbar.col(N).head(7);
+        x_lambda.col(N) += (xnew.col(N) - xbar.col(N)).eval();
+        q_lambda.col(N) += (joint_positions_IK.col(N) - xbar.col(N).head(7)).eval();
         
-        res_x[i] += (xnew.col(N) - xbar.col(N)).norm();
-        res_c[i] += (cnew.col(N) - cbar.col(N)).norm();
-        res_q[i] += (joint_positions_IK.col(N) - xbar.col(N).head(7)).norm();
+        res_x[i] = (xnew.col(N) - xbar.col(N)).norm();
+        res_c[i] = (cnew.col(N) - cbar.col(N)).norm();
+        res_q[i] = (joint_positions_IK.col(N) - xbar.col(N).head(7)).norm();
 
 
 
