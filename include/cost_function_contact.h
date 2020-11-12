@@ -45,14 +45,15 @@ struct ContactTerms
         q = new double[7];
         qd = new double[7];
         qdd = new double[7];
+        for (int i=0;i<7;i++) {qdd[i] = 0.0;}
     }
 
     // compute the contact term
-    Eigen::Vector3d computeContactTerms(std::shared_ptr<RobotAbstract>& plant_, const stateVec_t& x, double R_c)
+    Eigen::Vector3d computeContactTerms(const stateVec_t& x, double R_c)
     {
 
         memcpy(q, x.head(7).data(), 7 * sizeof(double));
-        memcpy(qd, x.segment(7,7), 7 * sizeof(double));
+        memcpy(qd, x.segment(7,7).data(), 7 * sizeof(double));
         plant->getForwardKinematics(q, qd, qdd, poseM, poseP, vel, accel, true);
 
         for (int i=0;i < 3;i++) {
@@ -87,7 +88,7 @@ struct ContactTerms
     Eigen::Matrix<double, 6, 7> contact_x(Eigen::VectorXd q) 
     {
         CX.block(0,0,7,7) = getContactJacobianDot(q);
-        // CX.block() = getContactJacobian();
+        CX.block(7,7,7,7) = getContactJacobian(q);
     }
 
     // compute the hessian

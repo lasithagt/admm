@@ -70,9 +70,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # EXECUTABLES
 #######################################################################################
 
-# add_executable(admm-contact src/OPT_solvers.cpp)
-# target_include_directories(admm-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
-# target_link_libraries(admm-contact orocos-kdl ddp-admm-solver kuka-models ModernRoboticsCpp ik-solvers)
+add_executable(admm-contact src/OPT_solvers.cpp)
+target_include_directories(admm-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(admm-contact orocos-kdl ddp-admm-solver kuka-models ModernRoboticsCpp ik-solvers)
 
 
 add_executable(ddp-optim src/ddp_main.cpp)

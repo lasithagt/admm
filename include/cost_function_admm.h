@@ -106,7 +106,8 @@ public:
         scalar_t cost_;
 
         // compute the contact terms.
-        // Eigen::Vector3d contact_terms = ComputeContact(plant, xList_k);
+        Eigen::Vector3d contact_terms = computeContact.computeContactTerms(xList_k, R_c(index_k));
+        // std::cout << contact_terms << std::endl;
 
         if (index_k == N) 
         {
