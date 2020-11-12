@@ -121,7 +121,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
   IK_OPT.Slist = Slist;
   IK_OPT.M = M;
 
-  unsigned int iterMax = 5; // DDP iteration max
+  unsigned int iterMax = 10; // DDP iteration max
 
   /*------------------initialize control input-----------------------*/
 
