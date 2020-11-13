@@ -77,7 +77,7 @@ public:
         cux_new.resize(N + 1);
         cuu_new.resize(N + 1);
 
-        // computeContact = ContactTerms<double, stateSize, commandSize>(plant_);
+        computeContact = ContactTerms<double, stateSize, commandSize>(plant_);
 
     }
 
@@ -106,7 +106,7 @@ public:
         scalar_t cost_;
 
         // compute the contact terms.
-        // Eigen::Vector3d contact_terms = computeContact.computeContactTerms(xList_k, R_c(index_k));
+        Eigen::Vector3d contact_terms = computeContact.computeContactTerms(xList_k, R_c(index_k));
         // std::cout << contact_terms << std::endl;
 
         if (index_k == N) 
@@ -225,7 +225,7 @@ protected:
     std::shared_ptr<RobotAbstract> plant;
 
     // structure to compute contact terms
-    // ContactTerms<double, stateSize, commandSize> computeContact;
+    ContactTerms<double, stateSize, commandSize> computeContact;
 
 
 };
