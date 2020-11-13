@@ -80,9 +80,9 @@ struct ContactTerms
     }
 
     // get the contact jabobian dot
-    Eigen::MatrixXd getContactJacobianDot(Eigen::VectorXd q)
+    Eigen::MatrixXd getContactJacobianDot(Eigen::VectorXd q, Eigen::VectorXd qd)
     {
-        plant->getSpatialJacobianDot(q.data(), JacDot); 
+        plant->getSpatialJacobianDot(q.data(), q.data(), JacDot); 
         return JacDot;
     }
 
