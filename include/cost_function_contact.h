@@ -20,8 +20,8 @@ struct ContactTerms
 
     Eigen::Matrix<double, 3, 3> poseM;
     Eigen::Matrix<double, 3, 3> massMatrix;
-    Eigen::Matrix<double, 6, 7> Jac;
-    Eigen::Matrix<double, 6, 7> JacDot;
+    Eigen::MatrixXd Jac;
+    Eigen::MatrixXd JacDot;
 
     Eigen::Matrix<double, stateSize, stateSize> CX; 
     Eigen::Matrix<double, stateSize, stateSize> CXX;
@@ -35,9 +35,9 @@ struct ContactTerms
     ContactTerms() = default;
     ~ContactTerms() 
     {
-        delete[] q;
-        delete[] qd;
-        delete[] qdd;
+        // delete[] q;
+        // delete[] qd;
+        // delete[] qdd;
     }
 
     ContactTerms(std::shared_ptr<RobotAbstract>& plant_) : plant(plant_) 
@@ -45,6 +45,8 @@ struct ContactTerms
         q = new double[7];
         qd = new double[7];
         qdd = new double[7];
+        Jac.resize(6, NDOF);
+        JacDot.resize(6, NDOF);
         for (int i=0;i<7;i++) {qdd[i] = 0.0;}
     }
 
@@ -71,30 +73,30 @@ struct ContactTerms
     }   
 
     // get the contact jabobian
-    Eigen::Matrix<double, 6, 7> getContactJacobian(Eigen::VectorXd q)
+    Eigen::MatrixXd getContactJacobian(Eigen::VectorXd q)
     {
         plant->getSpatialJacobian(q.data(), Jac); 
         return Jac;
     }
 
     // get the contact jabobian dot
-    Eigen::Matrix<double, 6, 7> getContactJacobianDot(Eigen::VectorXd q)
+    Eigen::MatrixXd getContactJacobianDot(Eigen::VectorXd q, Eigen::VectorXd qd)
     {
-        plant->getSpatialJacobianDot(q.data(), JacDot); 
+        plant->getSpatialJacobianDot(q.data(), q.data(), JacDot); 
         return JacDot;
     }
 
     // compute the jacobian
     Eigen::Matrix<double, 6, 7> contact_x(Eigen::VectorXd q) 
     {
-        CX.block(0,0,7,7) = getContactJacobianDot(q);
-        CX.block(7,7,7,7) = getContactJacobian(q);
+        // CX.block(0,0,7,7) = getContactJacobianDot(q);
+        // CX.block(7,7,7,7) = getContactJacobian(q);
     }
 
     // compute the hessian
     Eigen::Matrix<double, 6, 7> contact_xx(Eigen::VectorXd q) 
     {
-        CXX.block(0,0,7,7) = getContactJacobianDot(q);
+        // CXX.block(0,0,7,7) = getContactJacobianDot(q);
         // CXX.block() = getContactJacobian();
     }
 
