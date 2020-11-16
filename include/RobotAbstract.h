@@ -37,7 +37,7 @@ public:
 
 	virtual void getSpatialJacobian(double* q, Eigen::MatrixXd& jacobian) = 0;
 
-	void getSpatialJacobianDot(double* q, double* qd, Eigen::MatrixXd& jacobianDot);
+	virtual void getSpatialJacobianDot(double* q, double* qd, Eigen::MatrixXd& jacobianDot) {};
 
 	void ik();
 };

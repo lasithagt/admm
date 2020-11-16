@@ -2,9 +2,8 @@
 #include "admm_main.hpp"
 
 /* ------------- Eigen print arguments ------------------- */
-  Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+  // Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
  /* ------------------------------------------------------- */
-
 
 
 FULL_ADMM::FULL_ADMM(unsigned int N_, double dt_) : N(N_), dt(dt_) {

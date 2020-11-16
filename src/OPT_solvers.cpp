@@ -4,9 +4,10 @@
 
 #include "admm_main.hpp"
 #include "config.h"
+#include "admm_mpc_main.hpp"
 
 void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses);
-void admm_mpc();
+void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result);
 void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result);
 
 
@@ -57,23 +58,11 @@ void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecT
     IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), initial, rho_init, &thetalist_ret);
     xinit.head(7) = thetalist_ret;
 
-    // IK trajectory initialization
-    // IKTrajectory<IK_FIRST_ORDER> IK_solve = IKTrajectory<IK_FIRST_ORDER>(IK_OPT.Slist, IK_OPT.M, 
-    // IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init, N);
-
-    // IK_solve.getTrajectory(cartesianPoses, xinit.col(0).head(7), xinit.col(0).segment(7, 7), 
-    // Eigen::MatrixXd::Zero(7, N + 1), Eigen::MatrixXd::Zero(7, N + 1), rho_init, &joint_trajectory);
-
-
-    // xtrack.block(0, 0, 7, N + 1) = joint_trajectory;
-    // xgoal.head(7) = joint_trajectory.col(N).head(7);
 
 }
 
-/* input robot model */
-void admm_mpc()
+void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result)
 {
-
     // MPC_ADMM optimizerADMM;
     // stateVec_t xinit, xgoal;
     // stateVecTab_t xtrack;
@@ -82,18 +71,14 @@ void admm_mpc()
     // std::vector<Eigen::MatrixXd> cartesianPoses;
     // generateCartesianTrajectory(xinit, xgoal, xtrack, cartesianPoses);
 
-    // // xtrack.row(16) = 5 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+    // xtrack.row(16) = 5 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
-    // KUKAModelKDLInternalData robotParams;
-    // robotParams.numJoints = 7;
-    // robotParams.Kv = Eigen::MatrixXd(7,7);
-    // robotParams.Kp = Eigen::MatrixXd(7,7);
-    
-    // // optimizerADMM.run(xinit, xgoal, xtrack, cartesianPoses);
-    // optimizerADMM.run();
+
+    // optimizer::ILQRSolverADMM::traj result;
+    // optimizerADMM.run(kukaRobot, contactModel, xinit, xtrack, cartesianPoses, result);
+
 }
 
-/* input robot model */
 void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result)
 {
 
@@ -142,7 +127,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
 
 }
 
-// // For testing 
+// For testing 
 int main(int argc, char *argv[]) {
 
     /* -------------------- orocos kdl robot initialization-------------------------*/

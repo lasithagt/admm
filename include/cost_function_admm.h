@@ -13,41 +13,6 @@ using namespace Eigen;
 // template <class DynamicsT, class PlantT, class costFunctionT, class OptimizerT, class OptimizerResultT>
 class CostFunctionADMM
 {
-	using Jacobian = Eigen::Matrix<double, 1, stateSize + commandSize>;
-	using Hessian = Eigen::Matrix<double, 1, stateSize + commandSize>;
-
-    /* numerical derivative computation*/
-    template <class T, int S, int C>
-    struct Differentiable
-    {
-        /*****************************************************************************/
-        /*** Replicate Eigen's generic functor implementation to avoid inheritance ***/
-        /*** We only use the fixed-size functionality ********************************/
-        /*****************************************************************************/
-        enum { InputsAtCompileTime = S + C, ValuesAtCompileTime = S };
-        using Scalar        = T;
-        using InputType     = Eigen::Matrix<T, InputsAtCompileTime, 1>;
-        using ValueType     = Eigen::Matrix<T, ValuesAtCompileTime, 1>;
-        using JacobianType  = Eigen::Matrix<T, ValuesAtCompileTime, InputsAtCompileTime>;
-        int inputs() const { return InputsAtCompileTime; }
-        int values() const { return ValuesAtCompileTime; }
-        int operator()(const Eigen::Ref<const InputType> &xu, Eigen::Ref<ValueType> dx) const
-        {
-            dx =  dynamics_(xu.template head<S>(), xu.template tail<C>());
-            return 0;
-        }
-        /*****************************************************************************/
-
-        using DiffFunc = std::function<Eigen::Matrix<T, S, 1>(const Eigen::Matrix<T, S, 1>&, const Eigen::Matrix<T, C, 1>&)>;
-        Differentiable(const DiffFunc &dynamics) : dynamics_(dynamics) {}
-        Differentiable() = default;
-
-    private:
-        DiffFunc dynamics_;
-    };
-
-
-
 
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -77,7 +42,7 @@ public:
         cux_new.resize(N + 1);
         cuu_new.resize(N + 1);
 
-        computeContact = ContactTerms<double, stateSize, commandSize>(plant_);
+        computeContact = new ContactTerms<double, stateSize, commandSize>(plant_);
 
     }
 
@@ -105,9 +70,8 @@ public:
     {
         scalar_t cost_;
 
-        // compute the contact terms.
-        Eigen::Vector3d contact_terms = computeContact.computeContactTerms(xList_k, R_c(index_k));
-        // std::cout << contact_terms << std::endl;
+        /* compute the contact terms. */
+        Eigen::Vector2d contact_terms = computeContact->computeContactTerms(xList_k, R_c(index_k));
 
         if (index_k == N) 
         {
@@ -116,18 +80,17 @@ public:
 
         } else {
             cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Q * (xList_k - x_track);
-            cost_ += 0.5 * rho(0) * (xList_k.head(7).transpose() - xList_bar.head(7).transpose()) * (xList_k - xList_bar).head(7);
-            
-            // TODO: contact cost term
-            /* -------------------------- compute the contact term ----------------------------------*/
+            cost_ += 0.5 * uList_k.transpose() * R * uList_k; 
 
-            // cost_ += 0.5 * rho(2) * (contact_terms.head(2).transpose() - cList_bar.transpose()) * (contact_terms.head(2) - cList_bar); // temp
+            cost_ += 0.5 * rho(0) * (xList_k.head(7).transpose() - xList_bar.head(7).transpose()) * (xList_k - xList_bar).head(7);
+            cost_ += 0.5 * rho(1) * (uList_k.transpose() - uList_bar.transpose()) * (uList_k - uList_bar);
+
+            /* -------------------------- compute the contact term ----------------------------------*/
+            cost_ += 0.5 * rho(2) * (contact_terms.head(2).transpose() - cList_bar.transpose()) * (contact_terms.head(2) - cList_bar); // temp
             /* --------------------------------------------------------------------------------------*/
 
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
-
-            cost_ += 0.5 * uList_k.transpose() * R * uList_k; 
-            cost_ += 0.5 * rho(1) * (uList_k.transpose() - uList_bar.transpose()) * (uList_k - uList_bar);
+            
        }
         return cost_;
 
@@ -150,17 +113,22 @@ public:
 
         for (unsigned int k = 0; k < Nl - 1; k++)
         {
+
+            Eigen::VectorXd c_x = computeContact->contact_x(xList.col(k), R_c(k));
+            Eigen::MatrixXd c_xx = computeContact->contact_xx(xList.col(k), R_c(k));
+
             // Analytical derivatives given quadratic cost
             temp.head(7)  = (xList.col(k).head(7) - thetaList_bar.col(k));
-            cx_new.col(k) = Q * (xList.col(k) - x_track.col(k)) + m_ * (xList.col(k) - xList_bar.col(k)) + n_ *  temp;
+            cx_new.col(k) = Q * (xList.col(k) - x_track.col(k)) + m_ * (xList.col(k) - xList_bar.col(k)) + n_ *  temp + c_x;
             cu_new.col(k) = R * uList.col(k) + rho(1) * (uList.col(k) - uList_bar.col(k));
-            cxx_new[k]    = Q;
+            
 
             // TODO: contact cost term derivative. Needs num diff
             // compute the first derivative. ignore the second term of te second derivative.
-
+            cxx_new[k]    = Q;
             cxx_new[k]   += m_;
             cxx_new[k]   += n_;
+            cxx_new[k]   += c_xx;
             cuu_new[k]    = R + rho(1) * Eigen::MatrixXd::Identity(7, 7); 
 
             //Note that cu , cux and cuu at the final time step will never be used (see ilqrsolver::doBackwardPass)
@@ -173,7 +141,7 @@ public:
         cxx_new[Nl-1]   += m_;
         cxx_new[Nl-1]   += n_;
 
-        // cuu_new[Nl-1]    = R ; //+ rho(1) * Eigen::MatrixXd::Identity(7, 7); 
+        // cuu_new[Nl-1]    = R ; //+ rho(1) * Eigen::MatrixXd::Identity(7, 7);  TODO: check this line
 
         // c_new = 0; // TODO: move this to somewhere.
     }
@@ -225,7 +193,7 @@ protected:
     std::shared_ptr<RobotAbstract> plant;
 
     // structure to compute contact terms
-    ContactTerms<double, stateSize, commandSize> computeContact;
+    ContactTerms<double, stateSize, commandSize>* computeContact;
 
 
 };

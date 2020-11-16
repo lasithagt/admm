@@ -1,10 +1,22 @@
-#ifndef MPCADMM_H
-#define MPCADMM_H
+
+/// @file
+///
+/// kuka_plan_runner is designed to wait for LCM messages contraining
+/// a robot_plan_t message, and then execute the plan on an iiwa arm
+/// (also communicating via LCM using the
+/// lcmt_iiwa_command/lcmt_iiwa_status messages).
+///
+/// When a plan is received, it will immediately begin executing that
+/// plan on the arm (replacing any plan in progress).
+///
+/// If a stop message is received, it will immediately discard the
+/// current plan and wait until a new plan is received.
 
 #include <iostream>
 #include <memory>
 
 #include "config.h"
+// #include "spline.h"
 #include "ilqrsolver.h"
 #include "kuka_arm.h"
 #include "SoftContactModel.h"
@@ -30,7 +42,9 @@
 #include "kuka_robot.hpp"
 
 
-/* ADMM trajectory generation */
+/* DDP trajectory generation */
+static std::list< const char*> gs_fileName;
+static std::list< std::string > gs_fileName_string;
 
 /* ------------- Eigen print arguments ------------------- */
   Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
@@ -38,7 +52,7 @@
 
 
 template <class DynamicsT, class PlantT, class costFunctionT, class OptimizerT, class OptimizerResultT>
-class ModelPredictiveControllerADMM
+class ModelPredictiveController
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -66,7 +80,6 @@ public:
     Logger* logger_;
     ControlTrajectory control_trajectory;
     StateTrajectory x_track_;
-    std::vector<Eigen::MatrixXd> cartesianTrack_;
     int HMPC_;
 
 public:
@@ -79,13 +92,12 @@ public:
      * @param verbose       True if informational and warning messages should be passed to the logger; error messages are always passed
      * @param args          Arbitrary arguments to pass to the trajectory optimizer at initialization time
      */
-    ModelPredictiveControllerADMM(Scalar dt, int time_steps, int HMPC, int iterations, bool verbose, Logger *logger,
+    ModelPredictiveController(Scalar dt, int time_steps, int HMPC, int iterations, bool verbose, Logger *logger,
     		 Dynamics                       &dynamics,
 	         CostFunction                   &cost_function,
 	         Optimizer 						&opt,
-	         const StateTrajectory  		&x_track, 
-	         const std::vector<Eigen::MatrixXd> &cartesianTrack)
-    : dt_(dt), H_(time_steps), HMPC_(HMPC), verbose_(verbose), dynamics_(dynamics), cost_function_(cost_function), opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack)
+	         const StateTrajectory  		&x_track)
+    : dt_(dt), H_(time_steps), HMPC_(HMPC), verbose_(verbose), dynamics_(dynamics), cost_function_(cost_function), opt_(opt), x_track_(x_track)  
     {
     	logger_ = logger;
     	control_trajectory.resize(commandSize, H_);
@@ -106,11 +118,8 @@ public:
 	void run(const Eigen::Ref<const State>  &initial_state,
 	         ControlTrajectory              initial_control_trajectory,
 	         Plant                          &plant_,
-	         Eigen::MatrixXd	            &joint_state_traj, // save data
-
-	         TerminationCondition           &terminate,
-	         const Eigen::VectorXd 			&rho,
-	         const ADMM::Saturation			&L)
+	         Eigen::MatrixXd	            &joint_state_traj,
+	         TerminationCondition           &terminate)
 	         // TerminalCostFunction           &terminal_cost_function)
 	{
 
@@ -125,16 +134,8 @@ public:
 	    // Scalar true_cost = cost_function.c(xold, initial_control_trajectory[0]);
 
 	    Eigen::MatrixXd x_track_mpc;
-	    std::vector<Eigen::MatrixXd> cartesianTrack_mpc;
-	    cartesianTrack_mpc.resize(H_ + 1);
-
-	    for (int k = 0;k < H_ + 1;k++) {
-	    	cartesianTrack_mpc[k] = cartesianTrack_[k];
-	    }
-
 	    x_track_mpc.resize(stateSize, H_ + 1);
 	    x_track_mpc = x_track_.block(0, 0, stateSize, H_ + 1);
-
 
 	    scalar_t true_cost = cost_function_.cost_func_expre(0, xold, initial_control_trajectory.col(0), x_track_.col(0));
 	    
@@ -145,11 +146,11 @@ public:
 	    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 	    std::chrono::duration<float, std::milli> elapsed;
 
-
-
  	    int64_t i = 0;
 	    while(!terminate(i, x))
 	    {
+
+
 	        if(verbose_)
 	        {
 	            if(i > 0)
@@ -163,11 +164,11 @@ public:
 	        }
 
 	        // Run the optimizer to obtain the next control
-	        opt_.solve(xold, control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
 
+	        opt_.solve(xold, control_trajectory, x_track_mpc);
 	        result = opt_.getLastSolvedTrajectory();
-	        u = result.uList.col(0);
 
+	        u = result.uList.col(0);
 	        if(verbose_)
 	        {
 	            logger_->info("Obtained control from optimizer: ");
@@ -206,20 +207,12 @@ public:
 
 	        // control_trajectory.leftCols(H_ - 2) = result.uList.rightCols(H_ - 2);
 
-
-	        if(verbose_) logger_->info("Slide down the control trajectory\n");
 	        control_trajectory = result.uList;
-	        
+	        if(verbose_) logger_->info("Slide down the control trajectory\n");
+
 	        xold = x;
 
-
-	        // slide down the control for state and cartesian state
 	        x_track_mpc = x_track_.block(0, i, stateSize, H_ + 1);
-
-	        for (int k = 0;k < H_ + 1;k++) {
-	    		cartesianTrack_mpc[k] = cartesianTrack_[i + k];
-	    	}
-	    	
 
 	        if(verbose_) logger_->info("Slide down the desired trajectory\n");
 
@@ -229,13 +222,11 @@ public:
 
 	    }
 	    #ifdef DEBUG
-	    cnpy::npy_save("../data/state_trajectory_admm_mpc.npy", joint_state_traj.data(),{1, static_cast<unsigned long>(x_track_.cols()), static_cast<unsigned long>(stateSize)}, "w");
-		cnpy::npy_save("../data/state_trajectory_admm_mpc_desired.npy", x_track_.data(),{1, static_cast<unsigned long>(x_track_.cols()), static_cast<unsigned long>(stateSize)}, "w");
+	    cnpy::npy_save("../data/state_trajectory_mpc.npy", joint_state_traj.data(),{1, static_cast<unsigned long>(x_track_.cols()), static_cast<unsigned long>(stateSize)}, "w");
+		cnpy::npy_save("../data/state_trajectory_mpc_desired.npy", x_track_.data(),{1, static_cast<unsigned long>(x_track_.cols()), static_cast<unsigned long>(stateSize)}, "w");
 		#endif
 	}
 };
-
-#endif
 
 
 
