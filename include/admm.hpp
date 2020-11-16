@@ -119,7 +119,7 @@ protected:
   commandVecTab_t u_temp;
   Eigen::MatrixXd q_temp;
 
-  commandVecTab_t u_0;;
+  commandVecTab_t u_0;
 
   Eigen::MatrixXd xubar; // for projection
 
