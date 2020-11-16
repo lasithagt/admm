@@ -68,7 +68,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # EXECUTABLES
 #######################################################################################
 
-add_executable(admm-contact src/OPT_solvers.cpp)
+add_executable(admm-contact src/OPT_solvers.cpp src/main.cpp)
 target_include_directories(admm-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(admm-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers)
 
@@ -126,7 +126,7 @@ install (TARGETS kuka-models ik-solvers ddp-solver admm-solver
 # )
 
 # install header file
-install(FILES include/curvature.hpp include/cost_function_admm.h include/ilqrsolver_admm.hpp include/admm.hpp include/admm_main.hpp include/config.h include/kuka_arm.h  include/RobotAbstract.h DESTINATION include)
+install(FILES include/curvature.hpp include/cost_function_admm.h include/cost_function_contact.h include/ilqrsolver_admm.hpp include/admm.hpp include/admm_main.hpp include/config.h include/kuka_arm.h  include/RobotAbstract.h include/plant.h include/eigenmvn.hpp DESTINATION include)
 
 # # set version
 set(version 3.4.1)
