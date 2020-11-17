@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
     ContactModel::ContactParams cp_;
     cp_.E = 1000;
     cp_.mu = 0.5;
-    cp_.nu = 0.4;
+    cp_.nu = 0.55;
     cp_.R  = 0.005;
     cp_.R_path = 1000;
     cp_.Kd = 10;
