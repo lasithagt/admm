@@ -42,15 +42,8 @@ SoftContactModel(ContactParams cp) : cp_(cp)
 void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position, const Eigen::Vector3d& orientation, 
    const Eigen::Vector3d& velocity, const Eigen::Vector3d& acceleration, const Eigen::Vector3d& force_current, Eigen::Vector3d& force_next)
 {
-   // temp arrays
    Eigen::Vector3d vel_dir;
 
-
-   // Eigen::Vector3d temp;
-   // temp(0) = position(0);
-   // temp(1) = acceleration(0);
-   // temp(2) = force_current(0);
-   // temp(2) = orientation(0);
 
    /* -------------- Normal force calculation -------------- */
    // end-point velocity direction. used to calculate dynamic friction.
@@ -62,13 +55,9 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
    {
       vel_dir = velocity.normalized();
    }
-   
      
    // get the surface normal direction.
-   // Eigen::Vector3d spring_dir = surfaceNormal(force_current);
-   Eigen::Vector3d spring_dir;
-   spring_dir << 0, 0, 1;
-
+   Eigen::Vector3d spring_dir = surfaceNormal(force_current);
 
 
    // the force component in the direction of spring_dir, projection to spring direction
@@ -83,16 +72,19 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
    // calulate the stiffness
    double K = pow(6 * pow(cp_.E, 2) * cp_.R * force_z.norm(), (1/3));
 
-   // Eigen::Vector3d F_n_dot = K * velocity_z;
-   Eigen::Vector3d F_n_dot = 800.0 * velocity_z + 100.0 * acceleration_z; // Temp
+
+
+   /* ----------------- Normal force calculation ---------------- */
+
+   Eigen::Vector3d F_n_dot = K * velocity_z + 10.0 * acceleration_z; // Temp
 
    /* -------------- End - Normal force calculation -------------- */
 
 
 
-   /* -------------- Frictional force calculation -------------- */
-   // frictional force
-   Eigen::Vector3d F_f_dot = cp_.mu * K * velocity_z + 3 * cp_.mu * (2 * cp_.nu - 1) * (K * d * velocity_z  + force_z.norm() * velocity_z) / (10 * cp_.R);// - cp_.Kd * acceleration_z;
+   /* ------------------ Frictional force calculation ---------------- */
+
+   Eigen::Vector3d F_f_dot = cp_.mu * K * velocity_z + 3 * cp_.mu * (2 * cp_.nu - 1) * (K * d * velocity_z  + force_z.norm() * velocity_z) / (10 * cp_.R);
      
    /* -------------- End - Frictional force calculation -------------- */
 
@@ -106,10 +98,7 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
 
 
 
-   force_next = 0*F_f_dot - 0*F_n_dot + 0*F_normal_dot;
-   // Eigen::Vector3d temp_test;
-   // temp_test.setZero();
-   // force_next = temp_test;
+   force_next = F_f_dot - F_n_dot + F_normal_dot;
 }
 
 
@@ -117,11 +106,14 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
 inline Eigen::Vector3d surfaceNormal(const Eigen::Vector3d& force)
 {  
 
-   if (force.norm() < 0.1) {
-      return force;
-   } else {
-      return force.normalized();
-   }
+   // if (force.norm() < 0.1) {
+   //    return force;
+   // } else {
+   //    return force.normalized();
+   // }
+
+   Eigen::Vector3d surf(0, 0, 1);
+   return surf;
    
 }
 
