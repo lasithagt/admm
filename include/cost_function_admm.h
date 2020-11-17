@@ -29,7 +29,7 @@ public:
         /* for consensus admm. read it from te main file as a dynamic parameters passing */
         x_w  << 0, 0, 0, 0, 0, 0, 0, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0, 0, 0.05;
         xf_w << 0, 0, 0, 0, 0, 0, 0, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0, 0, 0.05;
-        u_w  << 1E-2, 1E-2, 1E-2, 1E-2, 1E-2, 1E-2, 1E-2;
+        u_w  << 1E-4, 1E-4, 1E-4, 1E-4, 1E-4, 1E-4, 1E-4;
 
         
         Q  = x_w.asDiagonal();
@@ -114,8 +114,8 @@ public:
         for (unsigned int k = 0; k < Nl - 1; k++)
         {
 
-            Eigen::VectorXd c_x = computeContact->contact_x(xList.col(k), R_c(k));
-            Eigen::MatrixXd c_xx = computeContact->contact_xx(xList.col(k), R_c(k));
+            Eigen::VectorXd c_x = computeContact->contact_x(xList.col(k), cList_bar.col(k), R_c(k));
+            Eigen::MatrixXd c_xx = computeContact->contact_xx(xList.col(k), cList_bar.col(k), R_c(k));
 
             // Analytical derivatives given quadratic cost
             temp.head(7)  = (xList.col(k).head(7) - thetaList_bar.col(k));
