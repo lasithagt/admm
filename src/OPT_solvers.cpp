@@ -63,19 +63,42 @@ void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecT
 
 void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result)
 {
-    // MPC_ADMM optimizerADMM;
-    // stateVec_t xinit, xgoal;
-    // stateVecTab_t xtrack;
-    // xtrack.resize(stateSize, NumberofKnotPt + 1);
+  // MPC_ADMM optimizerADMM;
+  // stateVec_t xinit, xgoal;
+  // stateVecTab_t xtrack;
+  // xtrack.resize(stateSize, NumberofKnotPt + 1);
 
-    // std::vector<Eigen::MatrixXd> cartesianPoses;
-    // generateCartesianTrajectory(xinit, xgoal, xtrack, cartesianPoses);
+  // std::vector<Eigen::MatrixXd> cartesianPoses;
+  // generateCartesianTrajectory(xinit, xgoal, xtrack, cartesianPoses);
 
-    // xtrack.row(16) = 5 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+  // xtrack.row(16) = 5 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
 
-    // optimizer::ILQRSolverADMM::traj result;
-    // optimizerADMM.run(kukaRobot, contactModel, xinit, xtrack, cartesianPoses, result);
+  // /* -------------------- orocos kdl robot initialization-------------------------*/
+  // KUKAModelKDLInternalData robotParams;
+  // robotParams.numJoints = NDOF;
+  // robotParams.Kv = Eigen::MatrixXd(7,7);
+  // robotParams.Kp = Eigen::MatrixXd(7,7);
+
+  // // robot instance initialization
+  // KDL::Chain robot = KDL::KukaDHKdl();
+  // std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
+
+  // // contact model dynamics
+  // ContactModel::ContactParams cp_;
+  // cp_.E = 1000;
+  // cp_.mu = 0.5;
+  // cp_.nu = 0.4;
+  // cp_.R  = 0.005;
+  // cp_.R_path = 1000;
+  // cp_.Kd = 10;
+  // ContactModel::SoftContactModel contactModel(cp_);
+  // kukaRobot->initRobot();
+
+  // optimizer::ILQRSolverADMM::traj result;
+  // optimizerADMM.run(kukaRobot, contactModel, xinit, xtrack, cartesianPoses, result);
+
+
 
 }
 
