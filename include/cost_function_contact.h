@@ -95,6 +95,7 @@ struct ContactTerms
         plant->getForwardKinematics(q, qd, qdd, poseM, poseP, vel, accel, true);
 
         contactTerms(0) = mass * (vel.transpose() * vel)(0) / R_c;
+
         contactTerms(1) = x(16);
 
         return contactTerms;
@@ -121,7 +122,7 @@ struct ContactTerms
     }
 
     /* compute the jacobian, assuming contact terms are calculated first */
-    Eigen::VectorXd contact_x(const stateVec_t& x, const Eigen::VectorXd& cList_bar, double R_c) 
+    Eigen::VectorXd contact_x(const stateVec_t& x, const Eigen::VectorXd& cList_bar, double R_c, double rho_c) 
     {
         // TODO: optimize this part
         memcpy(q, x.head(7).data(), 7 * sizeof(double));
@@ -132,15 +133,15 @@ struct ContactTerms
         Eigen::Vector2d w;
         w = (computeContactTerms(x, R_c) - cList_bar);
 
-        CX.head(7)      = 2 * mass * (w(0) + w(1)) * (1/R_c) * vel.transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF);
-        CX.segment(7,7) = 2 * mass * (w(0) + w(1)) * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
+        CX.head(7)      = rho_c * 2 * mass * (w(0) + w(1)) * (1/R_c) * vel.transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF);
+        CX.segment(7,7) = rho_c * 2 * mass * (w(0) + w(1)) * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
 
 
         return CX;
     }
 
     /* compute the hessian */
-    Eigen::MatrixXd contact_xx(const stateVec_t& x, const Eigen::VectorXd& cList_bar, double R_c) 
+    Eigen::MatrixXd contact_xx(const stateVec_t& x, const Eigen::VectorXd& cList_bar, double R_c, double rho_c) 
     {
         // TODO: optimize this part
         // Assumption: 
@@ -152,18 +153,18 @@ struct ContactTerms
         Eigen::Vector2d w;
         w = (computeContactTerms(x, R_c) - cList_bar);
 
-        CXX.block(0,0,7,7) = 2 * mass * (1/R_c) * getContactJacobianDot(q, qd).block(0,0,3,NDOF).transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF) + \
-                                2 * getContactJacobianDot(q, qd).block(0,0,3,NDOF).transpose() * vel * mass * (1/R_c) * vel.transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF);
+        CXX.block(0,0,7,7) = rho_c * 2 * mass * (1.0/R_c) * (w(0) + w(1)) * getContactJacobianDot(q, qd).block(0,0,3,NDOF).transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF) + \
+                                rho_c * 2 * getContactJacobianDot(q, qd).block(0,0,3,NDOF).transpose() * vel * mass * (1/R_c) * vel.transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF);
 
-        CXX.block(7,7,7,7) = 2 * mass  * (1/R_c) * getContactJacobian(q).block(0,0,3,NDOF).transpose() * getContactJacobian(q).block(0,0,3,NDOF) + \
-                                2 * getContactJacobian(q).block(0,0,3,NDOF).transpose() * vel * mass * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
+        CXX.block(7,7,7,7) = rho_c * 2 * mass  * (1.0/R_c) * (w(0) + w(1)) * getContactJacobian(q).block(0,0,3,NDOF).transpose() * getContactJacobian(q).block(0,0,3,NDOF) + \
+                                rho_c * 2 * getContactJacobian(q).block(0,0,3,NDOF).transpose() * vel * mass * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
 
-        CXX.block(0,7,7,7) = 2 * mass * (1/R_c) * getContactJacobian(q).block(0,0,3,NDOF).transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF) + \
-                                2 * mass * getContactJacobian(q).block(0,0,3,NDOF).transpose() * vel * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
+        CXX.block(0,7,7,7) = rho_c * 2 * mass * (1.0/R_c) * (w(0) + w(1)) * getContactJacobian(q).block(0,0,3,NDOF).transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF) + \
+                                rho_c * 2 * mass * getContactJacobian(q).block(0,0,3,NDOF).transpose() * vel * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
         
         CXX.block(7,0,7,7) = CXX.block(0,7,7,7).transpose();
 
-        Eigen::DiagonalMatrix<double, 3> fxx(0,0,0);
+        Eigen::DiagonalMatrix<double, 3> fxx(0,0,rho_c);
 
         CXX.block(14,14,3,3) = fxx;
         return CXX;
@@ -176,32 +177,3 @@ struct ContactTerms
 
 #endif // COSTFUNCTIONCONTACT_H
 
-
-// J         = Jac_kuka(x(1:7, j));                  % jacobian at the base of the manipulator
-// Jdot      = JacDot_kuka(x(1:7, j), x(8:14, j));
-// x_dot     = J * x(8:14, j);
-// cen_(1,j) = 0.3 * x_dot(1:3)'*x_dot(1:3) ./ RC(j); % TODO this should be projected on the orthogonal direction
-// cen_(2,j) = x(end, j);
-// c_x_contact(8:14,j) = 2 * ones(1,2)*(cen_(:,j) - c_bar(:,j)) * rhao(3) * (0.3 / RC(j)) *  x_dot(1:3)' * J(1:3,:);
-// c_x_contact(1:7,j)  = 2 * ones(1,2)*(cen_(:,j) - c_bar(:,j)) * rhao(3) * (0.3 / RC(j)) *  x_dot(1:3)' * Jdot(1:3,:);
-
-// c_xx_contact(1:7,1:7,j)   = 2 * (x_dot(1:3)' * Jdot(1:3,:))' * rhao(3) * (0.3 / RC(j)) *  x_dot(1:3)' * Jdot(1:3,:) + ...
-//                                 2 * ones(1,2)*(cen_(:,j) - c_bar(:,j)) * rhao(3) * (0.3 / RC(j)) *   Jdot(1:3,:)' * Jdot(1:3,:);
-                            
-// c_xx_contact(1:7,8:14,j)  = 2 * ones(1,2)*(cen_(:,j) - c_bar(:,j)) * rhao(3) * (0.3 / RC(j)) *   J(1:3,:)' * Jdot(1:3,:) + ...
-//                                 2 *  (x_dot(1:3)' * J(1:3,:))' * rhao(3) * (0.3 / RC(j)) *   x_dot(1:3)' * Jdot(1:3,:);
-
-// c_xx_contact(8:14,8:14,j) = 2 * (x_dot(1:3)' * J(1:3,:))' * rhao(3) * (0.3 / RC(j)) *  x_dot(1:3)' * J(1:3,:) + ...
-//                                  2 * ones(1,2)*(cen_(:,j) - c_bar(:,j)) * rhao(3) * (0.3 / RC(j)) *  J(1:3,:)' * J(1:3,:); % this works
-                             
-// c_xx_contact(8:14,1:7,j)  = 2 * (x_dot(1:3)' * Jdot(1:3,:))' * rhao(3) * (0.3 / RC(j)) *  x_dot(1:3)' * J(1:3,:) + ...
-//                                  2 * ones(1,2)*(cen_(:,j) - c_bar(:,j)) * rhao(3) * (0.3 / RC(j)) *  Jdot(1:3,:)' * J(1:3,:);
-
-// % second derivative
-// cost_xx(1:7,1:7, j)      = diag(rhao(5)*ones(1,7)) +  diag(rhao(1)*ones(1,7)) + c_xx_contact(1:7,1:7,j);
-// cost_xx(1:7,8:14, j)     = c_xx_contact(1:7,8:14,j);
-// cost_xx(8:14,1:7, j)     = c_xx_contact(8:14,1:7,j);
-// cost_xx(15:17, 15:17, j) = 2 * diag(cx_w(15:17)) + diag([0 0 rhao(3)]);
-// cost_xx(8:14, 8:14, j)   = diag(rhao(4) * ones(1,7)) +  c_xx_contact(8:14,8:14,j);
-
-// cost_uu(:,:,j) = diag(cu_w) + diag(rhao(2) * ones(1,m));

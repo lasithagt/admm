@@ -27,8 +27,8 @@ public:
         Eigen::VectorXd u_w(commandSize);
 
         /* for consensus admm. read it from te main file as a dynamic parameters passing */
-        x_w  << 0, 0, 0, 0, 0, 0, 0, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0, 0, 0.05;
-        xf_w << 0, 0, 0, 0, 0, 0, 0, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0, 0, 0.05;
+        x_w  << 0, 0, 0, 0, 0, 0, 0, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0, 0, 1;
+        xf_w << 0, 0, 0, 0, 0, 0, 0, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0, 0, 1;
         u_w  << 1E-4, 1E-4, 1E-4, 1E-4, 1E-4, 1E-4, 1E-4;
 
         
@@ -77,6 +77,7 @@ public:
         {
             cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Qf * (xList_k - x_track); 
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
+            cost_ += 0.5 * rho(0) * (xList_k.head(7).transpose() - xList_bar.head(7).transpose()) * (xList_k - xList_bar).head(7);
 
         } else {
             cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Q * (xList_k - x_track);
@@ -86,7 +87,10 @@ public:
             cost_ += 0.5 * rho(1) * (uList_k.transpose() - uList_bar.transpose()) * (uList_k - uList_bar);
 
             /* -------------------------- compute the contact term ----------------------------------*/
-            cost_ += 0.5 * rho(2) * (contact_terms.head(2).transpose() - cList_bar.transpose()) * (contact_terms.head(2) - cList_bar); // temp
+            if (CONTACT_EN)
+            {
+                cost_ += 0.5 * rho(2) * (contact_terms.head(2).transpose() - cList_bar.transpose()) * (contact_terms.head(2) - cList_bar); // temp
+            }   
             /* --------------------------------------------------------------------------------------*/
 
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
@@ -111,15 +115,23 @@ public:
         Eigen::DiagonalMatrix<double, stateSize> n_(rho(4), rho(4), rho(4), rho(4), rho(4), rho(4), rho(4), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         Eigen::VectorXd temp(stateSize);
 
+        Eigen::MatrixXd c_xx;
+        Eigen::VectorXd c_x;
         for (unsigned int k = 0; k < Nl - 1; k++)
         {
-
-            Eigen::VectorXd c_x = computeContact->contact_x(xList.col(k), cList_bar.col(k), R_c(k));
-            Eigen::MatrixXd c_xx = computeContact->contact_xx(xList.col(k), cList_bar.col(k), R_c(k));
+            
+            if (CONTACT_EN)
+            {
+                c_x = computeContact->contact_x(xList.col(k), cList_bar.col(k), R_c(k), rho(2));
+                c_xx = computeContact->contact_xx(xList.col(k), cList_bar.col(k), R_c(k), rho(2));
+                cx_new.col(k) = Q * (xList.col(k) - x_track.col(k)) + m_ * (xList.col(k) - xList_bar.col(k)) + n_ *  temp + c_x;
+            } else
+            {
+                cx_new.col(k) = Q * (xList.col(k) - x_track.col(k)) + m_ * (xList.col(k) - xList_bar.col(k)) + n_ *  temp;
+            }
 
             // Analytical derivatives given quadratic cost
             temp.head(7)  = (xList.col(k).head(7) - thetaList_bar.col(k));
-            cx_new.col(k) = Q * (xList.col(k) - x_track.col(k)) + m_ * (xList.col(k) - xList_bar.col(k)) + n_ *  temp + c_x;
             cu_new.col(k) = R * uList.col(k) + rho(1) * (uList.col(k) - uList_bar.col(k));
             
 
@@ -128,7 +140,7 @@ public:
             cxx_new[k]    = Q;
             cxx_new[k]   += m_;
             cxx_new[k]   += n_;
-            cxx_new[k]   += c_xx;
+            if (CONTACT_EN) {cxx_new[k] += c_xx;}
             cuu_new[k]    = R + rho(1) * Eigen::MatrixXd::Identity(7, 7); 
 
             //Note that cu , cux and cuu at the final time step will never be used (see ilqrsolver::doBackwardPass)
@@ -136,7 +148,15 @@ public:
         } 
 
         temp.head(7)     = (xList.col(Nl-1).head(7) - thetaList_bar.col(Nl-1));
-        cx_new.col(Nl-1) = Q * xList.col(Nl-1) + m_ * (xList.col(Nl-1) - xList_bar.col(Nl-1)) + n_ *  temp; // + rho(0) * (xList.col(Nl) - xList_bar.col(Nl));
+
+        if (CONTACT_EN)
+        {
+            c_x = computeContact->contact_x(xList.col(Nl-1), cList_bar.col(N-1), R_c(Nl-1), rho(2));
+            cx_new.col(Nl-1) = Q * xList.col(Nl-1) + m_ * (xList.col(Nl-1) - xList_bar.col(Nl-1)) + n_ *  temp + c_x; // + rho(0) * (xList.col(Nl) - xList_bar.col(Nl));
+        } else 
+        {
+            cx_new.col(Nl-1) = Q * xList.col(Nl-1) + m_ * (xList.col(Nl-1) - xList_bar.col(Nl-1)) + n_ *  temp;
+        }
         cxx_new[Nl-1]    = Q;
         cxx_new[Nl-1]   += m_;
         cxx_new[Nl-1]   += n_;

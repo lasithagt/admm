@@ -91,7 +91,12 @@ public:
 
     L(N - 1) = L(N - 2) + (X.row(N - 1) - X.row(N - 2)).norm();
 
+    // for (int i=0;i<20;i++) {
+    //   R(i) = 1;
+    // }
+
   }
+
 
 };
 

@@ -70,8 +70,8 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
    double d = pow(9 * pow(force_z.norm(), 2) / (16 * pow(cp_.E,2) * cp_.R), 1/3);
 
    // calulate the stiffness
-   double K = pow(6 * pow(cp_.E, 2) * cp_.R * force_z.norm(), (1/3));
-
+   double K = pow(6 * pow(cp_.E, 2) * cp_.R * force_z.norm(), (1/3)) + 400;
+   // K = 400;
 
 
    /* ----------------- Normal force calculation ---------------- */
@@ -98,7 +98,7 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
 
 
 
-   force_next = F_f_dot - F_n_dot + F_normal_dot;
+   force_next = F_f_dot + F_n_dot + F_normal_dot;
 }
 
 
