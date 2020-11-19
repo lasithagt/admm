@@ -187,6 +187,8 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
        /* ---------------------------------------- iLQRADMM solver block ----------------------------------------   */
         solver_.solve(xinit, unew, xtrack, cbar - c_lambda, xbar - x_lambda, ubar - u_lambda, qbar - q_lambda, rho_ddp, R_c);
 
+
+
         lastTraj = solver_.getLastSolvedTrajectory();
         xnew     = lastTraj.xList;
         unew     = lastTraj.uList;
@@ -310,7 +312,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
 
     #ifdef DEBUG
-    cnpy::npy_save("./cartesian_trajectory_admm.npy", data_store.data(), {static_cast<unsigned long>(ADMM_OPTS.ADMMiterMax + 1), 
+    cnpy::npy_save("../data/cartesian_trajectory_admm.npy", data_store.data(), {static_cast<unsigned long>(ADMM_OPTS.ADMMiterMax + 1), 
         6, static_cast<unsigned long>(N + 1)}, "w");
     #endif
 
@@ -322,12 +324,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     // cout << "Execution time by time step (second): " << texec/N << endl;
     // cout << "Execution time per iteration (second): " << texec/lastTraj.iter << endl;
     cout << "Total execution time of the solver (second): " << texec << endl;
-    // cout << "\tTime of derivative (second): " << lastTraj.time_derivative.sum() << " (" << 100.0*lastTraj.time_derivative.sum()/texec << "%)" << endl;
-    // cout << "\tTime of backward pass (second): " << lastTraj.time_backward.sum() << " (" << 100.0*lastTraj.time_backward.sum()/texec << "%)" << endl;
-
-
-
-
+ 
     cout << "lastTraj.xList[" << N << "]:" << xnew.col(N).transpose() << endl;
     cout << "lastTraj.uList[" << N-1 << "]:" << unew.col(N - 1).transpose() << endl;
 
@@ -342,6 +339,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     for (unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
       cout << "res_x[" << i << "]:" << res_x[i] << endl;
       cout << "res_u[" << i << "]:" << res_u[i] << endl;
+      cout << "res_c[" << i << "]:" << res_c[i] << endl;
       cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
     }
         std::cout << lastTraj.xList.cols() << std::endl;
@@ -377,9 +375,9 @@ Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixX
                 }
             } else if((j >= stateSize) && (j < (stateSize + 2))) { 
                 // TODO:
-                // if((cnew(0, j)) > 0.3 * std::abs(cnew(1, j))) {
-                //     xubar(j,i) = 0.3 * std::abs(cnew(1, i));
-                // }
+                if((cnew(0, j)) > 0.3 * std::abs(cnew(1, j))) {
+                    xubar(j,i) = 0.3 * std::abs(cnew(1, i));
+                }
 
             } else { //torque constraints
 
@@ -409,12 +407,15 @@ void ADMM::contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const state
     Eigen::MatrixXd jacobian(6, 7);
 
     curve.curvature(X_curve.transpose(), L, R_c, k);
+    R_c = Eigen::VectorXd::Constant(N+1, 1);
+
 
     for (int i = 0; i < xnew.cols(); i++) {
         kukaRobot->getSpatialJacobian(const_cast<double*>(xnew.col(i).head(7).data()), jacobian);
 
         vel = (jacobian * xnew.col(i).segment(6, 7)).norm();
         (*cnew)(0,i) = m * vel * vel / R_c(i);
+        // std::cout << 1/R_c(i) << " " << std::endl;
         (*cnew)(1,i) = *(const_cast<double*>(xnew.col(i).tail(1).data()));
     }
 

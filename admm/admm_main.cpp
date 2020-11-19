@@ -24,9 +24,9 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   CostFunctionADMM costFunction_admm(N, kukaRobot);
 
   ContactModel::ContactParams cp_;
-  cp_.E = 1000;
+  cp_.E = 4000;
   cp_.mu = 0.5;
-  cp_.nu = 0.4;
+  cp_.nu = 0.55;
   cp_.R  = 0.005;
   cp_.R_path = 1000;
   cp_.Kd = 10;
@@ -49,7 +49,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   stateVec_t xinit, xgoal;
   stateVecTab_t xtrack;
   xtrack.resize(stateSize, NumberofKnotPt + 1);
-  xtrack.row(16) = -0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+  xtrack.row(16) = 2 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
 
   /* ------------------------------------------------------------------------------------------------------ */
@@ -60,10 +60,10 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   Eigen::VectorXd x_limits_upper(stateSize);
   Eigen::VectorXd u_limits_lower(commandSize);
   Eigen::VectorXd u_limits_upper(commandSize);
-  x_limits_lower << -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -10, -10, -10;    
-  x_limits_upper << M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 10, 10, 10;      
-  u_limits_lower << -20, -20, -20, -20, -20, -20, -20;
-  u_limits_upper << 20, 20, 20, 20, 20, 20, 20;
+  x_limits_lower << -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -0.10, -0.10, -0.10, -0.10, -0.10, -0.10, -0.10, -10, -10, -10;    
+  x_limits_upper << M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 10, 10, 10;      
+  u_limits_lower << -1, -1, -1, -1, -1, -1, -1;
+  u_limits_upper << 1, 1, 1, 1, 1, 1, 1;
 
   LIMITS.stateLimits.row(0) = x_limits_lower;
   LIMITS.stateLimits.row(1) = x_limits_upper;
@@ -91,8 +91,8 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   Eigen::VectorXd q_bar(7);
   Eigen::VectorXd qd_bar(7);
   Eigen::VectorXd thetalist_ret(7);
-  // thetalist0 << 0.1, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1;
-
+  // thetalist0 << 0.1, 0.2, -0.1, 0.2, -0.1, 0.1, 0.1;
+  // thetalist0 << 0, 0.2, 0, 0.5, 0, 0.2, 0;
   for (int i = 0;i < 7; i++) { thetalist0(i) = init_state(i);}
 
   thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
@@ -105,10 +105,29 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, q_bar, qd_bar, initial, rho_init, &thetalist_ret);
   xinit.head(7) = thetalist_ret;
 
+  std::cout << thetalist_ret << std::endl;
+
+  /* ----------------------------------------------------------------------------------------------------------------------------------*/
+  Eigen::Vector3d vel;
+  Eigen::Vector3d accel;
+  Eigen::Vector3d poseP;
+  Eigen::Matrix<double, 3, 3> poseM;
+  kukaRobot->getForwardKinematics(thetalist_ret.data(), thetalist_ret.data(), thetalist_ret.data(), poseM, poseP, vel, accel, false);
+
+  std::cout << cartesianPoses.at(0) << std::endl;
+  std::cout << poseM << std::endl;
+  std::cout << poseP << std::endl;
+
+  // thetalist_ret <<  -0.5, -0.5, 0.8, 0.1, 0.2, 0.5, 0.5;
+  // std::cout << IK_OPT.M << std::endl;
+  // std::cout << IK_OPT.Slist << std::endl;
+  std::cout << mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, thetalist_ret) << std::endl;
+  /* ----------------------------------------------------------------------------------------------------------------------------------*/
+
   xinit = init_state;
 
   Eigen::VectorXd rho(5);
-  rho << 10, 0.01, 0, 0, 1;
+  rho << 1, 1, 0.05, 0, 1;
 
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);
