@@ -84,7 +84,7 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
 
    /* ------------------ Frictional force calculation ---------------- */
 
-   Eigen::Vector3d F_f_dot = cp_.mu * K * velocity_z + 3 * cp_.mu * (2 * cp_.nu - 1) * (K * d * velocity_z  + force_z.norm() * velocity_z) / (10 * cp_.R);
+   Eigen::Vector3d F_f_dot = cp_.mu * K * velocity_z(2) * vel_dir + 3 * cp_.mu * (2 * cp_.nu - 1) * (K * d * velocity_z(2) * vel_dir  + force_z.norm() * velocity_z(2) * vel_dir) / (10 * cp_.R);
      
    /* -------------- End - Frictional force calculation -------------- */
 
@@ -98,7 +98,7 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
 
 
 
-   force_next = F_f_dot + F_n_dot + F_normal_dot;
+   force_next = F_f_dot + F_n_dot + 0*F_normal_dot;
 }
 
 

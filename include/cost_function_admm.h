@@ -73,10 +73,15 @@ public:
         /* compute the contact terms. */
         Eigen::Vector2d contact_terms = computeContact->computeContactTerms(xList_k, R_c(index_k));
 
+        // std::cout << x_track.transpose() << std::endl;
         if (index_k == N) 
         {
             cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Qf * (xList_k - x_track); 
             cost_ += 0.5 * rho(4) * (xList_k.head(7).transpose() - thetaList_bar.transpose()) * (xList_k.head(7) - thetaList_bar);
+            if (CONTACT_EN)
+            {
+                cost_ += 0.5 * rho(2) * (contact_terms.head(2).transpose() - cList_bar.transpose()) * (contact_terms.head(2) - cList_bar); // temp
+            }  
             cost_ += 0.5 * rho(0) * (xList_k.head(7).transpose() - xList_bar.head(7).transpose()) * (xList_k - xList_bar).head(7);
 
         } else {
@@ -135,7 +140,6 @@ public:
             cu_new.col(k) = R * uList.col(k) + rho(1) * (uList.col(k) - uList_bar.col(k));
             
 
-            // TODO: contact cost term derivative. Needs num diff
             // compute the first derivative. ignore the second term of te second derivative.
             cxx_new[k]    = Q;
             cxx_new[k]   += m_;
@@ -152,11 +156,12 @@ public:
         if (CONTACT_EN)
         {
             c_x = computeContact->contact_x(xList.col(Nl-1), cList_bar.col(N-1), R_c(Nl-1), rho(2));
-            cx_new.col(Nl-1) = Q * xList.col(Nl-1) + m_ * (xList.col(Nl-1) - xList_bar.col(Nl-1)) + n_ *  temp + c_x; // + rho(0) * (xList.col(Nl) - xList_bar.col(Nl));
+            cx_new.col(Nl-1) = Q * (xList.col(Nl-1) - x_track.col(Nl-1)) + m_ * (xList.col(Nl-1) - xList_bar.col(Nl-1)) + n_ *  temp + c_x; // + rho(0) * (xList.col(Nl) - xList_bar.col(Nl));
         } else 
         {
-            cx_new.col(Nl-1) = Q * xList.col(Nl-1) + m_ * (xList.col(Nl-1) - xList_bar.col(Nl-1)) + n_ *  temp;
+            cx_new.col(Nl-1) = Q * (xList.col(Nl-1) - x_track.col(Nl-1)) + m_ * (xList.col(Nl-1) - xList_bar.col(Nl-1)) + n_ *  temp;
         }
+
         cxx_new[Nl-1]    = Q;
         cxx_new[Nl-1]   += m_;
         cxx_new[Nl-1]   += n_;

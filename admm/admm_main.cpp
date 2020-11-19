@@ -91,7 +91,6 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   Eigen::VectorXd q_bar(7);
   Eigen::VectorXd qd_bar(7);
   Eigen::VectorXd thetalist_ret(7);
-  // thetalist0 << 0, 0.2, 0, 0.5, 0, 0.2, 0;
   for (int i = 0;i < 7; i++) { thetalist0(i) = init_state(i);}
 
   thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
@@ -104,8 +103,6 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, q_bar, qd_bar, initial, rho_init, &thetalist_ret);
   xinit.head(7) = thetalist_ret;
 
-  std::cout << thetalist_ret << std::endl;
-
   /* ----------------------------------------------------------------------------------------------------------------------------------*/
   Eigen::Vector3d vel;
   Eigen::Vector3d accel;
@@ -117,16 +114,13 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   std::cout << poseM << std::endl;
   std::cout << poseP << std::endl;
 
-  // thetalist_ret <<  -0.5, -0.5, 0.8, 0.1, 0.2, 0.5, 0.5;
-  // std::cout << IK_OPT.M << std::endl;
-  // std::cout << IK_OPT.Slist << std::endl;
   std::cout << mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, thetalist_ret) << std::endl;
   /* ----------------------------------------------------------------------------------------------------------------------------------*/
 
   // xinit = init_state;
 
   Eigen::VectorXd rho(5);
-  rho << 1, 0.1, 0.05, 0, 1;
+  rho << 5, 0.1, 1, 0, 2;
 
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);

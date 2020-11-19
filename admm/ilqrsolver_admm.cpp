@@ -119,16 +119,13 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             /* -------------- compute cx, cu, cxx, cuu ------------ */
             costFunction->computeDerivatives(xList, uListFull, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
 
-
             gettimeofday(&tend_time_deriv,NULL);
             Op.time_derivative(iter) = (static_cast<double>(1000*(tend_time_deriv.tv_sec-tbegin_time_deriv.tv_sec)+((tend_time_deriv.tv_usec-tbegin_time_deriv.tv_usec)/1000)))/1000.0;
 
             newDeriv = 0;
         }
 
-        //==============
-        // Check TODO
-        //==============
+
         // TRACE("====== STEP 2: backward pass, compute optimal control law and cost-to-go\n");
         backPassDone = 0;
         while (!backPassDone)
@@ -312,8 +309,14 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     // costList[N] = costFunction->cost_func_expre(N, updatedxList.col(N), u_NAN_loc);
     costList[N]  = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), u_NAN_loc, thetaList_bar.col(N), rho, R_c);
 
+    /* ----------------------------------------- */
+    // for (int m = 0;m < N + 1;m++)
+    // {
+    //     std::cout << costList[m] << std::endl;
+    // }
+    /* ----------------------------------------- */
 
-    // simplistic divergence test, check for the last time step if it has diverged.
+    /* simplistic divergence test, check for the last time step if it has diverged. */
     int diverge_element_flag = 0;
     for (unsigned int j = 0; j < stateSize; j++)
     {
@@ -334,10 +337,6 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     Op.print_head = 6;
     Op.last_head = Op.print_head;
 
-    // for (unsigned int i = 0;i <= N; i++)
-    // {
-    //   cout << "init traj xList[" << i << "]:" << updatedxList[i].transpose() << endl;
-    // }
 
     if(Op.debug_level > 0) {TRACE("\n =========== begin iLQR =========== \n");}
 }
@@ -358,32 +357,19 @@ void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x
         costListNew[i]          = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho, R_c);
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
     }
-                
-
     costListNew[N] = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), uList_bar.col(N-1), thetaList_bar.col(N-1), rho, R_c);
 }
 
-/* 4th-order Runge-Kutta step */
+/* --------------------- 4th-order Runge-Kutta step --------------------- */
 inline stateVec_t ILQRSolverADMM::forward_integration(const stateVec_t& x, const commandVec_t& u)
 {
-    // if(debugging_print) TRACE_KUKA_ARM("update: 4th-order Runge-Kutta step\n");
-
     // gettimeofday(&tbegin_period4, NULL);
-
-
     stateVec_t x_dot1 = dynamicModel->kuka_arm_dynamics(x, u);
-
     stateVec_t x_dot2 = dynamicModel->kuka_arm_dynamics(x + 0.5 * dt * x_dot1, u);
-
     stateVec_t x_dot3 = dynamicModel->kuka_arm_dynamics(x + 0.5 * dt * x_dot2, u);
-
     stateVec_t x_dot4 = dynamicModel->kuka_arm_dynamics(x + dt * x_dot3, u);
 
-
-    stateVec_t x_new;
-    x_new = x + (dt/6) * (x_dot1 + 2 * x_dot2 + 2 * x_dot3 + x_dot4);
-
-    return x_new;
+    return x + (dt/6) * (x_dot1 + 2 * x_dot2 + 2 * x_dot3 + x_dot4);
 }
 
 void ILQRSolverADMM::doBackwardPass()
@@ -404,13 +390,13 @@ void ILQRSolverADMM::doBackwardPass()
     Vxx[N]     = costFunction->getcxx()[N];
     dV.setZero();
 
-    for (int i = static_cast<int>(N-1); i >= 0; i--)
+    for (int i = N-1; i >= 0; i--)
     {
         Qx  = costFunction->getcx().col(i)  + dynamicModel->getfxList()[i].transpose() *  Vx.col(i + 1);
         Qu  = costFunction->getcu().col(i)  + dynamicModel->getfuList()[i].transpose() *  Vx.col(i + 1);
-        Qxx = costFunction->getcxx()[i] + dynamicModel->getfxList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
-        Quu = costFunction->getcuu()[i] + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfuList()[i];
-        Qux = costFunction->getcux()[i] + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
+        Qxx = costFunction->getcxx()[i]     + dynamicModel->getfxList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
+        Quu = costFunction->getcuu()[i]     + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfuList()[i];
+        Qux = costFunction->getcux()[i]     + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
  
 
         if (Op.regType == 1)

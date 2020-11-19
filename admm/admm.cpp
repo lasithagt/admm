@@ -182,7 +182,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     for (unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
 
         // TODO: Stopping criterion is needed
-        std::cout << "\n ================================= ADMM iteration " << i + 1 << " ================================= \n";
+        std::cout << "\n ============================== ADMM iteration " << i + 1 << " ============================= \n";
 
        /* ---------------------------------------- iLQRADMM solver block ----------------------------------------   */
         solver_.solve(xinit, unew, xtrack, cbar - c_lambda, xbar - x_lambda, ubar - u_lambda, qbar - q_lambda, rho_ddp, R_c);
@@ -227,7 +227,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         std::cout << "\n ================================= begin IK =================================" << std::endl;
         joint_positions_IK.setZero();
         IK_solve.getTrajectory(cartesianTrack, xnew.col(0).head(7), xnew.col(0).segment(7, 7), xbar.block(0, 0, 7, N + 1) - q_lambda, xbar.block(7, 0, 7, N + 1), rho,  &joint_positions_IK);
-        std::cout << "\n ================================= End IK =================================" << std::endl;
+        std::cout << "\n ================================== End IK ==================================" << std::endl;
         
         /* ----------------------------------------------- TESTING ----------------------------------------------- */
 
@@ -277,7 +277,6 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
             res_q[i] = (joint_positions_IK.col(j) - xbar.col(j).head(7)).norm();
 
         }
-
 
         // xbar.col(N) = xubar.col(N - 1).head(stateSize); // 
         xbar.col(N) = x_temp.col(N);
@@ -373,10 +372,14 @@ Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixX
                 else {
                     xubar(j,i) = xnew(j,i);
                 }
+                
             } else if((j >= stateSize) && (j < (stateSize + 2))) { 
                 // TODO:
                 if((cnew(0, j)) > 0.3 * std::abs(cnew(1, j))) {
                     xubar(j,i) = 0.3 * std::abs(cnew(1, i));
+                } else
+                {
+                    xubar(j,i) = cnew(0, j)
                 }
 
             } else { //torque constraints
