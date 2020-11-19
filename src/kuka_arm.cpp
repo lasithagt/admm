@@ -66,7 +66,6 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
     /*  contact model dynamics */
     if (CONTACT_EN)
     {
-
         // compute forward kinematics, velocity and accleration
         kukaRobot_->getForwardKinematics(q.data(), qd.data(), qdd.data(), poseM, poseP, vel, accel, true);
 
@@ -75,7 +74,6 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
 
     } else 
     {   
-        // for testing
         force_dot.setZero();
         force_current.setZero();
     }

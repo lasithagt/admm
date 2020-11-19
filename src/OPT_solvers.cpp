@@ -106,7 +106,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
 {
 
   unsigned int N = NumberofKnotPt;
-  int ADMMiterMax = 5;
+  int ADMMiterMax = 10;
   double dt = TimeStep;
 
   ADMM::ADMMopt ADMM_OPTS(dt, 1e-7, 1e-7, 15, ADMMiterMax);
