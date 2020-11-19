@@ -48,7 +48,7 @@ void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecT
     /* initialize xinit, xgoal, xtrack - for the hozizon*/
     Eigen::MatrixXd joint_trajectory(7, N + 1);
     Eigen::VectorXd thetalist0(7), thetalistd0(7), thetalist_ret(7);
-    thetalist0  << 0.1, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1;
+    thetalist0  << 0, 0.2, 0, 0.5, 0, 0.2, 0;
     thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
 
 

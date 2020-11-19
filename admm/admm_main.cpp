@@ -91,7 +91,6 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   Eigen::VectorXd q_bar(7);
   Eigen::VectorXd qd_bar(7);
   Eigen::VectorXd thetalist_ret(7);
-  // thetalist0 << 0.1, 0.2, -0.1, 0.2, -0.1, 0.1, 0.1;
   // thetalist0 << 0, 0.2, 0, 0.5, 0, 0.2, 0;
   for (int i = 0;i < 7; i++) { thetalist0(i) = init_state(i);}
 
@@ -124,10 +123,10 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   std::cout << mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, thetalist_ret) << std::endl;
   /* ----------------------------------------------------------------------------------------------------------------------------------*/
 
-  xinit = init_state;
+  // xinit = init_state;
 
   Eigen::VectorXd rho(5);
-  rho << 1, 1, 0.05, 0, 1;
+  rho << 1, 0.1, 0.05, 0, 1;
 
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);

@@ -1,5 +1,6 @@
 
 import numpy as np
+
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 
@@ -8,14 +9,16 @@ if __name__ == "__main__":
 
 	fig1 = plt.figure(1)
 	ax = plt.axes(projection='3d')
+	# ax.set_aspect('equal')
+
 
 	# Plot data for motion
-	for i in range(6):
-		xline = data[i,0,::]
-		yline = data[i,1,::]
-		zline = data[i,2,::]
-		line_name = 'Iteration' + str(i)
-		ax.plot3D(xline, yline, zline, label = line_name)
+	# for i in range(6):
+	xline = data[5,0,::]
+	yline = data[5,1,::]
+	zline = data[5,2,::]
+	line_name = 'Iteration' + str(5)
+	ax.plot3D(xline, yline, zline, label = line_name)
 
 	ax.legend()
 

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   stateVec_t xinit;
   xinit.setZero();
 
-  xinit.head(7) << 0.1, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1;
+  xinit.head(7) << 0, 0.2, 0, 0.5, 0, 0.2, 0;;
 
   admm(kukaRobot, xinit, result);
 

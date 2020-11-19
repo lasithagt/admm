@@ -80,7 +80,6 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
 
     xdot_new << qd, qdd, force_dot;
 
-
     if (finalTimeProfile.counter0_ == 10)
     {
         gettimeofday(&tend_period,NULL);
