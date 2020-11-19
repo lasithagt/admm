@@ -372,15 +372,15 @@ Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixX
                 else {
                     xubar(j,i) = xnew(j,i);
                 }
-                
-            } else if((j >= stateSize) && (j < (stateSize + 2))) { 
-                // TODO:
+
+            } else if(j == stateSize) { 
                 if((cnew(0, j)) > 0.3 * std::abs(cnew(1, j))) {
                     xubar(j,i) = 0.3 * std::abs(cnew(1, i));
-                } else
-                {
-                    xubar(j,i) = cnew(0, j)
+                } else {
+                    xubar(j,i) = cnew(0, j);
                 }
+            } else if(j == stateSize + 1) {
+                xubar(j,i) = cnew(1, j);
 
             } else { //torque constraints
 
@@ -410,7 +410,7 @@ void ADMM::contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const state
     Eigen::MatrixXd jacobian(6, 7);
 
     curve.curvature(X_curve.transpose(), L, R_c, k);
-    R_c = Eigen::VectorXd::Constant(N+1, 1);
+    // R_c = Eigen::VectorXd::Constant(N+1, 1);
 
 
     for (int i = 0; i < xnew.cols(); i++) {

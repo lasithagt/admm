@@ -120,7 +120,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   // xinit = init_state;
 
   Eigen::VectorXd rho(5);
-  rho << 5, 0.1, 1, 0, 2;
+  rho << 6, 0.1, 0.01, 0, 2;
 
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);
