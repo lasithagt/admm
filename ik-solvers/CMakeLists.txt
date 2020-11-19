@@ -1,7 +1,7 @@
 # create library
 set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ik_solver.cpp)
 add_library(ik-solvers STATIC ${SOURCES})
-target_link_libraries(ik-solvers PUBLIC ModernRoboticsCpp)
+target_link_libraries(ik-solvers PUBLIC ModernRoboticsCpp kuka-models)
 
 
 # add include directories
