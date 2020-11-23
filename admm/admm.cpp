@@ -311,7 +311,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
 
     #ifdef DEBUG
-    cnpy::npy_save("../data/cartesian_trajectory_admm.npy", data_store.data(), {static_cast<unsigned long>(ADMM_OPTS.ADMMiterMax + 1), 
+    cnpy::npy_save("./cartesian_trajectory_admm.npy", data_store.data(), {static_cast<unsigned long>(ADMM_OPTS.ADMMiterMax + 1), 
         6, static_cast<unsigned long>(N + 1)}, "w");
     #endif
 

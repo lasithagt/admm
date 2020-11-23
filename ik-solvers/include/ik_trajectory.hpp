@@ -96,7 +96,7 @@ public:
 	        	}
 
 	            /* solves IK for each time step */
-	            IK.getIK(FK_desired.at(i), thetalist0, thetalistd0, q_bar.col(i), qd_bar.col(i), initial, rho, &thetalist_ret);
+	            IK.getIK(FK_desired.at(i), thetalist0, thetalistd0, q_bar.col(i), qd_bar.col(i), initial, rho, thetalist_ret);
 
 	            joint_positions->col(i) = thetalist_ret;
 	            FK_current.at(i) = mr::FKinSpace(M, Slist, joint_positions->col(i));

@@ -6,6 +6,7 @@
 
 
 #include "admm.hpp"
+#include "SoftContactModel.h"
 
 
 class FULL_ADMM {
@@ -16,7 +17,8 @@ public:
     FULL_ADMM(unsigned int N_, double dt_);
     ~FULL_ADMM();
 
-    void run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMM::ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT);
+    void run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMM::ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT); 
+
 
     optimizer::ILQRSolverADMM::traj getOptimizerResult(); 
 

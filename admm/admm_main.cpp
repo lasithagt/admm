@@ -12,7 +12,10 @@ FULL_ADMM::FULL_ADMM(unsigned int N_, double dt_) : N(N_), dt(dt_) {
 FULL_ADMM::~FULL_ADMM() {}
 
 void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMM::ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT) 
+
 {
+  
+
   
   // parameters for ADMM, penelty terms. initial
   Eigen::VectorXd rho_init(5);
@@ -91,6 +94,8 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   Eigen::VectorXd q_bar(7);
   Eigen::VectorXd qd_bar(7);
   Eigen::VectorXd thetalist_ret(7);
+
+
   for (int i = 0;i < 7; i++) { thetalist0(i) = init_state(i);}
 
   thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
@@ -100,7 +105,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   bool initial = true;
   IK_FIRST_ORDER IK = IK_FIRST_ORDER(IK_OPT.Slist,  IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
 
-  IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, q_bar, qd_bar, initial, rho_init, &thetalist_ret);
+  IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, q_bar, qd_bar, initial, rho_init, thetalist_ret);
   xinit.head(7) = thetalist_ret;
 
   /* ----------------------------------------------------------------------------------------------------------------------------------*/
@@ -130,6 +135,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
 
 
   resultTrajectory = optimizerADMM.getLastSolvedTrajectory();
+
 
 }
 

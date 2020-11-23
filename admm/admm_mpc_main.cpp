@@ -228,7 +228,7 @@ void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecT
     bool initial = true;
     IK_FIRST_ORDER IK = IK_FIRST_ORDER(IK_OPT.Slist,  IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
 
-    IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), initial, rho_init, &thetalist_ret);
+    IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), initial, rho_init, thetalist_ret);
     xinit.head(7) = thetalist_ret;
 
 }

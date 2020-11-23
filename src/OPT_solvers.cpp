@@ -55,7 +55,7 @@ void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecT
     bool initial = true;
     IK_FIRST_ORDER IK = IK_FIRST_ORDER(IK_OPT.Slist,  IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
 
-    IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), initial, rho_init, &thetalist_ret);
+    IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), initial, rho_init, thetalist_ret);
     xinit.head(7) = thetalist_ret;
 
 
@@ -106,7 +106,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
 {
 
   unsigned int N = NumberofKnotPt;
-  int ADMMiterMax = 10;
+  int ADMMiterMax = 5;
   double dt = TimeStep;
 
   ADMM::ADMMopt ADMM_OPTS(dt, 1e-7, 1e-7, 15, ADMMiterMax);
@@ -130,10 +130,6 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
   IK_OPT.M = M;
 
   unsigned int iterMax = 10; // DDP iteration max
-
-  /*------------------initialize control input-----------------------*/
-
-
   /* -------------------- Optimizer Params ------------------------ */
   optimizer::ILQRSolverADMM::OptSet solverOptions;
   solverOptions.n_hor    = N;
@@ -142,10 +138,97 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
   solverOptions.max_iter = iterMax;
 
 
+  ContactModel::ContactParams cp_;
+  cp_.E = 1000;
+  cp_.mu = 0.5;
+  cp_.nu = 0.4;
+  cp_.R  = 0.005;
+  cp_.R_path = 1000;
+  cp_.Kd = 10;
+  ContactModel::SoftContactModel contactModel(cp_);
+  kukaRobot->initRobot();
+
+  /* ------------------------------------------------------------------------------------------------------ */
+
+  /* ---------------------------------- State and Control Limits ---------------------------------- */
+  ADMM::Saturation LIMITS;
+  Eigen::VectorXd x_limits_lower(stateSize);
+  Eigen::VectorXd x_limits_upper(stateSize);
+  Eigen::VectorXd u_limits_lower(commandSize);
+  Eigen::VectorXd u_limits_upper(commandSize);
+  x_limits_lower << -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -10, -10, -10;    
+  x_limits_upper << M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 10, 10, 10;      
+  u_limits_lower << -20, -20, -20, -20, -20, -20, -20;
+  u_limits_upper << 20, 20, 20, 20, 20, 20, 20;
+
+  LIMITS.stateLimits.row(0) = x_limits_lower;
+  LIMITS.stateLimits.row(1) = x_limits_upper;
+  LIMITS.controlLimits.row(0) = u_limits_lower; 
+  LIMITS.controlLimits.row(1) = u_limits_upper; 
+
+  /* ----------------------------------------------------------------------------------------------- */
+
+
+  // parameters for ADMM, penelty terms. initial
+  Eigen::VectorXd rho_init(5);
+  rho_init << 0, 0, 0, 0, 0;
+  IKTrajectory<IK_FIRST_ORDER> IK_traj = IKTrajectory<IK_FIRST_ORDER>(IK_OPT.Slist, IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init, N);
+
+  Eigen::MatrixXd R(3,3);
+  R << 1, 0, 0, 0, 1, 0, 0, 0, 1;
+  double Tf = 2 * M_PI;
+  double z_depth = 1.16;
+  double r       = 0.05;
+  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 3, r, r, N, Tf);
+
+  stateVec_t xinit;
+  // stateVecTab_t xtrack;
+  // xtrack.resize(stateSize, NumberofKnotPt + 1);
+  // xtrack.row(16) = 2 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+
+
+  // initialize xinit, xgoal, xtrack - for the hozizon
+  Eigen::VectorXd thetalist0(7);
+  Eigen::VectorXd thetalistd0(7);
+  Eigen::VectorXd q_bar(7);
+  Eigen::VectorXd qd_bar(7);
+  Eigen::VectorXd thetalist_ret(7);
+
+  for (int i = 0;i < 7; i++) { thetalist0(i) = init_state(i);}
+
+  thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
+  q_bar << 0, 0, 0, 0, 0, 0, 0;
+  qd_bar << 0, 0, 0, 0, 0, 0, 0;
+
+  bool initial = true;
+  IK IK_ = IK_FIRST_ORDER(IK_OPT.Slist, IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
+
+  IK_.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, q_bar, qd_bar, initial, rho_init, thetalist_ret);
+  // xinit.head(7) = thetalist_ret;
+
+  // xtrack.col(0).head(7) = thetalist_ret;
+
+  Eigen::VectorXd rho(5);
+  rho << 6, 0.1, 0.01, 0, 2;
+
+  commandVecTab_t u_0;
+  u_0.resize(commandSize, N);
+  u_0.setZero();
+
+
+  // admm optimizer
   FULL_ADMM admm_full = FULL_ADMM(N, TimeStep);
   admm_full.run(kukaRobot, init_state, solverOptions, ADMM_OPTS, IK_OPT);
 
+
+  // admm_full.run(kukaRobot, xtrack, u_0, cartesianPoses, contactModel, solverOptions, ADMM_OPTS, IK_OPT, LIMITS, rho);
+  
+
+
+
+  // get the final trajectory
   result = admm_full.getOptimizerResult();
+
 
 
 }
