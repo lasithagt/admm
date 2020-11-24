@@ -177,7 +177,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
   Eigen::MatrixXd R(3,3);
   R << 1, 0, 0, 0, 1, 0, 0, 0, 1;
   double Tf = 2 * M_PI;
-  double z_depth = 1.16;
+  double z_depth = 1.18;
   double r       = 0.05;
   std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 3, r, r, N, Tf);
 
@@ -218,7 +218,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
 
   // admm optimizer
   FULL_ADMM admm_full = FULL_ADMM(N, TimeStep);
-  admm_full.run(kukaRobot, init_state, solverOptions, ADMM_OPTS, IK_OPT);
+  admm_full.run(kukaRobot, init_state, solverOptions, ADMM_OPTS, IK_OPT, LIMITS, cp_, cartesianPoses);
 
 
   // admm_full.run(kukaRobot, xtrack, u_0, cartesianPoses, contactModel, solverOptions, ADMM_OPTS, IK_OPT, LIMITS, rho);
