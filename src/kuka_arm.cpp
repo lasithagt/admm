@@ -58,8 +58,7 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
     // compute manipualator dynamics
 
     kukaRobot_->getSpatialJacobian(q.data(), manip_jacobian);
-    tau_ext = tau; // + manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
-
+    tau_ext = tau + manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
 
     kukaRobot_->getForwardDynamics(q.data(), qd.data(), tau_ext, qdd);
 

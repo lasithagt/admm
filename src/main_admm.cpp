@@ -8,13 +8,13 @@
 
 void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses);
 void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result);
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result);
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state,  optimizer::ILQRSolverADMM::traj& result);
 
 
 
 int main(int argc, char *argv[]) {
 
-    /* -------------------- orocos kdl robot initialization-------------------------*/
+  /* -------------------- orocos kdl robot initialization-------------------------*/
   KUKAModelKDLInternalData robotParams;
   robotParams.numJoints = NDOF;
   robotParams.Kv = Eigen::MatrixXd(7,7);
@@ -28,7 +28,9 @@ int main(int argc, char *argv[]) {
   stateVec_t xinit;
   xinit.setZero();
 
-  xinit.head(7) << 0, 0.2, 0, 0.5, 0, 0.2, 0;;
+  xinit.head(7) << 0, 0.2, 0, 0.5, 0, 0.2, 0;
+
+
 
   admm(kukaRobot, xinit, result);
 
