@@ -4,15 +4,10 @@
 #include "admm_mpc_main.hpp"
 
 
-using namespace std;
-
-void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses);
-
-
 MPC_ADMM::MPC_ADMM() {}
 MPC_ADMM::~MPC_ADMM() {}
 
-void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::SoftContactModel& contactModel, const stateVec_t& xinit, const stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses, optimizer::ILQRSolverADMM::traj& result) 
+void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_state,  ContactModel::SoftContactModel& contactModel,  optimizer::ILQRSolverADMM::traj& result) 
 {
 
     struct timeval tbegin,tend;
@@ -20,18 +15,15 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
 
     double dt      = TimeStep;
     unsigned int N = NumberofKnotPt;
-    double tolFun  = 1e-5;                 // 1e-5; //relaxing default value: 1e-10; - reduction exit crieria
-    double tolGrad = 1e-10;                // relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax = 5;              // 100;
+    double tolFun  = 1e-5;                 
+    double tolGrad = 1e-10;                
+    unsigned int iterMax = 5;              
     Logger* logger = new DefaultLogger();
 
 
     /*------------------initialize control input----------------------- */
-    commandVecTab_t u_0;
-    u_0.resize(commandSize, N);
-    u_0.setZero();
 
-    int horizon_mpc   = 10;          // make these loadable from a cfg file
+    int horizon_mpc     = 10;          // make these loadable from a cfg file
     unsigned int temp_N = 10;
 
 
@@ -65,9 +57,24 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
     IK_OPT.M = M;
 
 
-    /* ------------------------------------------------------------------------------------------------------ */
 
-    /* --------------------------------------- State and Control Limits ------------------------------------- */
+    // std::vector<Eigen::MatrixXd> cartesianPoses;
+
+
+    // parameters for ADMM, penelty terms. initial
+    Eigen::VectorXd rho_init(5);
+    rho_init << 0, 0, 0, 0, 0;
+    IKTrajectory<IK_FIRST_ORDER> IK_traj = IKTrajectory<IK_FIRST_ORDER>(IK_OPT.Slist, IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init, N);
+
+    Eigen::MatrixXd R(3,3);
+    R << 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    double Tf = 2 * M_PI;
+    double z_depth = 1.17;
+    double r       = 0.05;
+    std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 3, r, r, N, Tf);
+
+
+    /* ---------------------------------------------- State and Control Limits ------------------------------------------------ */
     ADMM::Saturation LIMITS;
     Eigen::VectorXd x_limits_lower(stateSize);
     Eigen::VectorXd x_limits_upper(stateSize);
@@ -83,16 +90,12 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
     LIMITS.controlLimits.row(0) = u_limits_lower; 
     LIMITS.controlLimits.row(1) = u_limits_upper; 
 
-    /* ------------------------------------------------------------------------------------------------------ */
+    /* ------------------------------------------------------------------------------------------------------------------------- */
 
     // parameters for ADMM, penelty terms. initial
-    Eigen::VectorXd rho_init(5);
-    rho_init << 0, 0, 0, 0, 0;
+    // Eigen::VectorXd rho_init(5);
+    // rho_init << 0, 0, 0, 0, 0;
 
-
-    // penelty parameters
-    Eigen::VectorXd rho(5);
-    rho << 20, 0.01, 0, 0, 1;
 
     gettimeofday(&tbegin,NULL);
 
@@ -103,6 +106,8 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
     // Initialize Cost Function 
     CostFunctionADMM costFunction_admm(temp_N, kukaRobot);
 
+    kukaRobot->initRobot();
+
     // initialize iLQR solver
     optimizer::ILQRSolverADMM solver(KukaArmModel, costFunction_admm, solverOptions, temp_N, dt, ENABLE_FULLDDP, ENABLE_QPBOX);
 
@@ -110,14 +115,54 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
     ADMM optimizerADMM(kukaRobot, costFunction_admm, solver, ADMM_OPTS, IK_OPT, temp_N);
 
 
-    /* --------------------------- Plant -----------------------------------*/
+
+    stateVec_t xinit;
+    stateVecTab_t xtrack;
+    xtrack.resize(stateSize, NumberofKnotPt + 1);
+    xtrack.row(16) = 2 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+
+
+    /* initialize xinit, xgoal, xtrack - for the hozizon*/
+    Eigen::VectorXd thetalist0(7);
+    Eigen::VectorXd thetalistd0(7);
+    Eigen::VectorXd q_bar(7);
+    Eigen::VectorXd qd_bar(7);
+    Eigen::VectorXd thetalist_ret(7);
+
+
+    for (int i = 0;i < 7; i++) { thetalist0(i) = init_state(i);}
+
+    thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
+    q_bar << 0, 0, 0, 0, 0, 0, 0;
+    qd_bar << 0, 0, 0, 0, 0, 0, 0;
+
+    bool initial = true;
+    IK_FIRST_ORDER IK = IK_FIRST_ORDER(IK_OPT.Slist,  IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
+
+    IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, q_bar, qd_bar, initial, rho_init, thetalist_ret);
+    xinit.head(7) = thetalist_ret;
+
+    // xinit = init_state;
+
+
+    /* ------------------------------------------------ Penelty parameters ----------------------------------------------------- */
+    Eigen::VectorXd rho(5);
+    rho << 20, 0.1, 0.001, 0, 1;
+
+
+    commandVecTab_t u_0;
+    u_0.resize(commandSize, N);
+    u_0.setZero();
+
+
+    /* ----------------------------------------------------- Plant ----------------------------------------------------------------*/
 
     double state_var   = 0.0000001;
     double control_var = 0.0000001;
 
     KukaPlant<KukaArm, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
 
-    /* ---------------------------- MPC ----------------------------------- */
+    /* ---------------------------------------------- MPC --------------------------------------------------- */
 
     // Initialize receding horizon controller
     bool verbose = true;
@@ -129,19 +174,17 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
     int iterations = 10;
     int HMPC       = 10;
 
-
-
     ModelPredictiveControllerADMM<KukaArm, Plant, CostFunctionADMM, Optimizer, Result> mpc_admm(dt, horizon_mpc, HMPC,
      iterations, verbose, logger, KukaArmModel, costFunction_admm, optimizerADMM, xtrack, cartesianPoses) ;
 
 
 
-    // termination condition
+    /* termination condition */
     using StateRef = Eigen::Ref<const stateVec_t>;
     auto termination =
     [&](int i, const StateRef &x)
     {
-        auto N_ = N - (horizon_mpc+i);
+        auto N_ = N  - (horizon_mpc + i);
         if (N_ <= 0) {
             return 1;
         } else {
@@ -153,7 +196,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
     joint_state_traj.resize(stateSize, N + 1);
 
 
-    // run MPC
+    /* ----------------------------------------- run MPC ------------------------- ------------------------- */
     mpc_admm.run(xinit, u_0.block(0, 0, commandSize, horizon_mpc), KukaModelPlant, joint_state_traj, termination, rho, LIMITS);
 
 
@@ -174,8 +217,6 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
     cout << "\tTime of backward pass (second): " << lastTraj.time_backward.sum() << " (" << 100.0*lastTraj.time_backward.sum()/texec << "%)" << endl;
 
 
-
-
     cout << "------------------------------------ MPC_ADMM Trajectory Generation Finished! ------------------------------------" << endl;
 
     delete(logger);
@@ -184,68 +225,29 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::Soft
 
 
 
-// Generate cartesian trajectory
-void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses) {
-    Eigen::MatrixXd joint_lims(2,7);
-    double eomg = 0.00001;
-    double ev   = 0.00001;
-    unsigned int N = NumberofKnotPt;
-
-    /* Cartesian Tracking. IKopt */
-    IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT(7);
-    models::KUKA robotIK = models::KUKA();
-    Eigen::MatrixXd Slist(6,7);
-    Eigen::MatrixXd M(4,4);
-    robotIK.getSlist(&Slist); 
-    robotIK.getM(&M);
-
-    IK_OPT.joint_limits = joint_lims;
-    IK_OPT.ev = ev;
-    IK_OPT.eomg = eomg;
-    IK_OPT.Slist = Slist;
-    IK_OPT.M = M;
-
-    // this is for admm parameters. For normal ddp, set it to zero.
-    Eigen::VectorXd rho_init(5);
-    rho_init << 0, 0, 0, 0, 0;
-
-    IKTrajectory<IK_FIRST_ORDER> IK_traj = IKTrajectory<IK_FIRST_ORDER>(Slist, M, joint_lims, eomg, ev, rho_init, N);
-
-    Eigen::MatrixXd R(3,3);
-    R << 1, 0, 0, 0, 1, 0, 0, 0, 1;
-    double Tf = 2 * M_PI;
-
-    cartesianPoses = IK_traj.generateLissajousTrajectories(R, 0.8, 1, 3, 0.08, 0.08, N, Tf);
-
-
-    /* initialize xinit, xgoal, xtrack - for the hozizon*/
-    Eigen::MatrixXd joint_trajectory(7, N + 1);
-    Eigen::VectorXd thetalist0(7), thetalistd0(7), thetalist_ret(7);
-    thetalist0  << 0.1, 0.2, 0.1, 0.2, 0.1, 0.1, 0.1;
-    thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
-
-
-    bool initial = true;
-    IK_FIRST_ORDER IK = IK_FIRST_ORDER(IK_OPT.Slist,  IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
-
-    IK.getIK(cartesianPoses.at(0), thetalist0, thetalistd0, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7), initial, rho_init, thetalist_ret);
-    xinit.head(7) = thetalist_ret;
-
-}
-
 
 int main(int argc, char *argv[]) 
 {
  
     MPC_ADMM optimizerADMM;
-    stateVec_t xinit, xgoal;
+    // stateVec_t xinit, xgoal;
     stateVecTab_t xtrack;
     xtrack.resize(stateSize, NumberofKnotPt + 1);
 
-    std::vector<Eigen::MatrixXd> cartesianPoses;
-    generateCartesianTrajectory(xinit, xgoal, xtrack, cartesianPoses);
+    // parameters for ADMM, penelty terms. initial
+    Eigen::VectorXd rho_init(5);
+    rho_init << 0, 0, 0, 0, 0;
+    // IKTrajectory<IK_FIRST_ORDER> IK_traj = IKTrajectory<IK_FIRST_ORDER>(IK_OPT.Slist, IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init, N);
 
-    xtrack.row(16) = 5 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+    // Eigen::MatrixXd R(3,3);
+    // R << 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    // double Tf = 2 * M_PI;
+    // double z_depth = 1.17;
+    // double r       = 0.05;
+    // std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 3, r, r, N, Tf);
+
+    // stateVec_t xinit;
+    // xtrack.row(16) = 5 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
 
     /* -------------------- orocos kdl robot initialization-------------------------*/
@@ -269,8 +271,13 @@ int main(int argc, char *argv[])
     ContactModel::SoftContactModel contactModel(cp_);
     kukaRobot->initRobot();
 
+
+    stateVec_t xinit;
+    xinit.setZero();
+    xinit.head(7) << 0, 0.2, 0, 0.5, 0, 0.2, 0;;
+
     optimizer::ILQRSolverADMM::traj result;
-    optimizerADMM.run(kukaRobot, contactModel, xinit, xtrack, cartesianPoses, result);
+    optimizerADMM.run(kukaRobot, xinit, contactModel, result);
 
 
   return 0;

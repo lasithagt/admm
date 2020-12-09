@@ -1,13 +1,7 @@
-
 #include "admm_main.hpp"
 
-/* ------------- Eigen print arguments ------------------- */
-  // Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
- /* ------------------------------------------------------- */
 
-
-FULL_ADMM::FULL_ADMM(unsigned int N_, double dt_) : N(N_), dt(dt_) {
-}
+FULL_ADMM::FULL_ADMM(unsigned int N_, double dt_) : N(N_), dt(dt_) {}
 
 FULL_ADMM::~FULL_ADMM() {}
 
@@ -68,7 +62,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
   // xinit = init_state;
 
   Eigen::VectorXd rho(5);
-  rho << 6, 0.1, 0.001, 0, 2;
+  rho << 25, 0.1, 0.001, 0, 2;
 
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);

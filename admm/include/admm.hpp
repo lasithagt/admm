@@ -50,9 +50,9 @@ public:
     ADMMopt(double dt_, double tolFun_, double tolGrad_, unsigned int iterMax_, 
       int ADMMiterMax_) : dt(dt_), tolFun(tolFun_), tolGrad(tolGrad_), iterMax(iterMax_), ADMMiterMax(ADMMiterMax_) {}
     double dt;
-    double tolFun; // 1e-5; // relaxing default value: 1e-10; - reduction exit crieria
-    double tolGrad; // relaxing default value: 1e-10; - gradient exit criteria
-    unsigned int iterMax; //DDP iteration max
+    double tolFun; 
+    double tolGrad; 
+    unsigned int iterMax; // DDP iteration max
     // parameters for ADMM, penelty terms
     int ADMMiterMax;
   };
@@ -70,6 +70,7 @@ public:
 
   struct optimizer::ILQRSolverADMM::traj lastTraj;
 
+
 protected:
   models::KUKA robotIK;
   std::shared_ptr<RobotAbstract> kukaRobot_;
@@ -85,6 +86,8 @@ protected:
   commandVecTab_t torque_traj;
   stateVecTab_t joint_state_traj_interp;
   commandVecTab_t torque_traj_interp;
+
+  // ProjectionOperator constraint_project;
 
   unsigned int N;
 

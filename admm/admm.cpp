@@ -141,7 +141,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     }
 
     std::cout << "error " << error_fk << std::endl; 
-    /* ----------------------------------------- END TESTING ----------------------------------------- */
+    /* ----------------------------------------------- END TESTING ----------------------------------------------- */
 
 
     /* ---------------------------------------- Initialize xbar, cbar,ubar ---------------------------------------- */
@@ -298,6 +298,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
 
         final_cost[i + 1] = cost;
+
     }
 
     gettimeofday(&tend,NULL);    
@@ -359,10 +360,12 @@ Projects the states and commands to be within bounds
 */
 Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixXd& cnew, const commandVecTab_t& unew, const ADMM::Saturation& L) {
 
+    double mu = 0.3;
     for(int i = 0;i < N ; i++) {
 
         for (int j = 0;j < stateSize + commandSize + 2; j++) {
-            if(j < stateSize) { //postion + velocity + force constraints
+            /* postion + velocity + force constraints */
+            if(j < stateSize) { 
                 if (xnew(j,i) > L.stateLimits(1, j)) {
                     xubar(j,i) = L.stateLimits(1, j);
                 }
@@ -372,17 +375,19 @@ Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixX
                 else {
                     xubar(j,i) = xnew(j,i);
                 }
-
+            /* contact constraints */
             } else if(j == stateSize) { 
-                if((cnew(0, j)) > 0.3 * std::abs(cnew(1, j))) {
-                    xubar(j,i) = 0.3 * std::abs(cnew(1, i));
-                } else {
-                    xubar(j,i) = cnew(0, j);
-                }
-            } else if(j == stateSize + 1) {
-                xubar(j,i) = cnew(1, j);
 
-            } else { //torque constraints
+                if((cnew(0, i)) > mu * std::abs(cnew(1, i))) {
+                    xubar(j,i) = mu * std::abs(cnew(1, i));
+                } else {
+                    xubar(j,i) = cnew(0, i);
+                }
+
+            } else if(j == stateSize + 1) {
+                xubar(j,i) = cnew(1, i);
+            /* torque constraints */
+            } else { 
 
                 if(unew(j - stateSize - 2, i) > L.controlLimits(1, j - stateSize - 2)) {
                     xubar(j, i) = L.controlLimits(1, j - stateSize - 2);
@@ -397,6 +402,7 @@ Eigen::MatrixXd ADMM::projection(const stateVecTab_t& xnew, const Eigen::MatrixX
 
         }
     }
+
     return xubar;
 }
 

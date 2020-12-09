@@ -69,7 +69,7 @@ void ModelPredictiveController::run(const Eigen::Ref<const State>  &initial_stat
     std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
     std::chrono::duration<float, std::milli> elapsed;
 
-	    int64_t i = 0;
+	int64_t i = 0;
     while(!terminate(i, x))
     {
 

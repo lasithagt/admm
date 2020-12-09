@@ -42,7 +42,7 @@ public:
     MPC_ADMM();
     ~MPC_ADMM();
 
-    void run(std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::SoftContactModel& contactModel, const stateVec_t& xinit, const stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
+    void run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_state, ContactModel::SoftContactModel& contactModel, optimizer::ILQRSolverADMM::traj& result);
 private:
     Eigen::MatrixXd joint_state_traj;
     commandVecTab_t torque_traj;

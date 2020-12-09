@@ -32,11 +32,6 @@
 
 /* ADMM trajectory generation */
 
-/* ------------- Eigen print arguments ------------------- */
-  Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
- /* ------------------------------------------------------- */
-
-
 template <class DynamicsT, class PlantT, class costFunctionT, class OptimizerT, class OptimizerResultT>
 class ModelPredictiveControllerADMM
 {
