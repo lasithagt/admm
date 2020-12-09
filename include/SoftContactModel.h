@@ -70,7 +70,7 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
    double d = pow(9 * pow(force_z.norm(), 2) / (16 * pow(cp_.E,2) * cp_.R), 1/3);
 
    // calulate the stiffness
-   double K = pow(6 * pow(cp_.E, 2) * cp_.R * force_z.norm(), (1/3)) + 400;
+   double K = pow(6 * pow(cp_.E, 2) * cp_.R * force_z.norm(), (1/3)) + 600;
    // K = 400;
 
 
@@ -84,7 +84,7 @@ void df(const Eigen::Matrix3d& mass_matrix_cart, const Eigen::Vector3d& position
 
    /* ------------------ Frictional force calculation ---------------- */
 
-   Eigen::Vector3d F_f_dot = cp_.mu * K * velocity_z(2) * vel_dir + 3 * cp_.mu * (2 * cp_.nu - 1) * (K * d * velocity  + force_z.norm() * velocity) / (10 * cp_.R);
+   Eigen::Vector3d F_f_dot = cp_.mu * K * velocity_z(2) * vel_dir + 3 * cp_.mu * (2 * cp_.nu - 1) * (0 * d * vel_dir  + force_z.norm() * velocity) / (10 * cp_.R);
      
    /* -------------- End - Frictional force calculation -------------- */
 
