@@ -18,7 +18,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
 // }
 
 /* -------------------------------------------  run admm  full trajectory optimization ------------------------------------------------ */
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result)
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result)
 {
 
   unsigned int N = NumberofKnotPt;
@@ -84,20 +84,6 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, opti
   LIMITS.controlLimits.row(1) = u_limits_upper; 
 
   /* ----------------------------------------------------------------------------------------------- */
-
-
-  // parameters for ADMM, penelty terms. initial
-  Eigen::VectorXd rho_init(5);
-  rho_init << 0, 0, 0, 0, 0;
-  IKTrajectory<IK_FIRST_ORDER> IK_traj = IKTrajectory<IK_FIRST_ORDER>(IK_OPT.Slist, IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init, N);
-
-  Eigen::MatrixXd R(3,3);
-  R << 1, 0, 0, 0, 1, 0, 0, 0, 1;
-  double Tf = 2 * M_PI;
-  // double z_depth = 1.161;
-  double z_depth = 1.17;
-  double r       = 0.05;
-  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 3, r, r, N, Tf);
 
 
 

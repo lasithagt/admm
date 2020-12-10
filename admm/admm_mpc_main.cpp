@@ -17,14 +17,14 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
     unsigned int N = NumberofKnotPt;
     double tolFun  = 1e-5;                 
     double tolGrad = 1e-10;                
-    unsigned int iterMax = 5;              
+    unsigned int iterMax = 10;              
     Logger* logger = new DefaultLogger();
 
 
     /*------------------initialize control input----------------------- */
 
-    int horizon_mpc     = 10;          // make these loadable from a cfg file
-    unsigned int temp_N = 10;
+    int horizon_mpc     = 50;          // make these loadable from a cfg file
+    unsigned int temp_N = 50;
 
 
 
@@ -58,9 +58,6 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
 
 
-    // std::vector<Eigen::MatrixXd> cartesianPoses;
-
-
     // parameters for ADMM, penelty terms. initial
     Eigen::VectorXd rho_init(5);
     rho_init << 0, 0, 0, 0, 0;
@@ -80,8 +77,8 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
     Eigen::VectorXd x_limits_upper(stateSize);
     Eigen::VectorXd u_limits_lower(commandSize);
     Eigen::VectorXd u_limits_upper(commandSize);
-    x_limits_lower << -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -10, -10, -10;    
-    x_limits_upper << M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 10, 10, 10;      
+    x_limits_lower << -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -10, -10, -10;    
+    x_limits_upper << M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 10, 10, 10;      
     u_limits_lower << -20, -20, -20, -20, -20, -20, -20;
     u_limits_upper << 20, 20, 20, 20, 20, 20, 20;
 
@@ -92,21 +89,14 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
     /* ------------------------------------------------------------------------------------------------------------------------- */
 
-    // parameters for ADMM, penelty terms. initial
-    // Eigen::VectorXd rho_init(5);
-    // rho_init << 0, 0, 0, 0, 0;
-
-
     gettimeofday(&tbegin,NULL);
 
-
+    kukaRobot->initRobot();
     // Initialize Robot Model
     KukaArm KukaArmModel(dt, temp_N, kukaRobot, contactModel);
 
     // Initialize Cost Function 
     CostFunctionADMM costFunction_admm(temp_N, kukaRobot);
-
-    kukaRobot->initRobot();
 
     // initialize iLQR solver
     optimizer::ILQRSolverADMM solver(KukaArmModel, costFunction_admm, solverOptions, temp_N, dt, ENABLE_FULLDDP, ENABLE_QPBOX);
@@ -119,7 +109,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
     stateVec_t xinit;
     stateVecTab_t xtrack;
     xtrack.resize(stateSize, NumberofKnotPt + 1);
-    xtrack.row(16) = 2 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+    xtrack.row(16) = 0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
 
     /* initialize xinit, xgoal, xtrack - for the hozizon*/
@@ -147,7 +137,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
     /* ------------------------------------------------ Penelty parameters ----------------------------------------------------- */
     Eigen::VectorXd rho(5);
-    rho << 20, 0.1, 0.001, 0, 1;
+    rho << 30, 0.1, 0.00001, 0, 2;
 
 
     commandVecTab_t u_0;
@@ -157,8 +147,8 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
     /* ----------------------------------------------------- Plant ----------------------------------------------------------------*/
 
-    double state_var   = 0.0000001;
-    double control_var = 0.0000001;
+    double state_var   = 0.00000000001;
+    double control_var = 0.00000000001;
 
     KukaPlant<KukaArm, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
 
@@ -172,10 +162,10 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
 
     int iterations = 10;
-    int HMPC       = 10;
+    int HMPC       = 1;
 
     ModelPredictiveControllerADMM<KukaArm, Plant, CostFunctionADMM, Optimizer, Result> mpc_admm(dt, horizon_mpc, HMPC,
-     iterations, verbose, logger, KukaArmModel, costFunction_admm, optimizerADMM, xtrack, cartesianPoses) ;
+     iterations, verbose, logger, KukaArmModel, costFunction_admm, optimizerADMM, xtrack, cartesianPoses, IK_OPT) ;
 
 
 
@@ -184,7 +174,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
     auto termination =
     [&](int i, const StateRef &x)
     {
-        auto N_ = N  - (horizon_mpc + i);
+        auto N_ = 201 - (horizon_mpc + i);
         if (N_ <= 0) {
             return 1;
         } else {

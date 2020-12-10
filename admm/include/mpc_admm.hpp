@@ -32,6 +32,12 @@
 
 /* ADMM trajectory generation */
 
+
+/* MPC algorithm */
+/*
+
+*/
+
 template <class DynamicsT, class PlantT, class costFunctionT, class OptimizerT, class OptimizerResultT>
 class ModelPredictiveControllerADMM
 {
@@ -62,7 +68,11 @@ public:
     ControlTrajectory control_trajectory;
     StateTrajectory x_track_;
     std::vector<Eigen::MatrixXd> cartesianTrack_;
+    Eigen::MatrixXd cartesian_desired_logger;
+    Eigen::MatrixXd cartesian_mpc_logger;
     int HMPC_;
+    IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
+    Eigen::MatrixXd actual_cartesian_pose;
 
 public:
     /**
@@ -79,11 +89,23 @@ public:
 	         CostFunction                   &cost_function,
 	         Optimizer 						&opt,
 	         const StateTrajectory  		&x_track, 
-	         const std::vector<Eigen::MatrixXd> &cartesianTrack)
-    : dt_(dt), H_(time_steps), HMPC_(HMPC), verbose_(verbose), dynamics_(dynamics), cost_function_(cost_function), opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack)
+	         const std::vector<Eigen::MatrixXd> &cartesianTrack,
+    		 const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT_)
+    : dt_(dt), H_(time_steps), HMPC_(HMPC), verbose_(verbose), dynamics_(dynamics), cost_function_(cost_function), opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack), IK_OPT(IK_OPT_)
     {
     	logger_ = logger;
     	control_trajectory.resize(commandSize, H_);
+    	cartesian_desired_logger.resize(3, cartesianTrack_.size());
+    	cartesian_mpc_logger.resize(3, cartesianTrack_.size());
+
+    	cartesian_mpc_logger.setZero();
+
+    	for (int i=0;i<cartesianTrack_.size();i++) {
+    		// cartesian_desired_logger.col(i) = cartesianTrack_.at(i).col(3).head(3);
+    	}
+
+    	actual_cartesian_pose.resize(4,4);
+    	
     }
 
     /**
@@ -116,6 +138,7 @@ public:
 	    }
 
 	    State x = initial_state, xold = initial_state;
+	    std::cout << xold << std::endl;
 	    Control u;
 	    // Scalar true_cost = cost_function.c(xold, initial_control_trajectory[0]);
 
@@ -133,7 +156,6 @@ public:
 
 	    scalar_t true_cost = cost_function_.cost_func_expre(0, xold, initial_control_trajectory.col(0), x_track_.col(0));
 	    
-	    // OptimizerResult<Dynamics> result;
 	    Result result;
 	    control_trajectory = initial_control_trajectory;
 	    u = initial_control_trajectory.col(0);
@@ -157,11 +179,14 @@ public:
 	            start = std::chrono::high_resolution_clock::now();
 	        }
 
+
 	        // Run the optimizer to obtain the next control
 	        opt_.solve(xold, control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
 
+	        
 	        result = opt_.getLastSolvedTrajectory();
 	        u = result.uList.col(0);
+	        control_trajectory = result.uList;
 
 	        if(verbose_)
 	        {
@@ -171,13 +196,27 @@ public:
 	        }
 
 	        // Apply the control to the plant and obtain the new state
-	        x = xold; // check for aliasing here
+	        // TODO: check for aliasing here
+	        x = xold; 
 	        for (int k = 0; k < HMPC_; k++) {
+	        	// std::cout << xold.transpose() << std::endl; 
+
+
+	        	// std::cout << control_trajectory.col(k).transpose() << std::endl;
+	        	// x = plant_.f(x, result.uList.col(k));
+	        	x = result.xList.col(1);
+
+	        	// x  = x.eval() + dynamics_.kuka_arm_dynamics(x, result.uList.col(k)) * dt_;
+	        	// save data
 	        	#ifdef DEBUG
-		        // save data
-			    joint_state_traj.col(i + k) = x;
+	        	cartesian_desired_logger.col(i + k) = cartesianTrack_.at(i + k).col(3).head(3);
+			    // joint_state_traj.col(i + k) = x;
+				actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, x.head(7));
+				// std::cout << actual_cartesian_pose.col(3).head(3) << std::endl;
+				cartesian_mpc_logger.col(i+k) = actual_cartesian_pose.col(3).head(3);
+				// std::cout << actual_cartesian_pose.col(i) << std::endl;
 			    #endif
-	        	x = plant_.f(x, result.uList.col(k));
+
 	        }
 	        
 
@@ -203,7 +242,8 @@ public:
 
 
 	        if(verbose_) logger_->info("Slide down the control trajectory\n");
-	        control_trajectory = result.uList;
+	        // control_trajectory = result.uList;
+	        control_trajectory = initial_control_trajectory;
 	        
 	        xold = x;
 
@@ -211,8 +251,10 @@ public:
 	        // slide down the control for state and cartesian state
 	        x_track_mpc = x_track_.block(0, i, stateSize, H_ + 1);
 
-	        for (int k = 0;k < H_ + 1;k++) {
-	    		cartesianTrack_mpc[k] = cartesianTrack_[i + k];
+	        for (int k = 0;k < H_+1;k++) 
+	        {
+	    		cartesianTrack_mpc[k] = cartesianTrack_[1 + i + k];
+
 	    	}
 	    	
 
@@ -222,10 +264,11 @@ public:
 
 
 
+
 	    }
 	    #ifdef DEBUG
-	    cnpy::npy_save("../data/state_trajectory_admm_mpc.npy", joint_state_traj.data(),{1, static_cast<unsigned long>(x_track_.cols()), static_cast<unsigned long>(stateSize)}, "w");
-		cnpy::npy_save("../data/state_trajectory_admm_mpc_desired.npy", x_track_.data(),{1, static_cast<unsigned long>(x_track_.cols()), static_cast<unsigned long>(stateSize)}, "w");
+	    cnpy::npy_save("../data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
+		cnpy::npy_save("../data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
 		#endif
 	}
 };
