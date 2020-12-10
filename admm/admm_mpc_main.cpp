@@ -17,7 +17,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
     unsigned int N = NumberofKnotPt;
     double tolFun  = 1e-5;                 
     double tolGrad = 1e-10;                
-    unsigned int iterMax = 10;              
+    unsigned int iterMax = 5;              
     Logger* logger = new DefaultLogger();
 
 
@@ -28,7 +28,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
 
 
-    int ADMMiterMax = 5;
+    int ADMMiterMax = 4;
     ADMM::ADMMopt ADMM_OPTS(dt, 1e-7, 1e-7, 15, ADMMiterMax);
     Eigen::MatrixXd joint_lims(2,7);
     double eomg = 0.00001;
@@ -137,7 +137,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
     /* ------------------------------------------------ Penelty parameters ----------------------------------------------------- */
     Eigen::VectorXd rho(5);
-    rho << 30, 0.1, 0.00001, 0, 2;
+    rho << 50, 0.1, 0.00001, 0, 2;
 
 
     commandVecTab_t u_0;
@@ -147,8 +147,8 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
     /* ----------------------------------------------------- Plant ----------------------------------------------------------------*/
 
-    double state_var   = 0.00000000001;
-    double control_var = 0.00000000001;
+    double state_var   = 0.0000001;
+    double control_var = 0.000001;
 
     KukaPlant<KukaArm, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
 
@@ -162,7 +162,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
 
 
     int iterations = 10;
-    int HMPC       = 1;
+    int HMPC       = 20;
 
     ModelPredictiveControllerADMM<KukaArm, Plant, CostFunctionADMM, Optimizer, Result> mpc_admm(dt, horizon_mpc, HMPC,
      iterations, verbose, logger, KukaArmModel, costFunction_admm, optimizerADMM, xtrack, cartesianPoses, IK_OPT) ;
@@ -174,7 +174,7 @@ void MPC_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_s
     auto termination =
     [&](int i, const StateRef &x)
     {
-        auto N_ = 201 - (horizon_mpc + i);
+        auto N_ = N + 1 - (horizon_mpc + i);
         if (N_ <= 0) {
             return 1;
         } else {

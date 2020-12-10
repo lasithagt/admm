@@ -317,12 +317,9 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     #endif
 
     cout << endl;
-    // cout << "Number of iterations: " << lastTraj.iter + 1 << endl;
     cout << "Final cost: " << lastTraj.finalCost << endl;
     cout << "Final gradient: " << lastTraj.finalGrad << endl;
     cout << "Final lambda: " << lastTraj.finalLambda << endl;
-    // cout << "Execution time by time step (second): " << texec/N << endl;
-    // cout << "Execution time per iteration (second): " << texec/lastTraj.iter << endl;
     cout << "Total execution time of the solver (second): " << texec << endl;
  
     cout << "lastTraj.xList[" << N << "]:" << xnew.col(N).transpose() << endl;
@@ -416,7 +413,7 @@ void ADMM::contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const state
     Eigen::MatrixXd jacobian(6, 7);
 
     curve.curvature(X_curve.transpose(), L, R_c, k);
-    // R_c = Eigen::VectorXd::Constant(N+1, 1);
+    R_c = Eigen::VectorXd::Constant(N+1, 1);
 
 
     for (int i = 0; i < xnew.cols(); i++) {

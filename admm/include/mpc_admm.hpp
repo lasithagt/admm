@@ -203,10 +203,10 @@ public:
 
 
 	        	// std::cout << control_trajectory.col(k).transpose() << std::endl;
-	        	// x = plant_.f(x, result.uList.col(k));
-	        	x = result.xList.col(1);
+	        	x = plant_.f(x, result.uList.col(k));
+	        	// x = result.xList.col(1);
+	        	// std::cout << x.transpose() << std::endl;
 
-	        	// x  = x.eval() + dynamics_.kuka_arm_dynamics(x, result.uList.col(k)) * dt_;
 	        	// save data
 	        	#ifdef DEBUG
 	        	cartesian_desired_logger.col(i + k) = cartesianTrack_.at(i + k).col(3).head(3);
@@ -233,12 +233,7 @@ public:
 	        if(verbose_) logger_->info("True cost for time step %d: %f\n", i, true_cost);
 
 	        // Slide down the control trajectory
-	        // for (int i = 0; i < H_; i++)
-	        // {
-	        // 	control_trajectory[i] = result.uList[i + 1];
-	        // }
-
-	        // control_trajectory.leftCols(H_ - 2) = result.uList.rightCols(H_ - 2);
+	        // control_trajectory.leftCols(H_ - 1) = result.uList.rightCols(H_ - 1);
 
 
 	        if(verbose_) logger_->info("Slide down the control trajectory\n");
@@ -254,7 +249,7 @@ public:
 	        for (int k = 0;k < H_+1;k++) 
 	        {
 	    		cartesianTrack_mpc[k] = cartesianTrack_[1 + i + k];
-
+	    		// std::cout << cartesianTrack_mpc[k] << std::endl;
 	    	}
 	    	
 

@@ -312,7 +312,7 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     /* ----------------------------------------- */
     // for (int m = 0;m < N + 1;m++)
     // {
-    //     std::cout << costList[m] << std::endl;
+    //     std::cout << costList[m] << " ";
     // }
     /* ----------------------------------------- */
 
