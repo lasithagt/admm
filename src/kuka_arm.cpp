@@ -2,7 +2,7 @@
 #include <Eigen/Geometry>
 
 
-KukaArm::KukaArm(double& dt_, unsigned int& N_, std::shared_ptr<RobotAbstract>& kukaRobot, ContactModel::SoftContactModel& contact_model) 
+KukaArm::KukaArm(double dt_, unsigned int N_, std::shared_ptr<RobotAbstract>& kukaRobot, const ContactModel::SoftContactModel& contact_model) 
 : diff_([this](const stateVec_t& x, const commandVec_t& u) -> stateVec_t{ return this->kuka_arm_dynamics(x, u); }),
       num_diff_(diff_), dt(dt_), N(N_)
 {
@@ -27,7 +27,7 @@ KukaArm::KukaArm(double& dt_, unsigned int& N_, std::shared_ptr<RobotAbstract>& 
     q.resize(NDOF), qd.resize(NDOF);
 
     // initialize contact model and the manipulator model
-    contact_model0 = &contact_model;
+    contact_model0 = contact_model;
     if (initial_phase_flag_ == 1)
     {
         kukaRobot_    = kukaRobot;      
@@ -69,7 +69,7 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         kukaRobot_->getForwardKinematics(q.data(), qd.data(), qdd.data(), poseM, poseP, vel, accel, true);
 
         // contact model dynamics
-        contact_model0->df(H_c, poseP, poseM_vec, vel, accel, force_current, force_dot);
+        contact_model0.df(H_c, poseP, poseM_vec, vel, accel, force_current, force_dot);
 
     } else 
     {   

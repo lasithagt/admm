@@ -2,14 +2,10 @@
 #include <Eigen/Dense>
 
 
-#include "admm_main.hpp"
+#include "ADMMTrajOptimizer.hpp"
 #include "config.h"
-// #include "admm_mpc_main.hpp"
 
-void generateCartesianTrajectory(stateVec_t& xinit, stateVec_t& xgoal, stateVecTab_t& xtrack, std::vector<Eigen::MatrixXd> &cartesianPoses);
-void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::traj& result);
 void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
-
 
 
 int main(int argc, char *argv[]) {
