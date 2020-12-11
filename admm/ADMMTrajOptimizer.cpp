@@ -1,11 +1,12 @@
-#include "admm_main.hpp"
+#include "ADMMTrajOptimizer.hpp"
 
 
-FULL_ADMM::FULL_ADMM(unsigned int N_, double dt_) : N(N_), dt(dt_) {}
+ADMMTrajOptimizer::ADMMTrajOptimizer(unsigned int N_, double dt_) : N(N_), dt(dt_) {}
 
-FULL_ADMM::~FULL_ADMM() {}
+ADMMTrajOptimizer::~ADMMTrajOptimizer() {}
 
-void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMM::ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, ADMM::Saturation& LIMITS, ContactModel::ContactParams& cp, std::vector<Eigen::MatrixXd>& cartesianPoses) 
+void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
+ Saturation& LIMITS, ContactModel::ContactParams& cp, std::vector<Eigen::MatrixXd>& cartesianPoses) 
 
 {
   
@@ -76,7 +77,7 @@ void FULL_ADMM::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_s
 
 }
 
-optimizer::ILQRSolverADMM::traj FULL_ADMM::getOptimizerResult() 
+optimizer::ILQRSolverADMM::traj ADMMTrajOptimizer::getOptimizerResult() 
 {
   return resultTrajectory;
 }

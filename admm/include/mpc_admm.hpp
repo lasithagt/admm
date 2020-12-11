@@ -28,6 +28,7 @@
 #include "ik_solver.hpp"
 #include "cnpy.h"
 #include "kuka_robot.hpp"
+#include "admmPublic.hpp"
 
 
 /* ADMM trajectory generation */
@@ -127,7 +128,7 @@ public:
 
 	         TerminationCondition           &terminate,
 	         const Eigen::VectorXd 			&rho,
-	         const ADMM::Saturation			&L)
+	         const Saturation			&L)
 	         // TerminalCostFunction           &terminal_cost_function)
 	{
 

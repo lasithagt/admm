@@ -26,36 +26,20 @@
 #include "curvature.hpp"
 #include "cnpy.h"
 
+#include "ProjectionOperator.hpp"
+#include "admmPublic.hpp"
+
 #include <unsupported/Eigen/CXX11/Tensor>
 
 
 /* ADMM trajectory generation */
+// struct ADMM
+
+
 class ADMM {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
-  // data structure for saturation limits
-  struct Saturation {
-    Saturation() {
-
-    }
-
-    Eigen::Matrix<double, 2, stateSize> stateLimits;
-    Eigen::Matrix<double, 2, commandSize> controlLimits;
-  };
-
-
-  // data structure for admm options
-  struct ADMMopt {
-    ADMMopt(double dt_, double tolFun_, double tolGrad_, unsigned int iterMax_, 
-      int ADMMiterMax_) : dt(dt_), tolFun(tolFun_), tolGrad(tolGrad_), iterMax(iterMax_), ADMMiterMax(ADMMiterMax_) {}
-    double dt;
-    double tolFun; 
-    double tolGrad; 
-    unsigned int iterMax; // DDP iteration max
-    // parameters for ADMM, penelty terms
-    int ADMMiterMax;
-  };
   
   ADMM(std::shared_ptr<RobotAbstract>& kukaModel, const CostFunctionADMM& costFunction, 
     const optimizer::ILQRSolverADMM& solverDDP, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps);
@@ -63,7 +47,6 @@ public:
   void solve(const stateVec_t& xinit, const commandVecTab_t& u_0, const stateVecTab_t& xtrack, 
     const std::vector<Eigen::MatrixXd>& cartesianTrack, const Eigen::VectorXd& rho, const Saturation& L);
 
-  Eigen::MatrixXd projection(const stateVecTab_t& xnew, const Eigen::MatrixXd& cnew, const commandVecTab_t& unew, const Saturation& L);
   void contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew);
 
   optimizer::ILQRSolverADMM::traj getLastSolvedTrajectory();
@@ -76,6 +59,7 @@ protected:
   std::shared_ptr<RobotAbstract> kukaRobot_;
   CostFunctionADMM costFunction_;
   optimizer::ILQRSolverADMM solver_;
+  ProjectionOperator m_projectionOperator;
 
   Curvature curve;
   Saturation projectionLimits;

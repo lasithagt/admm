@@ -34,15 +34,19 @@
 
 using namespace std;
 
-class MPC_ADMM {
+class ADMMTrajOptimizerMPC {
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    MPC_ADMM();
-    ~MPC_ADMM();
+    ADMMTrajOptimizerMPC();
+    ~ADMMTrajOptimizerMPC();
 
-    void run(std::shared_ptr<RobotAbstract>& kukaRobot,  stateVec_t init_state, ContactModel::SoftContactModel& contactModel, optimizer::ILQRSolverADMM::traj& result);
+    void run(std::shared_ptr<RobotAbstract>& kukaRobot,  const stateVec_t& init_state, const ContactModel::SoftContactModel& contactModel, const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
+     const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
+
+    optimizer::ILQRSolverADMM::traj getOptimizerResult(); 
+
 private:
     Eigen::MatrixXd joint_state_traj;
     commandVecTab_t torque_traj;
@@ -50,7 +54,7 @@ private:
     commandVecTab_t torque_traj_interp;
 
 protected:
-    optimizer::ILQRSolverADMM::traj lastTraj;
+	optimizer::ILQRSolverADMM::traj resultTrajectory;
 };
 
 #endif
