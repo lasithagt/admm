@@ -80,6 +80,8 @@ struct ContactTerms
         JacDot.resize(6, NDOF);
         CX.resize(stateSize);
         CXX.resize(stateSize, stateSize);
+        CXX.setZero();
+        CX.setZero();
 
         for (int i=0;i<7;i++) {qdd[i] = 0.0;}
         mass = 0.3;
@@ -133,7 +135,7 @@ struct ContactTerms
         Eigen::Vector2d w;
         w = (computeContactTerms(x, R_c) - cList_bar);
 
-        CX.head(7)      = rho_c * 2 * mass * (w(0) + w(1)) * (1/R_c) * vel.transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF);
+        // CX.head(7)      = rho_c * 2 * mass * (w(0) + w(1)) * (1/R_c) * vel.transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF);
         CX.segment(7,7) = rho_c * 2 * mass * (w(0) + w(1)) * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
 
 
@@ -153,14 +155,14 @@ struct ContactTerms
         Eigen::Vector2d w;
         w = (computeContactTerms(x, R_c) - cList_bar);
 
-        CXX.block(0,0,7,7) = rho_c * 2 * mass * (1.0/R_c) * (w(0) + w(1)) * getContactJacobianDot(q, qd).block(0,0,3,NDOF).transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF) + \
-                                rho_c * 2 * getContactJacobianDot(q, qd).block(0,0,3,NDOF).transpose() * vel * mass * (1/R_c) * vel.transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF);
+        // CXX.block(0,0,7,7) = rho_c * 2 * mass * (1.0/R_c) * (w(0) + w(1)) * getContactJacobianDot(q, qd).block(0,0,3,NDOF).transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF) + \
+        //                         rho_c * 2 * getContactJacobianDot(q, qd).block(0,0,3,NDOF).transpose() * vel * mass * (1/R_c) * vel.transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF);
 
         CXX.block(7,7,7,7) = rho_c * 2 * mass  * (1.0/R_c) * (w(0) + w(1)) * getContactJacobian(q).block(0,0,3,NDOF).transpose() * getContactJacobian(q).block(0,0,3,NDOF) + \
                                 rho_c * 2 * getContactJacobian(q).block(0,0,3,NDOF).transpose() * vel * mass * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
 
-        CXX.block(0,7,7,7) = rho_c * 2 * mass * (1.0/R_c) * (w(0) + w(1)) * getContactJacobian(q).block(0,0,3,NDOF).transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF) + \
-                                rho_c * 2 * mass * getContactJacobian(q).block(0,0,3,NDOF).transpose() * vel * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
+        // CXX.block(0,7,7,7) = rho_c * 2 * mass * (1.0/R_c) * (w(0) + w(1)) * getContactJacobian(q).block(0,0,3,NDOF).transpose() * getContactJacobianDot(q, qd).block(0,0,3,NDOF) + \
+        //                         rho_c * 2 * mass * getContactJacobian(q).block(0,0,3,NDOF).transpose() * vel * (1/R_c) * vel.transpose() * getContactJacobian(q).block(0,0,3,NDOF);
         
         CXX.block(7,0,7,7) = CXX.block(0,7,7,7).transpose();
 
