@@ -101,7 +101,7 @@ public:
 
 private:
     
-    ContactModel::SoftContactModel contact_model0;
+    ContactModel::SoftContactModel m_contact_model;
     stateR_half_commandC_t Bu; //input mapping
     stateVec_t xdot_new;
     stateVec_half_t vd;

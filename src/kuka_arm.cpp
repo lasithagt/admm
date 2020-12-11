@@ -23,16 +23,9 @@ KukaArm::KukaArm(double dt_, unsigned int N_, std::shared_ptr<RobotAbstract>& ku
     debugging_print = 0, finalTimeProfile.counter0_ = 0, finalTimeProfile.counter1_ = 0, finalTimeProfile.counter2_ = 0;
     finalTimeProfile.time_period1 = 0, finalTimeProfile.time_period2 = 0, finalTimeProfile.time_period3 = 0, finalTimeProfile.time_period4 = 0;
 
-    initial_phase_flag_ = 1;
-    q.resize(NDOF), qd.resize(NDOF);
-
     // initialize contact model and the manipulator model
-    contact_model0 = contact_model;
-    if (initial_phase_flag_ == 1)
-    {
-        kukaRobot_    = kukaRobot;      
-        initial_phase_flag_ = 0;
-    }
+    m_contact_model = contact_model;
+    kukaRobot_ = kukaRobot;          
 }
 
 stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau)
@@ -69,10 +62,9 @@ stateVec_t KukaArm::kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& t
         kukaRobot_->getForwardKinematics(q.data(), qd.data(), qdd.data(), poseM, poseP, vel, accel, true);
 
         // contact model dynamics
-        contact_model0.df(H_c, poseP, poseM_vec, vel, accel, force_current, force_dot);
+        m_contact_model.df(H_c, poseP, poseM_vec, vel, accel, force_current, force_dot);
 
-    } else 
-    {   
+    } else {   
         force_dot.setZero();
         force_current.setZero();
     }
