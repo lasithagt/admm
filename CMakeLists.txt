@@ -56,22 +56,26 @@ add_subdirectory(ik-solvers)
 add_subdirectory(admm)
 
 
-# set(SOURCES_DDP_ADMM src/ilqrsolver_admm.cpp src/kuka_arm.cpp src/admm.cpp src/admm_main.cpp)
-# add_library(ddp-admm-solver STATIC ${SOURCES_DDP_ADMM})
-# target_include_directories(ddp-admm-solver PUBLIC include)
-# target_link_libraries(ddp-admm-solver PUBLIC kuka-models ik-solvers cnpy ModernRoboticsCpp)
-
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+
 
 # EXECUTABLES
 #######################################################################################
 
-add_executable(admm-contact src/OPT_solvers.cpp src/main.cpp)
+add_executable(admm-contact src/OPT_solvers.cpp src/main_admm.cpp)
 target_include_directories(admm-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(admm-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers)
 
+
+# add_executable(admm-mpc-contact admm/admm_mpc_main.cpp)
+# target_include_directories(admm-mpc-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# target_link_libraries(admm-mpc-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers)
+
+add_executable(admm-mpc-contact src/OPT_solvers.cpp src/main_admm_mpc.cpp)
+target_include_directories(admm-mpc-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(admm-mpc-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers)
 
 add_executable(ddp-optim src/ddp_main.cpp)
 target_include_directories(ddp-optim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -83,16 +87,6 @@ target_include_directories(mpc-optim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(mpc-optim orocos-kdl ddp-solver kuka-models cnpy ModernRoboticsCpp ik-solvers)
 
 
-# add_executable(admm-mpc src/admm_mpc_main.cpp)
-# target_include_directories(admm-mpc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-# target_link_libraries(admm-mpc orocos-kdl ddp-admm-solver kuka-models ModernRoboticsCpp ik-solvers cnpy)
-
-# add_executable(admm-mpc src/admm_mpc_main.cpp)
-# target_include_directories(admm-mpc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-# target_link_libraries(admm-mpc orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers cnpy)
-
-
-
 add_executable(ik-test ik-solvers/ik_test.cpp)
 target_include_directories(ik-test PUBLIC ${ModernRoboticsCpp_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(ik-test ModernRoboticsCpp ik-solvers)
@@ -102,11 +96,6 @@ target_link_libraries(ik-test ModernRoboticsCpp ik-solvers)
 add_executable(test_cases src/test.cpp)
 target_include_directories(test_cases PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(test_cases ModernRoboticsCpp ik-solvers orocos-kdl kuka-models ddp-solver)
-
-
-add_executable(test_hdf5 src/testhdf5.cpp)
-target_include_directories(test_hdf5 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cnpy)
-target_link_libraries(test_hdf5 cnpy)
 
 
 
@@ -126,7 +115,7 @@ install (TARGETS kuka-models ik-solvers ddp-solver admm-solver
 # )
 
 # install header file
-install(FILES include/curvature.hpp include/cost_function_admm.h include/cost_function_contact.h include/config.h include/kuka_arm.h  include/RobotAbstract.h include/SoftContactModel.h include/plant.h include/eigenmvn.hpp DESTINATION include)
+install(FILES include/curvature.hpp include/cost_function_admm.h include/cost_function_contact.h include/config.h include/kuka_arm.h  include/RobotAbstract.h include/SoftContactModel.h include/plant.h include/eigenmvn.hpp include/RobotAbstract.h DESTINATION include)
 
 # # set version
 set(version 3.4.1)
