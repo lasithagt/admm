@@ -1,5 +1,5 @@
-#ifndef PLANT_H
-#define PLANT_H
+#ifndef ROBOTPLANT_H
+#define ROBOTPLANT_H
 
 #include <cstdio>
 #include <iostream>
@@ -7,13 +7,12 @@
 #include <math.h>
 
 #include "config.h"
-// #include "KukaModel.h"
 #include "models.h"
 #include "eigenmvn.hpp"
 #include "kuka_arm.h"
 
 template<class Dynamics_, int S, int C>
-class KukaPlant
+class RobotPlant
 {
     enum { StateSize = S, ControlSize = C };
     using State             = stateVec_t;
@@ -27,16 +26,21 @@ class KukaPlant
     // using Eigen::internal;
 
 public:
-    KukaPlant(Dynamics& kukaRobot, Scalar dt, Scalar state_var, Scalar control_var)
-    : kukaRobot_(kukaRobot), dt_(dt), sdist_(State::Zero(), state_var * StateNoiseVariance::Identity()),
-      cdist_(Control::Zero(), control_var * ControlNoiseVariance::Identity()) {}
+    RobotPlant(Dynamics& kukaRobot, Scalar dt_, Scalar state_var, Scalar control_var)
+    : m_plantDynamics(kukaRobot), dt(dt_), sdist_(State::Zero(), state_var * StateNoiseVariance::Identity()),
+      cdist_(Control::Zero(), control_var * ControlNoiseVariance::Identity()) {
 
-    KukaPlant() = default;
-    KukaPlant(const KukaPlant &other) = default;
-    KukaPlant(KukaPlant &&other) = default;
-    KukaPlant& operator=(const KukaPlant &other) = default;
-    KukaPlant& operator=(KukaPlant &&other) = default;
-    ~KukaPlant() = default;
+        // robotPublisher = RobotPublisherMPC();
+
+    }
+
+    RobotPlant() = default;
+    RobotPlant(const RobotPlant &other) = default;
+    RobotPlant(RobotPlant &&other) = default;
+
+    RobotPlant& operator=(const RobotPlant &other) = default;
+    RobotPlant& operator=(RobotPlant &&other) = default;
+    ~RobotPlant() = default;
 
 
     /**
@@ -54,21 +58,33 @@ public:
      * @param u The control calculated by the optimizer for the current time window.
      * @return  The new state of the system.
      */
-    State f(const Eigen::Ref<const State> &x, const Eigen::Ref<const Control> &u)
+    bool applyControl(const Eigen::Ref<const Control> &u)
     {
         commandVec_t u_noisy = u + cdist_.samples(1);
 
-        stateVec_t xnew = x + kukaRobot_.kuka_arm_dynamics(x, u_noisy) * dt_ + sdist_.samples(1);
-        // Eigen::Map<State>(sx.data(), StateSize) = xnew;
-        // Eigen::Map<Control>(su.data(), ControlSize) = u_noisy;
-        return xnew;
+        currentState = currentState.eval() + m_plantDynamics.kuka_arm_dynamics(currentState.eval(), u_noisy) * dt + sdist_.samples(1);
+        return true;
+    }
+
+    bool setInitialState(const Eigen::Ref<const State> &x)
+    {
+        currentState = x;
+        return true;
+    }
+
+    State getCurrentState()
+    {
+        return currentState;
     }
     
 private:
-    Dynamics& kukaRobot_;
-    Scalar dt_;
+    Dynamics& m_plantDynamics;
+    Scalar dt;
     Eigen::EigenMultivariateNormal<double, StateSize> sdist_;
     Eigen::EigenMultivariateNormal<double, ControlSize> cdist_;
+
+    State currentState;
+
 };
   
 #endif // KUKAARM_H

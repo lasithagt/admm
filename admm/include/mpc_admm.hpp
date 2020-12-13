@@ -1,7 +1,6 @@
 #ifndef MPCADMM_H
 #define MPCADMM_H
 
-#include <iostream>
 #include <memory>
 
 #include "config.h"
@@ -14,11 +13,9 @@
 
 /* DDP trajectory generation */
 #include <iostream>
-#include <fstream>
 #include <cmath>
 #include <vector>
 #include <stdio.h>
-#include <fstream>
 #include <string>
 #include <list>
 #include <chrono>
@@ -164,6 +161,8 @@ public:
 	    std::chrono::duration<float, std::milli> elapsed;
 
 
+	    // set the initial state
+	    plant_.setInitialState(initial_state);
 
  	    int64_t i = 0;
 	    while(!terminate(i, x))
@@ -199,14 +198,21 @@ public:
 	        // Apply the control to the plant and obtain the new state
 	        // TODO: check for aliasing here
 	        x = xold; 
+
+
+        	/* ----------------------------- apply to the plant. call a child thread ----------------------------- */
+        	// set the control trajectory
+        	// robotPublisher...
+
+        	// call the 
+        	// std::thread x = robotPublisher.f(x, result.uList.col(k));
+
+
 	        for (int k = 0; k < HMPC_; k++) {
-	        	// std::cout << xold.transpose() << std::endl; 
 
-
-	        	// std::cout << control_trajectory.col(k).transpose() << std::endl;
-	        	x = plant_.f(x, result.uList.col(k));
-	        	// x = result.xList.col(1);
-	        	// std::cout << x.transpose() << std::endl;
+	        	/* apply to the plant */
+	        	plant_.applyControl(result.uList.col(k));
+	        	x = plant_.getCurrentState();
 
 	        	// save data
 	        	#ifdef DEBUG

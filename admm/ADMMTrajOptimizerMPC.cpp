@@ -99,13 +99,13 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     double state_var   = 0.0000001;
     double control_var = 0.000001;
 
-    KukaPlant<KukaArm, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
+    RobotPlant<KukaArm, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
 
     /* ---------------------------------------------- MPC --------------------------------------------------- */
 
     // Initialize receding horizon controller
     bool verbose = true;
-    using Plant = KukaPlant<KukaArm, stateSize, commandSize>;
+    using Plant = RobotPlant<KukaArm, stateSize, commandSize>;
     using Optimizer = ADMM;
     using Result = optimizer::ILQRSolverADMM::traj;
 

@@ -23,7 +23,7 @@
 #include "admm.hpp"
 #include "cost_function_admm.h"
 #include "mpc_admm.hpp"
-#include "plant.h"
+#include "RobotPlant.hpp"
 
 
 #include "modern_robotics.h"

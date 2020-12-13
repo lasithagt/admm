@@ -100,6 +100,8 @@ void KukaArm::compute_dynamics_jacobian(const stateVecTab_t& xList, const comman
 
     if(debugging_print) TRACE_KUKA_ARM("compute cost function\n");
 
+
+    // TODO parallalize here
     for (unsigned int k=0; k < N; k++) 
     {
         /* Numdiff Eigen */

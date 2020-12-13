@@ -21,7 +21,7 @@ install(TARGETS admm-solver
 )
 
 # install header file
-install(FILES include/admm.hpp include/ADMMTrajOptimizer.hpp include/ADMMTrajOptimizerMPC.hpp include/mpc.hpp include/mpc_admm.hpp include/ilqrsolver_admm.hpp DESTINATION include)
+install(FILES include/admm.hpp include/ADMMTrajOptimizer.hpp include/ProjectionOperator.hpp include/admmPublic.hpp include/ADMMTrajOptimizerMPC.hpp include/mpc.hpp include/mpc_admm.hpp include/ilqrsolver_admm.hpp DESTINATION include)
 
 # generate and install export file
 install(EXPORT ADMMSolversTargets
