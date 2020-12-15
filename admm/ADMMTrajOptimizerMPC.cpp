@@ -3,7 +3,7 @@
 
 #include "ADMMTrajOptimizerMPC.hpp"
 #include "admmPublic.hpp"
-
+#include "RobotPublisherMPC.hpp"
 
 
 ADMMTrajOptimizerMPC::ADMMTrajOptimizerMPC() {}
@@ -83,6 +83,9 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
 
     // xinit = init_state;
 
+    int iterations = 10;
+    int HMPC       = 1;
+
 
     /* ------------------------------------------------ Penelty parameters ----------------------------------------------------- */
     Eigen::VectorXd rho(5);
@@ -101,7 +104,9 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
 
     RobotPlant<KukaArm, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
 
-    /* ---------------------------------------------- MPC --------------------------------------------------- */
+
+
+    /* ------------------------------------------------------ MPC ---------------------------------------------------------------- */
 
     // Initialize receding horizon controller
     bool verbose = true;
@@ -109,12 +114,16 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     using Optimizer = ADMM;
     using Result = optimizer::ILQRSolverADMM::traj;
 
+    /* ------------------------------------------------- Robot Publisher ----------------------------------------------------------*/
 
-    int iterations = 10;
-    int HMPC       = 20;
 
-    ModelPredictiveControllerADMM<KukaArm, Plant, CostFunctionADMM, Optimizer, Result> mpc_admm(dt, horizon_mpc, HMPC,
-     iterations, verbose, logger, KukaArmModel, costFunction_admm, optimizerADMM, xtrack, cartesianPoses, IK_OPT) ;
+    RobotPublisherMPC<Plant, stateSize, commandSize> KUKAPublisher(KukaModelPlant, HMPC, dt);
+
+
+    using RobotPublisher = RobotPublisherMPC<Plant, stateSize, commandSize>;
+
+    ModelPredictiveControllerADMM<RobotPublisher, CostFunctionADMM, Optimizer, Result> mpc_admm(dt, horizon_mpc, HMPC,
+     iterations, verbose, logger, costFunction_admm, optimizerADMM, xtrack, cartesianPoses, IK_OPT) ;
 
 
 
@@ -123,7 +132,7 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     auto termination =
     [&](int i, const StateRef &x)
     {
-        auto N_ = (int)N - (1 + (int)horizon_mpc + HMPC + i);
+        auto N_ = 100 - (1 + (int)horizon_mpc + HMPC + i);
         if (N_ <= 0) {
             return 1;
         } else {
@@ -136,7 +145,7 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
 
 
     /* ----------------------------------------- run MPC ------------------------- ------------------------- */
-    mpc_admm.run(xinit, u_0.block(0, 0, commandSize, horizon_mpc), KukaModelPlant, joint_state_traj, termination, rho, LIMITS);
+    mpc_admm.run(xinit, u_0.block(0, 0, commandSize, horizon_mpc), KUKAPublisher, joint_state_traj, termination, rho, LIMITS);
 
 
     gettimeofday(&tend,NULL);

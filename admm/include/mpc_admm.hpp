@@ -26,7 +26,8 @@
 #include "cnpy.h"
 #include "kuka_robot.hpp"
 #include "admmPublic.hpp"
-
+#include "RobotPublisherMPC.hpp"
+#include <thread>
 
 /* ADMM trajectory generation */
 
@@ -36,28 +37,25 @@
 
 */
 
-template <class DynamicsT, class PlantT, class costFunctionT, class OptimizerT, class OptimizerResultT>
+template <class RobotPublisherT, class costFunctionT, class OptimizerT, class OptimizerResultT>
 class ModelPredictiveControllerADMM
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     using Scalar                = double;            ///< Type of scalar used by the optimizer
     using Optimizer             = OptimizerT;
-    using Dynamics 				= DynamicsT;
     using CostFunction   		= costFunctionT;
     using State                 = stateVec_t;            
     using Control               = commandVec_t;           
     using StateTrajectory       = stateVecTab_t;   
     using ControlTrajectory     = commandVecTab_t; 
-    using Plant 				= PlantT;
+    using RobotPublisher 	 	= RobotPublisherT;
     using Result                = OptimizerResultT;            ///< Type of result returned by the optimizer
     using TerminationCondition =
         std::function<bool(int, State)>;     ///< Type of termination condition function
 
     static const int MPC_BAD_CONTROL_TRAJECTORY = -1;
     Optimizer opt_;
-    Dynamics& dynamics_;
-    // Plant& plant_;
     CostFunction& cost_function_;
     bool verbose_;
     Scalar dt_;
@@ -82,14 +80,13 @@ public:
      * @param verbose       True if informational and warning messages should be passed to the logger; error messages are always passed
      * @param args          Arbitrary arguments to pass to the trajectory optimizer at initialization time
      */
-    ModelPredictiveControllerADMM(Scalar dt, int time_steps, int HMPC, int iterations, bool verbose, Logger *logger,
-    		 Dynamics                       &dynamics,
+    ModelPredictiveControllerADMM(Scalar dt, int time_steps, int HMPC, int iterations, bool verbose, Logger *logger, \
 	         CostFunction                   &cost_function,
 	         Optimizer 						&opt,
 	         const StateTrajectory  		&x_track, 
 	         const std::vector<Eigen::MatrixXd> &cartesianTrack,
     		 const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT_)
-    : dt_(dt), H_(time_steps), HMPC_(HMPC), verbose_(verbose), dynamics_(dynamics), cost_function_(cost_function), opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack), IK_OPT(IK_OPT_)
+    : dt_(dt), H_(time_steps), HMPC_(HMPC), verbose_(verbose), cost_function_(cost_function), opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack), IK_OPT(IK_OPT_)
     {
     	logger_ = logger;
     	control_trajectory.resize(commandSize, H_);
@@ -99,7 +96,6 @@ public:
     	cartesian_mpc_logger.setZero();
 
     	for (int i=0;i<cartesianTrack_.size();i++) {
-    		// cartesian_desired_logger.col(i) = cartesianTrack_.at(i).col(3).head(3);
     	}
 
     	actual_cartesian_pose.resize(4,4);
@@ -120,9 +116,8 @@ public:
     template <typename TerminationCondition>
 	void run(const Eigen::Ref<const State>  &initial_state,
 	         ControlTrajectory              initial_control_trajectory,
-	         Plant                          &plant_,
+	         RobotPublisher                 &robotPublisher,
 	         Eigen::MatrixXd	            &joint_state_traj, // save data
-
 	         TerminationCondition           &terminate,
 	         const Eigen::VectorXd 			&rho,
 	         const Saturation			&L)
@@ -160,13 +155,22 @@ public:
 	    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 	    std::chrono::duration<float, std::milli> elapsed;
 
+	    Eigen::MatrixXd stateBuffer;
+	    stateBuffer.resize(stateSize, HMPC_);
 
-	    // set the initial state
-	    plant_.setInitialState(initial_state);
+    	// to store the state evolution
+    	robotPublisher.setStateBuffer(&stateBuffer);
+
+    	robotPublisher.setInitialState(initial_state);
+
+    	// call the thread
+		std::thread robotPublishThread = robotPublisher.publisherThread();
 
  	    int64_t i = 0;
 	    while(!terminate(i, x))
 	    {
+
+
 	        if(verbose_)
 	        {
 	            if(i > 0)
@@ -202,17 +206,14 @@ public:
 
         	/* ----------------------------- apply to the plant. call a child thread ----------------------------- */
         	// set the control trajectory
-        	// robotPublisher...
-
-        	// call the 
-        	// std::thread x = robotPublisher.f(x, result.uList.col(k));
-
+        	robotPublisher.setControlBuffer(control_trajectory);
 
 	        for (int k = 0; k < HMPC_; k++) {
 
 	        	/* apply to the plant */
-	        	plant_.applyControl(result.uList.col(k));
-	        	x = plant_.getCurrentState();
+	        	x = stateBuffer.col(k);
+
+	        	// std::cout << x << std::endl;
 
 	        	// save data
 	        	#ifdef DEBUG
@@ -263,11 +264,14 @@ public:
 	        if(verbose_) logger_->info("Slide down the desired trajectory\n");
 
 	        i += HMPC_;
-
-
+	    	robotPublisher.setTerminate(terminate(i, x));
 
 
 	    }
+
+	    robotPublishThread.join();
+	  	
+
 	    #ifdef DEBUG
 	    cnpy::npy_save("../data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
 		cnpy::npy_save("../data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");

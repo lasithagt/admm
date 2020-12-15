@@ -18,7 +18,7 @@
 #include "kuka_arm.h"
 
 
-using namespace std::literals::chrono_literals;
+// using namespace std::literals::chrono_literals;
 
 
 /**
@@ -37,7 +37,7 @@ using namespace std::literals::chrono_literals;
  * @param u The control calculated by the optimizer for the current time window.
  * @return  The new state of the system.
  */
-template<class Plant, int S, int C>
+template<typename Plant, int S, int C>
 class RobotPublisherMPC
 {
     enum { StateSize = S, ControlSize = C };
@@ -48,23 +48,23 @@ class RobotPublisherMPC
     using ControlTrajectory = commandVecTab_t;
 
 public:
-    RobotPublisherMPC(Plant& robotPlant, Scalar dt_)
-    : m_robotPlant(robotPlant), dt(dt_) {}
+    RobotPublisherMPC(Plant& robotPlant, int N, Scalar dt_)
+    : m_robotPlant(robotPlant), dt(dt_), N_commands(N) {
+
+        controlBuffer.resize(C, N_commands);
+        controlBuffer.setZero();
+    }
 
     RobotPublisherMPC() = default;
     RobotPublisherMPC(const RobotPublisherMPC &other) = default;
     RobotPublisherMPC(RobotPublisherMPC &&other) = default;
 
-    RobotPublisherMPC& operator=(const RobotPublisherMPC &other) = default;
-    RobotPublisherMPC& operator=(RobotPublisherMPC &&other) = default;
-    ~RobotPublisherMPC() = default;
+    RobotPublisherMPC& operator=(const RobotPublisherMPC &other) {
 
-
-
-    bool publishCommands() {
-        m_plantDynamics.set
     }
 
+    RobotPublisherMPC& operator=(RobotPublisherMPC &&other) = default;
+    ~RobotPublisherMPC() = default;
 
     // return the publisher thread
     std::thread publisherThread() {
@@ -86,34 +86,64 @@ public:
      * @param u The control calculated by the optimizer for the current time window.
      * @return  The new state of the system.
      */
-    bool publishCommands(const Eigen::Ref<const Control> &u)
+    bool publishCommands()
     {
-        for (int i=0;i<N_commands;i++) {
+        // run until optimizer is publishing
+        while (!terminate) {
+            for (int i = 0;i < N_commands;i++) 
+            {
+                std::lock_guard<std::mutex> locker(mu);
 
-            u_scratch  = u.col(i) + cdist_.samples(1);
-            // wait for dt
-            m_robotPlant.applyControl(u_scratch);
+                u_scratch  = controlBuffer.col(i);
+                std::cout << "lads" << u_scratch << std::endl;
+                m_robotPlant.applyControl(u_scratch);
+                
+                // wait for dt
+                auto t = dt * 1000;
+                std::this_thread::sleep_for(std::chrono::milliseconds((int)1000));
+            
+                // get current state
+                currentState = m_robotPlant.getCurrentState();
+                std::cout << "state" << currentState << std::endl;
 
-            // get current state
-            currentState = m_robotPlant.getCurrentState();
+                // store the states
+                stateBuffer->col(i) = currentState;   
+                std::cout << "Publishing Control Command..." << std::endl;
+            }
         }
 
         return true;
     }
 
 
+
     // set the control buffer from MPC optimizer
-    bool setControlBuffer(const Eigen::Ref<const Matrix<double, ,>> &u)
+    bool setControlBuffer(const Eigen::Ref<const MatrixXd> &u)
     {
         controlBuffer = u;
         return true;
     }
 
+    // set the control buffer from MPC optimizer
+    bool setStateBuffer(Eigen::MatrixXd* x)
+    {
+        stateBuffer = x;
+        return true;
+    }
 
     bool setCurrentState(const Eigen::Ref<const State> &x)
     {
         currentState = x;
         return true;
+    }
+
+    void setTerminate(bool t) {
+        terminate = t;
+    }
+
+    void setInitialState(const Eigen::Ref<const State> xinit) {
+        m_robotPlant.setInitialState(xinit);
+        stateBuffer->col(0) = xinit;
     }
 
 
@@ -123,17 +153,24 @@ private:
     commandVec_t u_scratch;
     stateVec_t  x_scratch;
 
-    Plant& m_robotPlant;
+    Plant m_robotPlant;
     Scalar dt;
 
     // length of the MPC trajectory commands
-    unsigned int N_commands;
+    int N_commands;
 
     // store command vector
-    Eigen::Matrix<double, ,> controlBuffer;
+    Eigen::MatrixXd controlBuffer;
+
+    // store the states in buffer
+    Eigen::MatrixXd* stateBuffer;
 
     // current state of the robot
     State currentState;
+
+    std::mutex mu;
+
+    bool terminate;
 
 };
   
