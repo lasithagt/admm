@@ -4,6 +4,7 @@
 #include "ADMMTrajOptimizerMPC.hpp"
 #include "admmPublic.hpp"
 #include "RobotPublisherMPC.hpp"
+#include "ModelPredictiveControlADMM.hpp"
 
 
 ADMMTrajOptimizerMPC::ADMMTrajOptimizerMPC() {}
@@ -102,6 +103,19 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     double state_var   = 0.0000001;
     double control_var = 0.000001;
 
+    /* -------------------- orocos kdl robot initialization-------------------------*/
+    KUKAModelKDLInternalData robotParams;
+    robotParams.numJoints = NDOF;
+    robotParams.Kv = Eigen::MatrixXd(7,7);
+    robotParams.Kp = Eigen::MatrixXd(7,7);
+
+
+    KDL::Chain robot = KDL::KukaDHKdl();
+    std::shared_ptr<RobotAbstract> kukaRobot_ = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
+    kukaRobot_->initRobot();
+    // Initialize Robot Model
+    KukaArm KukaArmModel_(dt, horizon_mpc, kukaRobot_, contactModel);
+
     RobotPlant<KukaArm, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
 
 
@@ -132,7 +146,7 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     auto termination =
     [&](int i, const StateRef &x)
     {
-        auto N_ = 100 - (1 + (int)horizon_mpc + HMPC + i);
+        auto N_ = 200 - (1 + (int)horizon_mpc + HMPC + i);
         if (N_ <= 0) {
             return 1;
         } else {

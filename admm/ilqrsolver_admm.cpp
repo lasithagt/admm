@@ -87,6 +87,7 @@ ILQRSolverADMM::ILQRSolverADMM(KukaArm& DynamicModel, CostFunctionADMM& CostFunc
 void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track,
  const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
+    // std::lock_guard<std::mutex> locker(mu);
 
     initializeTraj(x_0, u_0, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
 

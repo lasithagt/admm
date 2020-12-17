@@ -28,14 +28,61 @@
 #include "admmPublic.hpp"
 #include "RobotPublisherMPC.hpp"
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
-/* ADMM trajectory generation */
+std::mutex mu_main;
+std::condition_variable cv_main;
+bool ready = false;
+bool stateReady = false;
 
 
-/* MPC algorithm */
-/*
+template <typename RobotPublisher>
+void publishCommands(RobotPublisher& publisher)
+{
+	// run until optimizer is publishing
+	while (!publisher.terminate) {
+		std::cout << publisher.terminate << std::endl;
+	  // std::lock_guard<std::mutex> locker(mu_main);
+	  // cv.wait(locker, [this]{return optimizerFinished;});
+		{
 
-*/
+			if (publisher.terminate) {ready = true;}
+		
+			std::unique_lock<std::mutex> lk(mu_main);
+			cv_main.wait(lk, []{return ready;});
+
+
+			publisher.m_robotPlant.applyControl(publisher.controlBuffer.col(0));
+
+			// std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+			// get current state
+			publisher.currentState = publisher.m_robotPlant.getCurrentState();
+
+
+			// store the states
+			publisher.stateBuffer->col(0) = publisher.currentState;   
+			std::cout << "Publishing Control Command..." << std::endl;
+
+			stateReady = true;
+
+			ready = false;
+			lk.unlock();
+
+			cv_main.notify_one();
+
+		}
+
+		std::cout << "Finished Publishing Thread" << std::endl;
+
+	}
+
+
+
+}
+
+
 
 template <class RobotPublisherT, class costFunctionT, class OptimizerT, class OptimizerResultT>
 class ModelPredictiveControllerADMM
@@ -69,6 +116,7 @@ public:
     int HMPC_;
     IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
     Eigen::MatrixXd actual_cartesian_pose;
+
 
 public:
     /**
@@ -164,12 +212,14 @@ public:
     	robotPublisher.setInitialState(initial_state);
 
     	// call the thread
-		std::thread robotPublishThread = robotPublisher.publisherThread();
+		std::thread robotPublishThread(publishCommands<RobotPublisher>, std::ref(robotPublisher));
+
 
  	    int64_t i = 0;
 	    while(!terminate(i, x))
 	    {
 
+	        std::cout << "MPC loop started..." << std::endl;
 
 	        if(verbose_)
 	        {
@@ -185,8 +235,10 @@ public:
 
 
 	        // Run the optimizer to obtain the next control
-	        opt_.solve(xold, control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
-
+	        std::cout << xold.transpose() << std::endl;
+	        {
+		        opt_.solve(xold, control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
+	    	}
 	        
 	        result = opt_.getLastSolvedTrajectory();
 	        u = result.uList.col(0);
@@ -208,12 +260,37 @@ public:
         	// set the control trajectory
         	robotPublisher.setControlBuffer(control_trajectory);
 
+	        robotPublisher.reset();
+
+		    {
+		        std::lock_guard<std::mutex> lk(mu_main);
+		        ready = true;
+		        std::cout << "main() signals data ready for processing\n";
+		    }
+		    cv_main.notify_one();
+
+	        // publishCommands<RobotPublisher>(robotPublisher);
+
+
+
+	        // robotPublisher.publishCommands();
+
+	        // std::thread robotPublishThread = robotPublisher.publisherThread();
+	        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
 	        for (int k = 0; k < HMPC_; k++) {
+	        	// std::lock_guard<std::mutex> locker(mu);
 
 	        	/* apply to the plant */
-	        	x = stateBuffer.col(k);
+				// wait for the worker
+			    {
+			        std::unique_lock<std::mutex> lk(mu_main);
+			        cv_main.wait(lk, []{return stateReady;});
+			    }
 
-	        	// std::cout << x << std::endl;
+	        	x = stateBuffer.col(k);
+	        	stateReady = false;
+	        	// std::cout << x.transpose() << std::endl;
 
 	        	// save data
 	        	#ifdef DEBUG
@@ -226,7 +303,6 @@ public:
 			    #endif
 
 	        }
-	        
 
 	        if(verbose_)
 	        {
@@ -257,7 +333,6 @@ public:
 	        for (int k = 0;k < H_+1;k++) 
 	        {
 	    		cartesianTrack_mpc[k] = cartesianTrack_[1 + i + k];
-	    		// std::cout << cartesianTrack_mpc[k] << std::endl;
 	    	}
 	    	
 
@@ -266,16 +341,17 @@ public:
 	        i += HMPC_;
 	    	robotPublisher.setTerminate(terminate(i, x));
 
-
 	    }
 
-	    robotPublishThread.join();
-	  	
+	    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 	    #ifdef DEBUG
 	    cnpy::npy_save("../data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
 		cnpy::npy_save("../data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
 		#endif
+	    std::cout << "Finished the main thread...\n";
+
+		robotPublishThread.join();
 	}
 };
 

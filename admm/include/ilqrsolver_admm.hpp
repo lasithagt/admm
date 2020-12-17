@@ -8,6 +8,7 @@
 
 #include <numeric>
 #include <sys/time.h>
+#include <mutex>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -147,6 +148,8 @@ private:
     int newDeriv;
     double g_norm_i, g_norm_max, g_norm_sum;
     bool isUNan;
+
+    // std::mutex mu;
 
 public:
     ILQRSolverADMM(KukaArm& DynamicModel, CostFunctionADMM& Cost, const OptSet& solverOptions, const int& time_steps, const double& dt_, bool fullDDP, bool QPBox);

@@ -8,6 +8,8 @@
 #include <thread>         // std::thread
 #include <math.h>
 #include <mutex>
+#include <condition_variable>
+
 
 // Eigen libary
 #include <Eigen/Dense>
@@ -53,6 +55,8 @@ public:
 
         controlBuffer.resize(C, N_commands);
         controlBuffer.setZero();
+
+        increment = 0;
     }
 
     RobotPublisherMPC() = default;
@@ -88,29 +92,44 @@ public:
      */
     bool publishCommands()
     {
+      
+        // Wait until main() sends data
+        // std::unique_lock<std::mutex> lk(mu);
+        // cv.wait(lk, []{return false;});
+
         // run until optimizer is publishing
-        while (!terminate) {
-            for (int i = 0;i < N_commands;i++) 
-            {
-                std::lock_guard<std::mutex> locker(mu);
+        // while (!terminate) {
+          // std::lock_guard<std::mutex> locker(mu);
+          // cv.wait(locker, [this]{return optimizerFinished;});
 
-                u_scratch  = controlBuffer.col(i);
-                std::cout << "lads" << u_scratch << std::endl;
-                m_robotPlant.applyControl(u_scratch);
-                
-                // wait for dt
-                auto t = dt * 1000;
-                std::this_thread::sleep_for(std::chrono::milliseconds((int)1000));
+          while (increment!=N_commands) {
+          // for (int i = 0;i<N_commands;i++) {
             
-                // get current state
-                currentState = m_robotPlant.getCurrentState();
-                std::cout << "state" << currentState << std::endl;
+            u_scratch  = controlBuffer.col(increment);
 
-                // store the states
-                stateBuffer->col(i) = currentState;   
-                std::cout << "Publishing Control Command..." << std::endl;
-            }
-        }
+            m_robotPlant.applyControl(u_scratch);
+
+            // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+              // }
+
+            // get current state
+            currentState = m_robotPlant.getCurrentState();
+            // firstStateReceived = true;
+
+            // store the states
+            stateBuffer->col(increment) = currentState;   
+            std::cout << "Publishing Control Command..." << std::endl;
+
+            increment++;
+            optimizerFinished = false;
+
+          }
+
+          // wait for dt
+          // auto t = dt * 1000;
+          // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // }
 
         return true;
     }
@@ -120,6 +139,7 @@ public:
     // set the control buffer from MPC optimizer
     bool setControlBuffer(const Eigen::Ref<const MatrixXd> &u)
     {
+        // std::lock_guard<std::mutex> locker(mu);
         controlBuffer = u;
         return true;
     }
@@ -137,18 +157,33 @@ public:
         return true;
     }
 
+    State getCurrentState()
+    {
+        return currentState;
+    }
+
     void setTerminate(bool t) {
         terminate = t;
     }
 
     void setInitialState(const Eigen::Ref<const State> xinit) {
+        std::lock_guard<std::mutex> locker(mu);
         m_robotPlant.setInitialState(xinit);
         stateBuffer->col(0) = xinit;
     }
 
+    void reset() {
+      increment = 0;
+      // optimizerFinished = 1;
+    }
+
+    void set() {
+      increment = 1;
+    }
+
 
     
-private:
+public:
     // storing variable
     commandVec_t u_scratch;
     stateVec_t  x_scratch;
@@ -169,8 +204,13 @@ private:
     State currentState;
 
     std::mutex mu;
+    std::condition_variable cv;
 
     bool terminate;
+
+    bool optimizerFinished;
+
+    int increment;
 
 };
   
