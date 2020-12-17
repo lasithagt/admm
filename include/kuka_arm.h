@@ -126,7 +126,7 @@ public:
     KukaArm() {}
 
     ~KukaArm(){};
-    KukaArm(double dt, unsigned int N,  std::shared_ptr<RobotAbstract>& kukaRobot, const ContactModel::SoftContactModel& contact_model);
+    KukaArm(double dt, unsigned int N,  std::shared_ptr<RobotAbstract> kukaRobot, const ContactModel::SoftContactModel& contact_model);
     stateVec_t kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau);
     void compute_dynamics_jacobian(const stateVecTab_t& xList, const commandVecTab_t& uList);
     struct timeprofile getFinalTimeProfile();

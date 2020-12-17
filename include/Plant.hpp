@@ -1,5 +1,5 @@
-#ifndef ROBOTPLANT_H
-#define ROBOTPLANT_H
+#ifndef PLANT_H
+#define PLANT_H
 
 #include <cstdio>
 #include <iostream>
@@ -10,10 +10,9 @@
 #include "models.h"
 #include "eigenmvn.hpp"
 #include "kuka_arm.h"
-#include <mutex>
 
 template<class Dynamics_, int S, int C>
-class RobotPlant
+class Plant
 {
     enum { StateSize = S, ControlSize = C };
     using State             = stateVec_t;
@@ -27,20 +26,20 @@ class RobotPlant
     // using Eigen::internal;
 
 public:
-    RobotPlant(const Dynamics& kukaRobot, Scalar dt_, Scalar state_var, Scalar control_var)
-    : m_plantDynamics(kukaRobot), dt(dt_), sdist_(State::Zero(), state_var * StateNoiseVariance::Identity()),
+    Plant(Dynamics& RobotDynamics, Scalar dt_, Scalar state_var, Scalar control_var)
+    : m_plantDynamics(RobotDynamics), dt(dt_), sdist_(State::Zero(), state_var * StateNoiseVariance::Identity()),
       cdist_(Control::Zero(), control_var * ControlNoiseVariance::Identity()) {
 
         // robotPublisher = RobotPublisherMPC();
 
     }
 
-    RobotPlant() = default;
-    RobotPlant(const RobotPlant &other) = default;
-    RobotPlant(RobotPlant &&other) = default;
+    Plant() = default;
+    Plant(const Plant &other) = default;
+    Plant(Plant &&other) = default;
 
-    RobotPlant& operator=(const RobotPlant &other) = default;
-    RobotPlant& operator=(RobotPlant &&other) = default;
+    Plant& operator=(const Plant &other) = default;
+    Plant& operator=(Plant &&other) = default;
     ~RobotPlant() = default;
 
 
@@ -59,16 +58,8 @@ public:
      * @param u The control calculated by the optimizer for the current time window.
      * @return  The new state of the system.
      */
-    bool applyControl(const Eigen::Ref<const Control> &u)
-    {
-        // std::lock_guard<std::mutex> locker(mu);
-        commandVec_t u_noisy = u + cdist_.samples(1);
-        // std::cout << "state prior\n" << m_plantDynamics.kuka_arm_dynamics(currentState, u) * dt << std::endl;
+    virtual bool applyControl(const Eigen::Ref<const Control> &u) = 0;
 
-        currentState = currentState.eval() + m_plantDynamics.kuka_arm_dynamics(currentState.eval(), u_noisy) * dt + sdist_.samples(1);
-        //std::cout << "state\n" << currentState << std::endl;
-        return true;
-    }
 
     bool setInitialState(const Eigen::Ref<const State> &x)
     {
@@ -82,14 +73,12 @@ public:
     }
     
 private:
-    Dynamics m_plantDynamics;
+    Dynamics& m_plantDynamics;
     Scalar dt;
     Eigen::EigenMultivariateNormal<double, StateSize> sdist_;
     Eigen::EigenMultivariateNormal<double, ControlSize> cdist_;
 
     State currentState;
-
-    // std::mutex mu;
 
 };
   

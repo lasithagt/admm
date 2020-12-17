@@ -67,4 +67,6 @@ int main(int argc, char *argv[]) {
 
   admm_mpc(kukaRobot, xinit, cartesianPoses, result);
 
+  return 0;
+
 }
