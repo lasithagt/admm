@@ -1,3 +1,6 @@
 [submodule "ModernRobotics"]
 	path = ModernRobotics
 	url = https://github.com/Le0nX/ModernRoboticsCpp.git
+[submodule "control-toolbox"]
+	path = control-toolbox
+	url = https://github.com/lasithagt/control-toolbox.git
