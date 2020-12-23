@@ -1,5 +1,5 @@
 #include "SoftContactModel.h"
-#include "kuka_arm.h"
+#include "RobotDynamics.hpp"
 #include "SoftContactModel.h"
 #include "KukaModel.h"
 #include "cost_function_admm.h"
@@ -58,12 +58,12 @@ int main() {
 	// TEST manipulator + contact dynamics model
 	double dt = 0.02;
 	unsigned int D = 7;
-	KukaArm plant = KukaArm(dt, D, kukaRobot, contactModel); 
+	RobotDynamics plant = RobotDynamics(dt, D, kukaRobot, contactModel); 
 	stateVec_t x;
 	commandVec_t u;
 	u << 0, 0, 0, 0, 0, 0, 0;
 	x << M_PI/3, M_PI/3, M_PI/3, M_PI/3, M_PI/3, M_PI/3, M_PI/3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0, 0, 1; 
-	stateVec_t dyn = plant.kuka_arm_dynamics(x, u);
+	stateVec_t dyn = plant.f(x, u);
 	std::cout << "\n" << dyn.transpose().format(CleanFmt) << "\n" << std::endl;
 	// ----------------------------------------------------------------------------------------------------------
 

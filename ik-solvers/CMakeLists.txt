@@ -1,5 +1,5 @@
 # create library
-set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ik_solver.cpp)
+set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/DiffIKSolver.cpp)
 add_library(ik-solvers STATIC ${SOURCES})
 target_link_libraries(ik-solvers PUBLIC ModernRoboticsCpp kuka-models)
 
@@ -21,7 +21,7 @@ install(TARGETS ik-solvers
 )
 
 # install header file
-install(FILES include/ik_solver.hpp include/ik_trajectory.hpp DESTINATION include)
+install(FILES include/DiffIKSolver.hpp include/DiffIKTrajectory.hpp DESTINATION include)
 
 # generate and install export file
 install(EXPORT IKSolversTargets

@@ -9,7 +9,7 @@
 #include "config.h"
 #include "models.h"
 #include "eigenmvn.hpp"
-#include "kuka_arm.h"
+#include "RobotDynamics.hpp"
 #include <mutex>
 
 template<class Dynamics_, int S, int C>
@@ -31,7 +31,6 @@ public:
     : m_plantDynamics(kukaRobot), dt(dt_), sdist_(State::Zero(), state_var * StateNoiseVariance::Identity()),
       cdist_(Control::Zero(), control_var * ControlNoiseVariance::Identity()) {
 
-        // robotPublisher = RobotPublisherMPC();
 
     }
 
@@ -65,7 +64,7 @@ public:
         commandVec_t u_noisy = u + cdist_.samples(1);
         // std::cout << "state prior\n" << m_plantDynamics.kuka_arm_dynamics(currentState, u) * dt << std::endl;
 
-        currentState = currentState.eval() + m_plantDynamics.kuka_arm_dynamics(currentState.eval(), u_noisy) * dt + sdist_.samples(1);
+        currentState = currentState.eval() + m_plantDynamics.f(currentState.eval(), u_noisy) * dt + sdist_.samples(1);
         //std::cout << "state\n" << currentState << std::endl;
         return true;
     }

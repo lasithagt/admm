@@ -10,7 +10,7 @@ using Eigen::VectorXd;
 
 namespace optimizer {
 
-ILQRSolver::ILQRSolver(KukaArm& iiwaDynamicModel, CostFunction& iiwaCostFunction, const OptSet& solverOptions, const int& time_steps, const double& dt_, bool fullDDP, bool QPBox) : 
+ILQRSolver::ILQRSolver(RobotDynamics& iiwaDynamicModel, CostFunction& iiwaCostFunction, const OptSet& solverOptions, const int& time_steps, const double& dt_, bool fullDDP, bool QPBox) : 
         N(time_steps), dt(dt_), Op(solverOptions)
 {
     // TRACE("initialize dynamic model and cost function\n");
@@ -127,7 +127,7 @@ void ILQRSolver::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const 
             /* ---------------- forwad pass ----------------------- */
 
             /* -------------- compute fx, fu ---------------------- */
-            dynamicModel->compute_dynamics_jacobian(xList, uListFull);
+            dynamicModel->fx(xList, uListFull);
             
 
             /* -------------- compute cx, cu, cxx, cuu ------------ */
@@ -376,10 +376,10 @@ inline stateVec_t ILQRSolver::forward_integration(const stateVec_t& x, const com
 
     // gettimeofday(&tbegin_period4, NULL);
 
-    stateVec_t x_dot1 = dynamicModel->kuka_arm_dynamics(x, u);
-    stateVec_t x_dot2 = dynamicModel->kuka_arm_dynamics(x + 0.5 * dt * x_dot1, u);
-    stateVec_t x_dot3 = dynamicModel->kuka_arm_dynamics(x + 0.5 * dt * x_dot2, u);
-    stateVec_t x_dot4 = dynamicModel->kuka_arm_dynamics(x + dt * x_dot3, u);
+    stateVec_t x_dot1 = dynamicModel->f(x, u);
+    stateVec_t x_dot2 = dynamicModel->f(x + 0.5 * dt * x_dot1, u);
+    stateVec_t x_dot3 = dynamicModel->f(x + 0.5 * dt * x_dot2, u);
+    stateVec_t x_dot4 = dynamicModel->f(x + dt * x_dot3, u);
 
     stateVec_t x_new;
     x_new = x + (dt/6) * (x_dot1 + 2 * x_dot2 + 2 * x_dot3 + x_dot4);

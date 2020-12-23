@@ -16,7 +16,7 @@ void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, 
   stateVecTab_t xtrack;
   xtrack.resize(stateSize, NumberofKnotPt + 1);
 
-  int ADMMiterMax = 4;
+  int ADMMiterMax = 3;
   ADMMopt ADMM_OPTS(TimeStep, 1e-7, 1e-7, 15, ADMMiterMax);
 
   Eigen::MatrixXd joint_lims(2,7);

@@ -1,8 +1,6 @@
 #include <memory>
 #include <Eigen/Dense>
 
-
-// #include "admm_main.hpp"
 #include "config.h"
 #include "ADMMTrajOptimizerMPC.hpp"
 

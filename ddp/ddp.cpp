@@ -90,7 +90,7 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
 
 
     // robot model
-    KukaArm KukaArmModel(dt, N, kukaRobot, contactModel);
+    RobotDynamics KukaArmModel(dt, N, kukaRobot, contactModel);
 
     // cost function 
     CostFunction costKukaArm(N);

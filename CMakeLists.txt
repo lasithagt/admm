@@ -33,6 +33,9 @@ endif()
 find_package(OROCOS_KDL)
 find_package(ModernRoboticsCpp)
 find_package(CNPY)
+find_package(ct_rbd)
+find_package(ct_core)
+
 
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -43,7 +46,7 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS "-march=native -mtune=native -mavx2 -mfma")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-std=c++11 -pthread")
 
 
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
@@ -82,9 +85,9 @@ target_include_directories(ddp-optim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(ddp-optim orocos-kdl ddp-solver kuka-models cnpy ModernRoboticsCpp ik-solvers)
 
 
-add_executable(mpc-optim admm/mpc_main.cpp)
-target_include_directories(mpc-optim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(mpc-optim orocos-kdl ddp-solver kuka-models cnpy ModernRoboticsCpp ik-solvers)
+#add_executable(mpc-optim src/mpc_main.cpp)
+#target_include_directories(mpc-optim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+#target_link_libraries(mpc-optim orocos-kdl ddp-solver kuka-models cnpy ModernRoboticsCpp ik-solvers)
 
 
 add_executable(ik-test ik-solvers/ik_test.cpp)
@@ -93,9 +96,9 @@ target_link_libraries(ik-test ModernRoboticsCpp ik-solvers)
 
 
 # test scripts
-add_executable(test_cases src/test.cpp)
-target_include_directories(test_cases PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(test_cases ModernRoboticsCpp ik-solvers orocos-kdl kuka-models ddp-solver)
+add_executable(test_models src/main_test_models.cpp)
+target_include_directories(test_models PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(test_models ModernRoboticsCpp ik-solvers orocos-kdl kuka-models ddp-solver)
 
 
 
@@ -115,7 +118,7 @@ install (TARGETS kuka-models ik-solvers ddp-solver admm-solver
 # )
 
 # install header file
-install(FILES include/curvature.hpp include/cost_function_admm.h include/cost_function_contact.h include/config.h include/kuka_arm.h  include/RobotAbstract.h include/SoftContactModel.h include/plant.h include/eigenmvn.hpp include/RobotAbstract.h DESTINATION include)
+install(FILES include/curvature.hpp include/cost_function_admm.h include/CostFunctionContact.hpp include/config.h include/RobotDynamics.h  include/RobotAbstract.h include/SoftContactModel.h include/RobotPlant.hpp include/eigenmvn.hpp include/RobotAbstract.h DESTINATION include)
 
 # # set version
 set(version 3.4.1)

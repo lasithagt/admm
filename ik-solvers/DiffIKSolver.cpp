@@ -1,6 +1,6 @@
 #include <iostream>
 #include <Eigen/Dense>
-#include <ik_solver.hpp>
+#include <DiffIKSolver.hpp>
 
 
 

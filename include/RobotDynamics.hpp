@@ -1,10 +1,9 @@
     
-#ifndef KUKAARM_H
-#define KUKAARM_H
+#ifndef ROBOTDYNAMICS_H
+#define ROBOTDYNAMICS_H
 
 #include "config.h"
 #include "SoftContactModel.h"
-
 #include "KukaModel.h"
 
 
@@ -12,15 +11,13 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NumericalDiff>
+#include <Eigen/Geometry>
 
 #include <math.h>
-
 #include <memory>
 #include <functional>
-// #include <mutex>
-// std::mutex mtx;
+#include <thread>
 
-#define pi 3.141592653
 
 #ifndef DEBUG_KUKA_ARM
 #define DEBUG_KUKA_ARM 1
@@ -32,13 +29,13 @@
 
 #define TRACE_KUKA_ARM(x) do { if (DEBUG_KUKA_ARM) printf(x);} while (0)
 
-using namespace Eigen;
 using namespace std;
 
-
-class KukaArm
+class RobotDynamics
 {
     using Jacobian = Eigen::Matrix<double, stateSize, stateSize + commandSize>;
+    using State    = stateVec_t;
+    using Control  = commandVec_t;
 
     template <class T, int S, int C>
     struct Differentiable
@@ -69,12 +66,7 @@ class KukaArm
         DiffFunc dynamics_;
     };
 
-    /* --------------- to evaluate time profiles ------------------------*/
-    struct timeprofile
-    {
-        double time_period1, time_period2, time_period3, time_period4;
-        unsigned int counter0_, counter1_, counter2_;
-    };
+
 
 
 protected:
@@ -91,13 +83,10 @@ private:
     double dt;
     int N;
     bool initial_phase_flag_;
-    struct timeprofile finalTimeProfile;
-    struct timeval tbegin_period, tend_period, tbegin_period4, tend_period4; //tbegin_period2, tend_period2, tbegin_period3, tend_period3, 
 
 public:
-    static const double mc, mp, l, g;
-    unsigned int globalcnt;
-    std::shared_ptr<RobotAbstract> kukaRobot_;
+    // static const double mc, mp, l, g;
+    std::shared_ptr<RobotAbstract> m_kukaRobot;
 
 private:
     
@@ -105,8 +94,6 @@ private:
     stateR_half_commandC_t Bu; //input mapping
     stateVec_t xdot_new;
     stateVec_half_t vd;
-    stateVecTab_half_t vd_thread;
-    stateVecTab_t Xdot_new_thread;
 
     Eigen::VectorXd q, qd, qdd, tau_ext;
     Eigen::Vector3d force_current, accel, vel, poseP;
@@ -114,7 +101,13 @@ private:
     Eigen::Matrix3d H_c;
     Eigen::MatrixXd manip_jacobian;
 
-    std::vector<Eigen::VectorXd> q_thread, qd_thread;
+    Eigen::Vector3d force_dot;
+    Eigen::Vector3d poseM_vec;
+
+    stateVecTab_t xList_;
+    commandVecTab_t uList_;
+
+
     bool debugging_print;
 
     Jacobian j_;
@@ -123,18 +116,17 @@ private:
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    KukaArm() {}
+    RobotDynamics() {}
 
-    ~KukaArm(){};
-    KukaArm(double dt, unsigned int N,  std::shared_ptr<RobotAbstract> kukaRobot, const ContactModel::SoftContactModel& contact_model);
-    stateVec_t kuka_arm_dynamics(const stateVec_t& X, const commandVec_t& tau);
-    void compute_dynamics_jacobian(const stateVecTab_t& xList, const commandVecTab_t& uList);
-    struct timeprofile getFinalTimeProfile();
+    ~RobotDynamics(){};
+    RobotDynamics(double dt, unsigned int N,  std::shared_ptr<RobotAbstract> robot, const ContactModel::SoftContactModel& contact_model);
+    State f(const stateVec_t& X, const commandVec_t& tau);
+    void fx(const stateVecTab_t& xList, const commandVecTab_t& uList);
 
-    commandVec_t& getLowerCommandBounds();
-    commandVec_t& getUpperCommandBounds();
-    stateMatTab_t& getfxList();
-    stateR_commandC_tab_t& getfuList();
+    commandVec_t getLowerCommandBounds();
+    commandVec_t getUpperCommandBounds();
+    stateMatTab_t getfxList();
+    stateR_commandC_tab_t getfuList();
 };
 
 

@@ -3,7 +3,7 @@
 
 #include "config.h"
 #include <iostream>
-#include "cost_function_contact.h"
+#include "CostFunctionContact.hpp"
 
 #include <Eigen/Dense>
 

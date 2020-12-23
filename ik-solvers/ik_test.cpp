@@ -2,9 +2,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include "modern_robotics.h"
-#include "ik_trajectory.hpp"
-#include "ik_solver.hpp"
-#include "kuka_robot.hpp"
+#include "DiffIKTrajectory.hpp"
+#include "DiffIKSolver.hpp"
+#include "KukaKinematicsScrews.hpp"
 #include <chrono>
 #include <ctime>
 #include <math.h> 

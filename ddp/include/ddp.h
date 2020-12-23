@@ -13,9 +13,8 @@
 
 
 #include "config.h"
-// #include "spline.h"
 #include "ilqrsolver.h"
-#include "kuka_arm.h"
+#include "RobotDynamics.hpp"
 #include "SoftContactModel.h"
 #include "KukaModel.h"
 #include "models.h"

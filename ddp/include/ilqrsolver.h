@@ -4,8 +4,7 @@
 #define ILQRSOLVER_H
 
 #include "config.h"
-#include "kuka_arm.h"
-// #include "cost_function_kuka_arm.h"
+#include "RobotDynamics.hpp"
 #include "cost_function.h"
 #include "SoftContactModel.h"
 
@@ -15,8 +14,6 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 #include <Eigen/Cholesky>
-//#include <qpOASES.hpp>
-//#include <qpOASES/QProblemB.hpp>
 
 #define ENABLE_QPBOX 0
 #define DISABLE_QPBOX 1
@@ -89,7 +86,7 @@ public:
 
 
 private:
-    KukaArm* dynamicModel;
+    RobotDynamics* dynamicModel;
     CostFunction* costFunction;
     unsigned int stateNb;
     unsigned int commandNb;
@@ -153,7 +150,7 @@ private:
     bool isUNan;
 
 public:
-    ILQRSolver(KukaArm& DynamicModel, CostFunction& Cost, const OptSet& solverOptions, const int& time_steps, const double& dt_, bool fullDDP, bool QPBox);
+    ILQRSolver(RobotDynamics& DynamicModel, CostFunction& Cost, const OptSet& solverOptions, const int& time_steps, const double& dt_, bool fullDDP, bool QPBox);
     void solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track);
     void initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track);
     struct traj getLastSolvedTrajectory();

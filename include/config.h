@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef CONFIG_H
 #define CONFIG_H
 
@@ -14,14 +12,10 @@
 #define ENABLE_FULLDDP 0
 #define DISABLE_FULLDDP 1
 
-#define WHOLE_BODY 1
-#define CARTESIAN_FRAME 10
-
 #define SOFT_CONTACT 1
-#define CONTACT_EN 1
-#define NUM_COST 1
-#define DEBUG 1
-#define TRACK 1 // for tracking vs goal
+#define CONTACT_EN 0
+#define DEBUG 
+// #define PRINT 0
 
 #define MULTI_THREAD 0
 #if MULTI_THREAD
