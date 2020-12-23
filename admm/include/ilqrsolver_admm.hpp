@@ -2,7 +2,7 @@
 #define ILQRSOLVER_H
 
 #include "config.h"
-#include "kuka_arm.h"
+#include "RobotDynamics.hpp"
 #include "cost_function_admm.h"
 #include "SoftContactModel.h"
 
@@ -13,6 +13,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 #include <Eigen/Cholesky>
+#include <chrono>
 
 
 #define ENABLE_QPBOX 0
@@ -86,7 +87,7 @@ public:
 
 
 private:
-    KukaArm* dynamicModel;
+    RobotDynamics* dynamicModel;
     CostFunctionADMM* costFunction;
     unsigned int stateNb;
     unsigned int commandNb;
@@ -149,10 +150,13 @@ private:
     double g_norm_i, g_norm_max, g_norm_sum;
     bool isUNan;
 
+    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+    std::chrono::duration<float, std::milli> elapsed;
+
     // std::mutex mu;
 
 public:
-    ILQRSolverADMM(KukaArm& DynamicModel, CostFunctionADMM& Cost, const OptSet& solverOptions, const int& time_steps, const double& dt_, bool fullDDP, bool QPBox);
+    ILQRSolverADMM(RobotDynamics& DynamicModel, CostFunctionADMM& Cost, const OptSet& solverOptions, int time_steps, double dt_, bool fullDDP, bool QPBox);
     void solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, 
         const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c);
     void initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar,

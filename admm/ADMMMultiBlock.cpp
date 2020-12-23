@@ -1,14 +1,13 @@
-
 #include <iostream>
 #include <memory>
 
-
 /* ADMM trajectory generation */
-#include "admm.hpp"
+#include "ADMMMultiBlock.hpp"
+#include <chrono>
 
 using namespace Eigen;
 
-ADMM::ADMM(std::shared_ptr<RobotAbstract>& kukaRobot, const CostFunctionADMM& costFunction, 
+ADMMMultiBlock::ADMMMultiBlock(std::shared_ptr<RobotAbstract>& kukaRobot, const CostFunctionADMM& costFunction, 
     const optimizer::ILQRSolverADMM& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) : N(Time_steps), kukaRobot_(kukaRobot), 
 ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(costFunction), solver_(solver) 
 {
@@ -41,8 +40,6 @@ ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(costFunction), solver_(solver
     c_temp.resize(2, N + 1);
     u_temp.resize(commandSize, N);
 
-
-    // u_0.resize(commandSize, N);
 
     xubar.resize(stateSize + commandSize + 2, N); // for projection TODO
 
@@ -87,10 +84,11 @@ ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(costFunction), solver_(solver
     m_projectionOperator = ProjectionOperator(N);
 
 
+
 }
 
 /* optimizer execution */
-void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
+void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
   const stateVecTab_t& xtrack, const std::vector<Eigen::MatrixXd>& cartesianTrack,
    const Eigen::VectorXd& rho, const Saturation& L) {
 
@@ -111,6 +109,8 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     final_cost[0] = lastTraj.finalCost;
 
 
+    start = std::chrono::high_resolution_clock::now();
+    
     /* ---------------------------------------- Initialize IK solver ---------------------------------------- */
     
     IK_solve.getTrajectory(cartesianTrack, xnew.col(0).head(7), xnew.col(0).segment(7, 7), xbar.block(0, 0, 7, N + 1), xbar.block(0, 0, 7, N + 1), 0 * rho, &joint_positions_IK);
@@ -143,6 +143,9 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     }
 
     std::cout << "error " << error_fk << std::endl; 
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    std::cout << "IK compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
     /* ----------------------------------------------- END TESTING ----------------------------------------------- */
 
 
@@ -187,8 +190,11 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         std::cout << "\n ============================== ADMM iteration " << i + 1 << " ============================= \n";
 
        /* ---------------------------------------- iLQRADMM solver block ----------------------------------------   */
+        start = std::chrono::high_resolution_clock::now();
         solver_.solve(xinit, unew, xtrack, cbar - c_lambda, xbar - x_lambda, ubar - u_lambda, qbar - q_lambda, rho_ddp, R_c);
-
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        std::cout << "DDP compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
 
 
         lastTraj = solver_.getLastSolvedTrajectory();
@@ -221,9 +227,10 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         /* --------------------------------------------- END TESTING --------------------------------------------- */
 
         
-
+        start = std::chrono::high_resolution_clock::now();
         /* ----------------------------- update cnew. TODO: variable path curves -----------------------------  */
         contact_update(kukaRobot_, xnew, &cnew);
+        
 
         /* ------------------------------------------- IK block update -----------------------------------------   */ 
         std::cout << "\n ================================= begin IK =================================" << std::endl;
@@ -240,6 +247,9 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
             error_fk += temp.col(3).head(3).norm();
         }
         std::cout << "IK: " << error_fk << std::endl; 
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end - start;
+        std::cout << "IK compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
         /* --------------------------------------------- END TESTING --------------------------------------------- */
 
 
@@ -303,7 +313,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
     }
 
-    gettimeofday(&tend,NULL);    
+    gettimeofday(&tend, NULL);    
 
     solver_.initializeTraj(xinit, unew, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 
@@ -318,6 +328,7 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         6, static_cast<unsigned long>(N + 1)}, "w");
     #endif
 
+    #ifdef PRINT
     cout << endl;
     cout << "Final cost: " << lastTraj.finalCost << endl;
     cout << "Final gradient: " << lastTraj.finalGrad << endl;
@@ -341,14 +352,15 @@ void ADMM::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
       cout << "res_c[" << i << "]:" << res_c[i] << endl;
       cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
     }
-        std::cout << lastTraj.xList.cols() << std::endl;
-        lastTraj = solver_.getLastSolvedTrajectory();
+    #endif
+
+    lastTraj = solver_.getLastSolvedTrajectory();
 
 
 }
 
 
-optimizer::ILQRSolverADMM::traj ADMM::getLastSolvedTrajectory() {
+optimizer::ILQRSolverADMM::traj ADMMMultiBlock::getLastSolvedTrajectory() {
     return lastTraj;
 }
 
@@ -356,7 +368,7 @@ optimizer::ILQRSolverADMM::traj ADMM::getLastSolvedTrajectory() {
 
 /* Computes contact terms
 */
-void ADMM::contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew) {
+void ADMMMultiBlock::contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew) {
     double vel = 0.0;
     double m = 0.3; 
     double R = 0.4;

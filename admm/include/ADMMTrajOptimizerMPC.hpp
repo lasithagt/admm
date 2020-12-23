@@ -13,22 +13,16 @@
 
 #include <Eigen/Dense>
 
-
 #include "config.h"
 #include "ilqrsolver_admm.hpp"
-#include "kuka_arm.h"
 #include "SoftContactModel.h"
-#include "KukaModel.h"
-#include "models.h"
-#include "admm.hpp"
+#include "ADMMMultiBlock.hpp"
 #include "cost_function_admm.h"
 #include "RobotPlant.hpp"
 
-
 #include "modern_robotics.h"
-#include "ik_trajectory.hpp"
-#include "ik_solver.hpp"
-#include "kuka_robot.hpp"
+#include "DiffIKTrajectory.hpp"
+#include "DiffIKSolver.hpp"
 
 
 using namespace std;
@@ -46,14 +40,10 @@ public:
 
     optimizer::ILQRSolverADMM::traj getOptimizerResult(); 
 
-private:
-    Eigen::MatrixXd joint_state_traj;
-    commandVecTab_t torque_traj;
-    stateVecTab_t joint_state_traj_interp;
-    commandVecTab_t torque_traj_interp;
-
 protected:
 	optimizer::ILQRSolverADMM::traj resultTrajectory;
+    Eigen::MatrixXd joint_state_traj;
+
 };
 
 #endif

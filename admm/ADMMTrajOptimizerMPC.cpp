@@ -1,10 +1,14 @@
 
 /* MPC trajectory generation */
+#include "RobotPublisherMPC.hpp"
+
 
 #include "ADMMTrajOptimizerMPC.hpp"
 #include "admmPublic.hpp"
-#include "RobotPublisherMPC.hpp"
 #include "ModelPredictiveControlADMM.hpp"
+#include "RobotDynamics.hpp"
+#include "KukaModel.h"
+#include "models.h"
 
 
 ADMMTrajOptimizerMPC::ADMMTrajOptimizerMPC() {}
@@ -21,20 +25,20 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     unsigned int N = NumberofKnotPt;
     double tolFun  = 1e-5;                 
     double tolGrad = 1e-10;                
-    unsigned int iterMax = 5;              
+    unsigned int iterMax = 3;              
     Logger* logger = new DefaultLogger();
 
 
     /*------------------initialize control input----------------------- */
 
-    unsigned int horizon_mpc = 50;          // make these loadable from a cfg file
+    unsigned int horizon_mpc = 40;          // make these loadable from a cfg file
 
 
     gettimeofday(&tbegin,NULL);
 
     kukaRobot->initRobot();
     // Initialize Robot Model
-    KukaArm KukaArmModel(dt, horizon_mpc, kukaRobot, contactModel);
+    RobotDynamics KukaArmModel(dt, horizon_mpc, kukaRobot, contactModel);
 
     // Initialize Cost Function 
     CostFunctionADMM costFunction_admm(horizon_mpc, kukaRobot);
@@ -49,7 +53,7 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     optimizer::ILQRSolverADMM solver(KukaArmModel, costFunction_admm, solverOptions, horizon_mpc, dt, ENABLE_FULLDDP, ENABLE_QPBOX);
 
     // admm optimizer
-    ADMM optimizerADMM(kukaRobot, costFunction_admm, solver, ADMM_OPTS, IK_OPT, horizon_mpc);
+    ADMMMultiBlock optimizerADMM(kukaRobot, costFunction_admm, solver, ADMM_OPTS, IK_OPT, horizon_mpc);
 
 
 
@@ -114,9 +118,9 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     std::shared_ptr<RobotAbstract> kukaRobot_ = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
     kukaRobot_->initRobot();
     // Initialize Robot Model
-    KukaArm KukaArmModel_(dt, horizon_mpc, kukaRobot_, contactModel);
+    RobotDynamics KukaArmModel_(dt, horizon_mpc, kukaRobot_, contactModel);
 
-    RobotPlant<KukaArm, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
+    RobotPlant<RobotDynamics, stateSize, commandSize> KukaModelPlant(KukaArmModel_, dt, state_var, control_var);
 
 
 
@@ -124,8 +128,8 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
 
     // Initialize receding horizon controller
     bool verbose = true;
-    using Plant = RobotPlant<KukaArm, stateSize, commandSize>;
-    using Optimizer = ADMM;
+    using Plant = RobotPlant<RobotDynamics, stateSize, commandSize>;
+    using Optimizer = ADMMMultiBlock;
     using Result = optimizer::ILQRSolverADMM::traj;
 
     /* ------------------------------------------------- Robot Publisher ----------------------------------------------------------*/
@@ -146,7 +150,7 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     auto termination =
     [&](int i, const StateRef &x)
     {
-        auto N_ = 200 - (1 + (int)horizon_mpc + HMPC + i);
+        auto N_ = (int)N - (1 + (int)horizon_mpc + HMPC + i);
         if (N_ <= 0) {
             return 1;
         } else {

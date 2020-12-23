@@ -1,4 +1,5 @@
 #include "ADMMTrajOptimizer.hpp"
+#include "RobotDynamics.hpp"
 
 
 ADMMTrajOptimizer::ADMMTrajOptimizer(unsigned int N_, double dt_) : N(N_), dt(dt_) {}
@@ -23,7 +24,7 @@ void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_
 
 
   // dynamic model of the manipulator and the contact model
-  KukaArm KukaArmModel(dt, N, kukaRobot, contactModel);
+  RobotDynamics KukaArmModel(dt, N, kukaRobot, contactModel);
 
 
   // TODO: make this updatable, for speed
@@ -31,7 +32,7 @@ void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_
 
 
   // admm optimizer
-  ADMM optimizerADMM(kukaRobot, costFunction_admm, solverDDP, ADMM_OPTS, IK_OPT, N);
+  ADMMMultiBlock optimizerADMM(kukaRobot, costFunction_admm, solverDDP, ADMM_OPTS, IK_OPT, N);
 
 
   stateVec_t xinit;

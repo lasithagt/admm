@@ -4,37 +4,35 @@
 #include <memory>
 
 #include "config.h"
-#include "ilqrsolver.h"
-#include "kuka_arm.h"
+#include "RobotDynamics.hpp"
 #include "SoftContactModel.h"
 #include "KukaModel.h"
 #include "models.h"
 
 
-/* DDP trajectory generation */
 #include <iostream>
 #include <cmath>
 #include <vector>
 #include <stdio.h>
 #include <string>
-#include <list>
 #include <chrono>
-
-#include "modern_robotics.h"
-#include "ik_trajectory.hpp"
-#include "ik_solver.hpp"
-#include "cnpy.h"
-#include "kuka_robot.hpp"
-#include "admmPublic.hpp"
-#include "RobotPublisherMPC.hpp"
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 
+#include "modern_robotics.h"
+#include "DiffIKTrajectory.hpp"
+#include "DiffIKSolver.hpp"
+#include "cnpy.h"
+#include "KukaKinematicsScrews.hpp"
+#include "admmPublic.hpp"
+#include "RobotPublisherMPC.hpp"
+
+
 std::mutex mu_main;
 std::condition_variable cv_main;
-bool ready = false;
-bool stateReady = false;
+bool mpcComputeFinished = false;
+bool currentStateReceived = false;
 
 
 template <typename RobotPublisher>
@@ -42,35 +40,48 @@ void publishCommands(RobotPublisher& publisher)
 {
 	// run until optimizer is publishing
 	while (!publisher.terminate) {
-		std::cout << publisher.terminate << std::endl;
-	  // std::lock_guard<std::mutex> locker(mu_main);
-	  // cv.wait(locker, [this]{return optimizerFinished;});
 		{
-
-			if (publisher.terminate) {ready = true;}
+			if (publisher.terminate) {mpcComputeFinished = true;}
 		
 			std::unique_lock<std::mutex> lk(mu_main);
-			cv_main.wait(lk, []{return ready;});
+			cv_main.wait(lk, []{return mpcComputeFinished;});
 
+ 
 
 			publisher.m_robotPlant.applyControl(publisher.controlBuffer.col(0));
+			std::cout << "Publishing Control Command..." << 0 <<  std::endl;
 
-			// std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 			// get current state
 			publisher.currentState = publisher.m_robotPlant.getCurrentState();
 
-
 			// store the states
-			publisher.stateBuffer->col(0) = publisher.currentState;   
-			std::cout << "Publishing Control Command..." << std::endl;
+			publisher.stateBuffer->col(0) = publisher.currentState;  
 
-			stateReady = true;
-
-			ready = false;
-			lk.unlock();
-
+			currentStateReceived = true;
+			mpcComputeFinished = false;
+			
+			
 			cv_main.notify_one();
+			
+			lk.unlock();
+			{
+				for (int i = 1;i < 2;i++)
+				{
+					// publisher.m_robotPlant.applyControl(publisher.controlBuffer.col(i));
+					std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+					// get current state
+					// publisher.currentState = publisher.m_robotPlant.getCurrentState();
+					std::cout << "Publishing Control Command..." << i <<  std::endl;
+
+					// store the states
+					// lk.lock()
+					// publisher.stateBuffer->col(i) = publisher.currentState;   
+					// lk.unlock();
+				}
+			}
+			
 
 		}
 
@@ -78,11 +89,7 @@ void publishCommands(RobotPublisher& publisher)
 
 	}
 
-
-
 }
-
-
 
 template <class RobotPublisherT, class costFunctionT, class OptimizerT, class OptimizerResultT>
 class ModelPredictiveControllerADMM
@@ -235,7 +242,6 @@ public:
 
 
 	        // Run the optimizer to obtain the next control
-	        std::cout << xold.transpose() << std::endl;
 	        {
 		        opt_.solve(xold, control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
 	    	}
@@ -252,7 +258,6 @@ public:
 	        }
 
 	        // Apply the control to the plant and obtain the new state
-	        // TODO: check for aliasing here
 	        x = xold; 
 
 
@@ -260,37 +265,27 @@ public:
         	// set the control trajectory
         	robotPublisher.setControlBuffer(control_trajectory);
 
-	        robotPublisher.reset();
-
 		    {
 		        std::lock_guard<std::mutex> lk(mu_main);
-		        ready = true;
+		        mpcComputeFinished = true;
 		        std::cout << "main() signals data ready for processing\n";
 		    }
+
 		    cv_main.notify_one();
 
-	        // publishCommands<RobotPublisher>(robotPublisher);
-
-
-
-	        // robotPublisher.publishCommands();
-
-	        // std::thread robotPublishThread = robotPublisher.publisherThread();
-	        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 	        for (int k = 0; k < HMPC_; k++) {
-	        	// std::lock_guard<std::mutex> locker(mu);
-
 	        	/* apply to the plant */
-				// wait for the worker
 			    {
 			        std::unique_lock<std::mutex> lk(mu_main);
-			        cv_main.wait(lk, []{return stateReady;});
+			        cv_main.wait(lk, []{return currentStateReceived;});
 			    }
 
+			    end = std::chrono::high_resolution_clock::now();
+			    elapsed = end - start;
+
 	        	x = stateBuffer.col(k);
-	        	stateReady = false;
-	        	// std::cout << x.transpose() << std::endl;
+	        	currentStateReceived = false;
 
 	        	// save data
 	        	#ifdef DEBUG
@@ -351,7 +346,7 @@ public:
 		#endif
 	    std::cout << "Finished the main thread...\n";
 
-		robotPublishThread.join();
+		robotPublishThread.detach();
 	}
 };
 

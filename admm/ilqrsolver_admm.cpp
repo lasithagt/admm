@@ -10,10 +10,11 @@ using Eigen::VectorXd;
 
 namespace optimizer {
 
-ILQRSolverADMM::ILQRSolverADMM(KukaArm& DynamicModel, CostFunctionADMM& CostFunction, const OptSet& solverOptions, const int& time_steps, const double& dt_, bool fullDDP, bool QPBox) : 
+ILQRSolverADMM::ILQRSolverADMM(RobotDynamics& DynamicModel, CostFunctionADMM& CostFunction, const OptSet& solverOptions, int time_steps, double dt_, bool fullDDP, bool QPBox) : 
         N(time_steps), dt(dt_), Op(solverOptions)
 {
     // TRACE("initialize dynamic model and cost function\n");
+    // TODO: change pointers to shared pointers
 
     dynamicModel  = &DynamicModel;
     costFunction  = &CostFunction;
@@ -87,9 +88,11 @@ ILQRSolverADMM::ILQRSolverADMM(KukaArm& DynamicModel, CostFunctionADMM& CostFunc
 void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track,
  const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
-    // std::lock_guard<std::mutex> locker(mu);
-
+    start = std::chrono::high_resolution_clock::now();
     initializeTraj(x_0, u_0, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    std::cout << "Forward Integration compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
 
     Op.lambda = Op.lambdaInit;
     Op.dlambda = Op.dlambdaInit;
@@ -115,10 +118,16 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             /* ---------------- forwad pass ----------------------- */
 
             /* -------------- compute fx, fu ---------------------- */
-            dynamicModel->compute_dynamics_jacobian(xList, uListFull);
+            start = std::chrono::high_resolution_clock::now();
+
+            dynamicModel->fx(xList, uListFull);
             
             /* -------------- compute cx, cu, cxx, cuu ------------ */
             costFunction->computeDerivatives(xList, uListFull, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
+
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = end - start;
+            std::cout << "Jacobian compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
 
             gettimeofday(&tend_time_deriv,NULL);
             Op.time_derivative(iter) = (static_cast<double>(1000*(tend_time_deriv.tv_sec-tbegin_time_deriv.tv_sec)+((tend_time_deriv.tv_usec-tbegin_time_deriv.tv_usec)/1000)))/1000.0;
@@ -162,6 +171,8 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             break;
         }
 
+
+
         //====== STEP 3: line-search to find new control sequence, trajectory, cost
         fwdPassDone = 0;
         if (backPassDone)
@@ -197,7 +208,6 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             Op.time_forward(iter) = (static_cast<double>(1000*(tend_time_fwd.tv_sec-tbegin_time_fwd.tv_sec)+((tend_time_fwd.tv_usec-tbegin_time_fwd.tv_usec)/1000)))/1000.0;
         }
                 
-
         //====== STEP 4: accept step (or not), draw graphics, print status
         if (Op.debug_level > 1 && Op.last_head == Op.print_head)
         {
@@ -310,12 +320,6 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     // costList[N] = costFunction->cost_func_expre(N, updatedxList.col(N), u_NAN_loc);
     costList[N]  = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), u_NAN_loc, thetaList_bar.col(N), rho, R_c);
 
-    /* ----------------------------------------- */
-    // for (int m = 0;m < N + 1;m++)
-    // {
-    //     std::cout << costList[m] << " ";
-    // }
-    /* ----------------------------------------- */
 
     /* simplistic divergence test, check for the last time step if it has diverged. */
     int diverge_element_flag = 0;
@@ -339,7 +343,7 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     Op.last_head = Op.print_head;
 
 
-    if(Op.debug_level > 0) {TRACE("\n =========== begin iLQR =========== \n");}
+    if(Op.debug_level > 0) {TRACE("\n ===================================== begin iLQR ======================================== \n");}
 }
 
 void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
@@ -365,10 +369,10 @@ void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x
 inline stateVec_t ILQRSolverADMM::forward_integration(const stateVec_t& x, const commandVec_t& u)
 {
     // gettimeofday(&tbegin_period4, NULL);
-    stateVec_t x_dot1 = dynamicModel->kuka_arm_dynamics(x, u);
-    stateVec_t x_dot2 = dynamicModel->kuka_arm_dynamics(x + 0.5 * dt * x_dot1, u);
-    stateVec_t x_dot3 = dynamicModel->kuka_arm_dynamics(x + 0.5 * dt * x_dot2, u);
-    stateVec_t x_dot4 = dynamicModel->kuka_arm_dynamics(x + dt * x_dot3, u);
+    stateVec_t x_dot1 = dynamicModel->f(x, u);
+    stateVec_t x_dot2 = dynamicModel->f(x + 0.5 * dt * x_dot1, u);
+    stateVec_t x_dot3 = dynamicModel->f(x + 0.5 * dt * x_dot2, u);
+    stateVec_t x_dot4 = dynamicModel->f(x + dt * x_dot3, u);
 
     return x + (dt/6) * (x_dot1 + 2 * x_dot2 + 2 * x_dot3 + x_dot4);
 }
@@ -431,7 +435,6 @@ void ILQRSolverADMM::doBackwardPass()
         if (!enableQPBox)
         {
             // Cholesky decomposition by using upper triangular matrix
-            // TRACE("Use Cholesky decomposition");
             Eigen::LLT<MatrixXd> lltOfQuuF(QuuF);
             Eigen::MatrixXd L = lltOfQuuF.matrixU(); 
             // assume QuuF is positive definite

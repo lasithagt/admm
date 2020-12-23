@@ -17,7 +17,7 @@
 // headers in this project
 #include "config.h"
 #include "models.h"
-#include "kuka_arm.h"
+#include "RobotDynamics.hpp"
 
 
 // using namespace std::literals::chrono_literals;

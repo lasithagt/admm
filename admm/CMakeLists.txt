@@ -1,5 +1,5 @@
 # create library
-set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ilqrsolver_admm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../src/kuka_arm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/admm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMTrajOptimizer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMTrajOptimizerMPC.cpp)
+set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ilqrsolver_admm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../src/RobotDynamics.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMMultiBlock.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMTrajOptimizer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMTrajOptimizerMPC.cpp)
 add_library(admm-solver STATIC ${SOURCES})
 target_link_libraries(admm-solver PUBLIC kuka-models ik-solvers cnpy ModernRoboticsCpp)
 
@@ -21,7 +21,7 @@ install(TARGETS admm-solver
 )
 
 # install header file
-install(FILES include/admm.hpp include/ADMMTrajOptimizer.hpp include/ProjectionOperator.hpp include/admmPublic.hpp include/ADMMTrajOptimizerMPC.hpp include/mpc.hpp include/ModelPredictiveControlADMM.hpp include/ilqrsolver_admm.hpp DESTINATION include)
+install(FILES include/ADMMMultiBlock.hpp include/ADMMTrajOptimizer.hpp include/ProjectionOperator.hpp include/admmPublic.hpp include/ADMMTrajOptimizerMPC.hpp include/mpc.hpp include/ModelPredictiveControlADMM.hpp include/ilqrsolver_admm.hpp DESTINATION include)
 
 # generate and install export file
 install(EXPORT ADMMSolversTargets

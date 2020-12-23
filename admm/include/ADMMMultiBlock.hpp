@@ -1,27 +1,26 @@
-#ifndef ADMM_H
-#define ADMM_H
+#ifndef ADMMBLOCKS_H
+#define ADMMBLOCKS_H
 
 #include <iostream>
 #include <fstream>
 #include <cmath>
 #include <vector>
 #include <stdio.h>
-#include <string>
 
 #include <Eigen/Dense>
 
 #include "config.h"
 #include "ilqrsolver_admm.hpp"
-#include "kuka_arm.h"
+#include "RobotDynamics.hpp"
 #include "SoftContactModel.h"
 #include "KukaModel.h"
 #include "models.h"
 #include "cost_function_admm.h"
 
 #include "modern_robotics.h"
-#include "ik_trajectory.hpp"
-#include "ik_solver.hpp"
-#include "kuka_robot.hpp"
+#include "DiffIKTrajectory.hpp"
+#include "DiffIKSolver.hpp"
+#include "KukaKinematicsScrews.hpp"
 
 #include "curvature.hpp"
 #include "cnpy.h"
@@ -36,12 +35,12 @@
 // struct ADMM
 
 
-class ADMM {
+class ADMMMultiBlock {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
   
-  ADMM(std::shared_ptr<RobotAbstract>& kukaModel, const CostFunctionADMM& costFunction, 
+  ADMMMultiBlock(std::shared_ptr<RobotAbstract>& kukaModel, const CostFunctionADMM& costFunction, 
     const optimizer::ILQRSolverADMM& solverDDP, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps);
 
   void solve(const stateVec_t& xinit, const commandVecTab_t& u_0, const stateVecTab_t& xtrack, 
@@ -67,16 +66,10 @@ protected:
   IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
 
   stateVecTab_t joint_state_traj;
-  commandVecTab_t torque_traj;
-  stateVecTab_t joint_state_traj_interp;
-  commandVecTab_t torque_traj_interp;
-
-  // ProjectionOperator constraint_project;
 
   unsigned int N;
 
   /* Initalize Primal and Dual variables */
-
   // primal parameters
   stateVecTab_t xnew;
   Eigen::MatrixXd qnew, cnew;
@@ -130,6 +123,9 @@ protected:
   IKTrajectory<IK_FIRST_ORDER> IK_solve;
 
   Eigen::Tensor<double, 3> data_store;
+
+  std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+  std::chrono::duration<float, std::milli> elapsed;
 
 };
 
