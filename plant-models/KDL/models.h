@@ -30,10 +30,6 @@ namespace KDL
 {
 
 Chain KukaDHKdl();
-// class KukaDHKdl
-// {
-// 	Chain KukaDHKdl();
-// };
 
 }
 #endif

@@ -1,0 +1,26 @@
+Robot Kuka
+
+Frames {
+    fr_link0, fr_link1, fr_link2, fr_link3, fr_link4, fr_link5, fr_link6,  fr_ee
+}
+
+Transforms {
+	base=fr_link0, target=fr_link1
+	base=fr_link0, target=fr_link2
+	base=fr_link0, target=fr_link3
+	base=fr_link0, target=fr_link4
+	base=fr_link0, target=fr_link5
+	base=fr_link0, target=fr_link6
+	base=fr_link0, target=fr_ee
+	base=fr_link1, target=fr_link0
+	base=fr_link2, target=fr_link0
+	base=fr_link3, target=fr_link0
+	base=fr_link4, target=fr_link0
+	base=fr_link5, target=fr_link0
+	base=fr_link6, target=fr_link0
+	base=fr_ee,    target=fr_link0
+}
+
+Jacobians {
+	base=fr_link0, target=fr_ee
+}

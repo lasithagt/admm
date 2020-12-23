@@ -1,0 +1,163 @@
+Robot Kuka
+{
+/*
+ * A fictitious kinematic chain, without branches.
+ * All the links are hollow cylinders infinitely thin (internal and external
+ * radii are the same) with radius equal to 0.05 meters, unit length, unit mass.
+ * They are connected by five joints: revolute, prismatic, revolute, prismatic,
+ * revolute.
+*/
+
+RobotBase base0 {
+    inertia_properties {
+        mass = 1.0
+        CoM = (0.0, 0.0, 0.0)
+        Iy=0.0    Ix=0.0    Ixy=0.0    Iz=0.0    Ixz=0.0    Iyz=0.0
+    }
+    children {
+        link1 via jA
+    }
+}
+
+link link1 {
+    id = 1
+    inertia_properties {
+        mass = 4.0
+        CoM = (0.0, -0.03, 0.12)
+        Ix=0.1  Iy=0.09  Iz=0.02  Ixy=0.0  Ixz=0.0  Iyz=0.0
+    }
+    children {
+        link2 via jB
+    }
+}
+
+
+link link2 {
+    id = 2
+    inertia_properties {
+        mass = 4.0
+        CoM = (0.0003, 0.059, 0.042)
+        Ix=0.05  Iy=0.018  Iz=0.044  Ixy=0.0  Ixz=0.0  Iyz=0.0
+    }
+    children {
+        link3 via jC
+    }
+}
+
+link link3 {
+    id = 3
+    inertia_properties {
+        mass = 3.0
+        CoM = (0.0, 0.03, 0.13)
+        Ix=0.08  Iy=0.075  Iz=0.01  Ixy=0.0  Ixz=0.0  Iyz=0.0
+    }
+    children {
+        link4 via jD
+    }
+}
+
+link link4 {
+    id = 4
+    inertia_properties {
+        mass = 2.7
+        CoM = (0.0, 0.067, 0.034)
+        Ix=0.03  Iy=0.01  Iz=0.029  Ixy=0.0  Ixz=0.0  Iyz=0.0
+    }
+    children {
+        link5 via jE
+    }
+}
+
+link link5 {
+    id = 5
+    inertia_properties {
+        mass = 1.7
+        CoM = (0.0001, 0.021, 0.076)
+        Ix=0.02  Iy=0.018  Iz=0.005  Ixy=0.0  Ixz=0.0  Iyz=0.0
+    }
+    children {
+        link6 via jF
+    }
+}
+
+
+link link6 {
+    id = 6
+    inertia_properties {
+        mass = 1.8
+        CoM = (0.0, 0.00060, 0.0004)
+        Ix=0.0005  Iy=0.0033458  Iz=0.0047  Ixy=0.0  Ixz=0.0  Iyz=0.0
+    }
+    children {
+        link7 via jG
+    }
+}
+
+link link7 {
+    id = 7
+    inertia_properties {
+        mass = 0.3
+        CoM = (0.0, .0, 0.02)
+        Ix=0.001  Iy=0.001  Iz=0.001  Ixy=0.0  Ixz=0.0  Iyz=0.0
+    }
+    children {}
+    frames {
+       fr_ee {
+           translation = (0.0, 0.0, 0.0)
+           rotation    = (0.0, 0.0, 0.16)
+       }
+    }
+}
+
+
+r_joint jA {
+    ref_frame {
+        translation= (0.0, 0.0, 0.1575)
+        rotation   = (0.0, 0.0, 0.0)
+    }
+}
+
+p_joint jB {
+    ref_frame {
+        translation= (0.0, 0.0, 0.2025)
+        rotation   = (PI/2.0, 0.0, PI)
+    }
+}
+
+r_joint jC {
+    ref_frame {
+        translation= (0.0, 0.2045, 0.0)
+        rotation   = (PI/2.0, 0.0, PI)
+    }
+}
+
+p_joint jD {
+    ref_frame {
+        translation= (0.0, 0.0, 0.2155)
+        rotation   = (PI/2.0, 0.0, 0.0)
+    }
+}
+
+r_joint jE {
+    ref_frame {
+        translation= (0.0, 0.1845, 0.0)
+        rotation   = (-PI/2.0, PI, 0.0)
+    }
+}
+
+r_joint jF {
+    ref_frame {
+        translation= (0.0, 0.0, 0.2155)
+        rotation   = (PI/2.0, 0.0, 0.0)
+    }
+}
+
+r_joint jG {
+    ref_frame {
+        translation= (0.0, 0.081, 0.0)
+        rotation   = (-PI/2.0, PI, 0.0)
+    }
+}
+
+
+}

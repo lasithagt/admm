@@ -1,0 +1,102 @@
+<robot name="Kuka">
+    <link name="base0">
+    </link>
+    <link name="link1">
+        <inertial>
+            <origin xyz="0.00000 -0.03000 0.12000"/>
+            <mass value="4.00000"/>
+            <inertia ixx="0.03880" iyy="0.03240" izz="0.01640" ixy="-0.00000" ixz="-0.00000" iyz="-0.01440"/>
+        </inertial>
+    </link>
+    <link name="link2">
+        <inertial>
+            <origin xyz="0.00030 0.05900 0.04200"/>
+            <mass value="4.00000"/>
+            <inertia ixx="0.02902" iyy="0.01094" izz="0.03008" ixy="0.00007" ixz="0.00005" iyz="0.00991"/>
+        </inertial>
+    </link>
+    <link name="link3">
+        <inertial>
+            <origin xyz="0.00000 0.03000 0.13000"/>
+            <mass value="3.00000"/>
+            <inertia ixx="0.02660" iyy="0.02430" izz="0.00730" ixy="-0.00000" ixz="-0.00000" iyz="0.01170"/>
+        </inertial>
+    </link>
+    <link name="link4">
+        <inertial>
+            <origin xyz="0.00000 0.06700 0.03400"/>
+            <mass value="2.70000"/>
+            <inertia ixx="0.01476" iyy="0.00688" izz="0.01688" ixy="-0.00000" ixz="-0.00000" iyz="0.00615"/>
+        </inertial>
+    </link>
+    <link name="link5">
+        <inertial>
+            <origin xyz="0.00010 0.02100 0.07600"/>
+            <mass value="1.70000"/>
+            <inertia ixx="0.00943" iyy="0.00818" izz="0.00425" ixy="0.00000" ixz="0.00001" iyz="0.00271"/>
+        </inertial>
+    </link>
+    <link name="link6">
+        <inertial>
+            <origin xyz="0.00000 0.00060 0.00040"/>
+            <mass value="1.80000"/>
+            <inertia ixx="0.00050" iyy="0.00335" izz="0.00470" ixy="-0.00000" ixz="-0.00000" iyz="0.00000"/>
+        </inertial>
+    </link>
+    <link name="link7">
+        <inertial>
+            <origin xyz="0.00000 0.00000 0.02000"/>
+            <mass value="0.30000"/>
+            <inertia ixx="0.00088" iyy="0.00088" izz="0.00100" ixy="-0.00000" ixz="-0.00000" iyz="-0.00000"/>
+        </inertial>
+    </link>
+    <joint name="jA" type="revolute">
+        <origin xyz="0.00000 0.00000 0.15750" rpy="0.0 0.0 0.0"/>
+        <parent link="base0"/>
+        <child  link="link1"/>
+        <limit effort="30" velocity="1.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="jB" type="prismatic">
+        <origin xyz="0.00000 0.00000 0.20250" rpy="-1.5707963705062866 8.742278000372476E-8 3.1415926535897896"/>
+        <parent link="link1"/>
+        <child  link="link2"/>
+        <limit effort="30" velocity="1.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="jC" type="revolute">
+        <origin xyz="0.00000 0.20450 0.00000" rpy="-1.5707963705062866 8.742278000372476E-8 3.1415926535897896"/>
+        <parent link="link2"/>
+        <child  link="link3"/>
+        <limit effort="30" velocity="1.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="jD" type="prismatic">
+        <origin xyz="0.00000 0.00000 0.21550" rpy="1.5707963705062866 -0.0 0.0"/>
+        <parent link="link3"/>
+        <child  link="link4"/>
+        <limit effort="30" velocity="1.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="jE" type="revolute">
+        <origin xyz="0.00000 0.18450 0.00000" rpy="-1.5707962830835067 3.821371231789831E-15 3.1415925661670134"/>
+        <parent link="link4"/>
+        <child  link="link5"/>
+        <limit effort="30" velocity="1.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="jF" type="revolute">
+        <origin xyz="0.00000 0.00000 0.21550" rpy="1.5707963705062866 -0.0 0.0"/>
+        <parent link="link5"/>
+        <child  link="link6"/>
+        <limit effort="30" velocity="1.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="jG" type="revolute">
+        <origin xyz="0.00000 0.08100 0.00000" rpy="-1.5707962830835067 3.821371231789831E-15 3.1415925661670134"/>
+        <parent link="link6"/>
+        <child  link="link7"/>
+        <limit effort="30" velocity="1.0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+</robot>
