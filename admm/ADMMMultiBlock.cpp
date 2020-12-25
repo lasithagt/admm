@@ -101,7 +101,6 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     // optimizer::ILQRSolverADMM::traj lastTraj; 
     solver_.initializeTraj(xinit, u_0, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 
-
     lastTraj = solver_.getLastSolvedTrajectory();
     xnew = lastTraj.xList;
     unew = lastTraj.uList;

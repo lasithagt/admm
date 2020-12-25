@@ -7,8 +7,8 @@
 #include "admmPublic.hpp"
 #include "ModelPredictiveControlADMM.hpp"
 #include "RobotDynamics.hpp"
-#include "KukaModel.h"
-#include "models.h"
+// #include "KukaModel.h"
+// #include "models.h"
 
 
 ADMMTrajOptimizerMPC::ADMMTrajOptimizerMPC() {}
@@ -108,19 +108,20 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
     double control_var = 0.000001;
 
     /* -------------------- orocos kdl robot initialization-------------------------*/
-    KUKAModelKDLInternalData robotParams;
-    robotParams.numJoints = NDOF;
-    robotParams.Kv = Eigen::MatrixXd(7,7);
-    robotParams.Kp = Eigen::MatrixXd(7,7);
+    // KUKAModelKDLInternalData robotParams;
+    // robotParams.numJoints = NDOF;
+    // robotParams.Kv = Eigen::MatrixXd(7,7);
+    // robotParams.Kp = Eigen::MatrixXd(7,7);
 
 
-    KDL::Chain robot = KDL::KukaDHKdl();
-    std::shared_ptr<RobotAbstract> kukaRobot_ = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
-    kukaRobot_->initRobot();
-    // Initialize Robot Model
-    RobotDynamics KukaArmModel_(dt, horizon_mpc, kukaRobot_, contactModel);
+    // KDL::KukaDHKdl robot = KDL::KukaDHKdl();
+    // KDL::Chain chain = robot();
+    // std::shared_ptr<RobotAbstract> kukaRobot_ = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(chain, robotParams));
+    // kukaRobot_->initRobot();
+    // // Initialize Robot Model
+    // RobotDynamics KukaArmModel_(dt, horizon_mpc, kukaRobot_, contactModel);
 
-    RobotPlant<RobotDynamics, stateSize, commandSize> KukaModelPlant(KukaArmModel_, dt, state_var, control_var);
+    RobotPlant<RobotDynamics, stateSize, commandSize> KukaModelPlant(KukaArmModel, dt, state_var, control_var);
 
 
 

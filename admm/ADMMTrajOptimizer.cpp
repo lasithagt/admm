@@ -20,7 +20,7 @@ void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_
 
 
   ContactModel::SoftContactModel contactModel(cp);
-  kukaRobot->initRobot();
+  // kukaRobot->initRobot();
 
 
   // dynamic model of the manipulator and the contact model
@@ -38,7 +38,7 @@ void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_
   stateVec_t xinit;
   stateVecTab_t xtrack;
   xtrack.resize(stateSize, NumberofKnotPt + 1);
-  xtrack.row(16) = 2 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+  xtrack.row(16) = 0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
 
   /* initialize xinit, xgoal, xtrack - for the hozizon*/
@@ -69,6 +69,7 @@ void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);
   u_0.setZero();
+
 
   optimizerADMM.solve(xinit, u_0, xtrack, cartesianPoses, rho, LIMITS);
 

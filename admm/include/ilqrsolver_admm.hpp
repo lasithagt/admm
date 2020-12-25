@@ -31,13 +31,9 @@
 
 #define TRACE(x) do { if (DEBUG_ILQR) printf(x);} while (0)
 
-using namespace Eigen;
-
 namespace optimizer {
 
-
-class ILQRSolverADMM
-{
+class ILQRSolverADMM {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -49,7 +45,6 @@ public:
         double finalCost;
         double finalGrad;
         double finalLambda;
-        Eigen::VectorXd time_forward, time_backward, time_derivative; //computation time?
     };
 
     struct OptSet {
@@ -77,7 +72,6 @@ public:
         int print;
         double print_head; // print headings every print_head lines
         double last_head;
-        Eigen::VectorXd time_backward, time_forward, time_derivative;
         Eigen::VectorXd alphaList;
 
         OptSet() : debug_level(2), n_alpha(11), lambdaMin(1e-6), lambdaMax(1e10), lambdaInit(1), dlambdaInit(1), lambdaFactor(1.3), max_iter(500), 
@@ -100,6 +94,11 @@ private:
     stateVecTab_t xList; // vector/array of stateVec_t = basically knot config over entire time horizon
     commandVecTab_t uList;
 
+    stateVec_t x_dot1;
+    stateVec_t x_dot2;
+    stateVec_t x_dot3;
+    stateVec_t x_dot4;
+
 
     commandVecTab_t uListFull;
     commandVec_t u_NAN; //matrix of <commandsize, 1> = essentially a vector
@@ -109,7 +108,6 @@ private:
     costVecTab_t costList;
     costVecTab_t costListNew;
     struct traj lastTraj;
-    struct timeval tbegin_time_fwd, tend_time_fwd, tbegin_time_bwd, tend_time_bwd, tbegin_time_deriv, tend_time_deriv;
 
     stateVecTab_t Vx;
     stateMatTab_t Vxx;

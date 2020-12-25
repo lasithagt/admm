@@ -137,7 +137,7 @@ public:
 
 
     // set the control buffer from MPC optimizer
-    bool setControlBuffer(const Eigen::Ref<const MatrixXd> &u)
+    bool setControlBuffer(const Eigen::Ref<const Eigen::MatrixXd> &u)
     {
         // std::lock_guard<std::mutex> locker(mu);
         controlBuffer = u;

@@ -7,14 +7,10 @@
 #include <vector>
 #include <stdio.h>
 
-#include <Eigen/Dense>
-
 #include "config.h"
 #include "ilqrsolver_admm.hpp"
 #include "RobotDynamics.hpp"
 #include "SoftContactModel.h"
-#include "KukaModel.h"
-#include "models.h"
 #include "cost_function_admm.h"
 
 #include "modern_robotics.h"
@@ -29,10 +25,6 @@
 #include "admmPublic.hpp"
 
 #include <unsupported/Eigen/CXX11/Tensor>
-
-
-/* ADMM trajectory generation */
-// struct ADMM
 
 
 class ADMMMultiBlock {

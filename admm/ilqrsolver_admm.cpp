@@ -25,16 +25,6 @@ ILQRSolverADMM::ILQRSolverADMM(RobotDynamics& DynamicModel, CostFunctionADMM& Co
     if(enableQPBox) TRACE("Box QP is enabled\n");
     else TRACE("Box QP is disabled\n");
 
-    if(enableFullDDP) TRACE("Full DDP is enabled\n");
-    else TRACE("Full DDP is disabled\n");
-
-
-    Op.time_backward.resize(Op.max_iter);
-    Op.time_backward.setZero();
-    Op.time_forward.resize(Op.max_iter);
-    Op.time_forward.setZero();
-    Op.time_derivative.resize(Op.max_iter);
-    Op.time_derivative.setZero();
 
     xList.resize(stateSize, N + 1);
     uList.resize(commandSize, N);
@@ -88,11 +78,13 @@ ILQRSolverADMM::ILQRSolverADMM(RobotDynamics& DynamicModel, CostFunctionADMM& Co
 void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track,
  const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
-    start = std::chrono::high_resolution_clock::now();
+    // start = std::chrono::high_resolution_clock::now();
+
+    if(Op.debug_level > 0) {TRACE("\n  begin iterative LQR...  \n");}
     initializeTraj(x_0, u_0, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
-    end = std::chrono::high_resolution_clock::now();
-    elapsed = end - start;
-    std::cout << "Forward Integration compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
+    // end = std::chrono::high_resolution_clock::now();
+    // elapsed = end - start;
+    // std::cout << "Forward Integration compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
 
     Op.lambda = Op.lambdaInit;
     Op.dlambda = Op.dlambdaInit;
@@ -113,24 +105,19 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             }
             uListFull.rightCols(1) = u_NAN;
 
-            gettimeofday(&tbegin_time_deriv,NULL);
-
             /* ---------------- forwad pass ----------------------- */
 
             /* -------------- compute fx, fu ---------------------- */
-            start = std::chrono::high_resolution_clock::now();
+            // start = std::chrono::high_resolution_clock::now();
 
             dynamicModel->fx(xList, uListFull);
             
             /* -------------- compute cx, cu, cxx, cuu ------------ */
             costFunction->computeDerivatives(xList, uListFull, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
 
-            end = std::chrono::high_resolution_clock::now();
-            elapsed = end - start;
-            std::cout << "Jacobian compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
-
-            gettimeofday(&tend_time_deriv,NULL);
-            Op.time_derivative(iter) = (static_cast<double>(1000*(tend_time_deriv.tv_sec-tbegin_time_deriv.tv_sec)+((tend_time_deriv.tv_usec-tbegin_time_deriv.tv_usec)/1000)))/1000.0;
+            // end = std::chrono::high_resolution_clock::now();
+            // elapsed = end - start;
+            // std::cout << "Jacobian compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
 
             newDeriv = 0;
         }
@@ -140,12 +127,12 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
         backPassDone = 0;
         while (!backPassDone)
         {
-            gettimeofday(&tbegin_time_bwd,NULL);
+            // start = std::chrono::high_resolution_clock::now();
 
             doBackwardPass();
-
-            gettimeofday(&tend_time_bwd,NULL);
-            Op.time_backward(iter) = (static_cast<double>(1000*(tend_time_bwd.tv_sec-tbegin_time_bwd.tv_sec)+((tend_time_bwd.tv_usec-tbegin_time_bwd.tv_usec)/1000)))/1000.0;
+            // end = std::chrono::high_resolution_clock::now();
+            // elapsed = end - start;
+            // std::cout << "Backward Pass compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
 
             if (diverge)
             {
@@ -177,7 +164,6 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
         fwdPassDone = 0;
         if (backPassDone)
         {
-            gettimeofday(&tbegin_time_fwd,NULL);
             //only implement serial backtracking line-search
             for (int alpha_index = 0; alpha_index < Op.alphaList.size(); alpha_index++)
             {
@@ -188,24 +174,19 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
                 Op.expected = -alpha*(dV(0) + alpha*dV(1));
 
                 double z;
-                if (Op.expected > 0) 
-                {
+                if (Op.expected > 0) {
                     z = Op.dcost / Op.expected;
-                }
-                else 
-                {
+                } else {
                     z = static_cast<double>(-signbit(Op.dcost)); // [TODO:doublecheck]
                     TRACE("non-positive expected reduction: should not occur \n"); //warning
                 }
-                if(z > Op.zMin)
-                { 
+
+                if(z > Op.zMin) { 
                     fwdPassDone = 1;
                     break;
                 }
             }
             if(!fwdPassDone) alpha = sqrt(-1.0);
-            gettimeofday(&tend_time_fwd,NULL);
-            Op.time_forward(iter) = (static_cast<double>(1000*(tend_time_fwd.tv_sec-tbegin_time_fwd.tv_sec)+((tend_time_fwd.tv_usec-tbegin_time_fwd.tv_usec)/1000)))/1000.0;
         }
                 
         //====== STEP 4: accept step (or not), draw graphics, print status
@@ -296,8 +277,7 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     initFwdPassDone = 0;
     diverge = 1;
     
-    for (int i = 0; i < N; i++)
-    {
+    for (int i = 0; i < N; i++) {
         uList.col(i) = u_0.col(i);
     }
 
@@ -315,9 +295,6 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
 
     }
-
-    // getting final cost, state, input = NaN
-    // costList[N] = costFunction->cost_func_expre(N, updatedxList.col(N), u_NAN_loc);
     costList[N]  = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), u_NAN_loc, thetaList_bar.col(N), rho, R_c);
 
 
@@ -342,8 +319,6 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     Op.print_head = 6;
     Op.last_head = Op.print_head;
 
-
-    if(Op.debug_level > 0) {TRACE("\n ===================================== begin iLQR ======================================== \n");}
 }
 
 void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
@@ -355,7 +330,7 @@ void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x
     u_NAN_loc(0) = sqrt(-1.0);
 
     isUNan = 0;
-
+    // start = std::chrono::high_resolution_clock::now();
     for (unsigned int i = 0; i < N; i++) 
     {
         updateduList.col(i)     = uList.col(i) + alpha * kList.col(i) + KList[i] * (updatedxList.col(i) - xList.col(i));
@@ -363,28 +338,28 @@ void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
     }
     costListNew[N] = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), uList_bar.col(N-1), thetaList_bar.col(N-1), rho, R_c);
+    // end = std::chrono::high_resolution_clock::now();
+    // elapsed = end - start;
+    // std::cout << "Forward Pass compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
+
 }
 
 /* --------------------- 4th-order Runge-Kutta step --------------------- */
 inline stateVec_t ILQRSolverADMM::forward_integration(const stateVec_t& x, const commandVec_t& u)
 {
-    // gettimeofday(&tbegin_period4, NULL);
-    stateVec_t x_dot1 = dynamicModel->f(x, u);
-    stateVec_t x_dot2 = dynamicModel->f(x + 0.5 * dt * x_dot1, u);
-    stateVec_t x_dot3 = dynamicModel->f(x + 0.5 * dt * x_dot2, u);
-    stateVec_t x_dot4 = dynamicModel->f(x + dt * x_dot3, u);
+    x_dot1 = dynamicModel->f(x, u);
+    x_dot2 = dynamicModel->f(x + 0.5 * dt * x_dot1, u);
+    x_dot3 = dynamicModel->f(x + 0.5 * dt * x_dot2, u);
+    x_dot4 = dynamicModel->f(x + dt * x_dot3, u);
 
     return x + (dt/6) * (x_dot1 + 2 * x_dot2 + 2 * x_dot3 + x_dot4);
 }
 
 void ILQRSolverADMM::doBackwardPass()
 {    
-    if (Op.regType == 1)
-    {
+    if (Op.regType == 1) {
         lambdaEye = Op.lambda * stateMat_t::Identity();
-    }
-    else
-    {
+    } else {
         lambdaEye = Op.lambda * stateMat_t::Zero();
     }
 
@@ -395,21 +370,18 @@ void ILQRSolverADMM::doBackwardPass()
     Vxx[N]     = costFunction->getcxx()[N];
     dV.setZero();
 
-    for (int i = N-1; i >= 0; i--)
-    {
+    for (int i = N-1; i >= 0; i--) {
+
         Qx  = costFunction->getcx().col(i)  + dynamicModel->getfxList()[i].transpose() *  Vx.col(i + 1);
         Qu  = costFunction->getcu().col(i)  + dynamicModel->getfuList()[i].transpose() *  Vx.col(i + 1);
         Qxx = costFunction->getcxx()[i]     + dynamicModel->getfxList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
         Quu = costFunction->getcuu()[i]     + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfuList()[i];
         Qux = costFunction->getcux()[i]     + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
- 
 
         if (Op.regType == 1)
         {
             QuuF = Quu + Op.lambda * commandMat_t::Identity();
-        }
-        else
-        {
+        } else {
             QuuF = Quu;
         }
         
@@ -419,18 +391,14 @@ void ILQRSolverADMM::doBackwardPass()
         {
             //To be Implemented : Regularization (is Quu definite positive ?)
             TRACE("Quu is not positive definite ");
-            if (Op.lambda==0.0) 
-            {
+            if (Op.lambda==0.0) {
                 Op.lambda += 1e-4;
-            }
-            else 
-            {   
+            } else {   
                 Op.lambda *= 10;
             }
             backPassDone = 0;
             break;
         }
-
 
         if (!enableQPBox)
         {
@@ -473,6 +441,7 @@ void ILQRSolverADMM::doBackwardPass()
         }
         g_norm_sum += g_norm_max;
     }
+
     Op.g_norm = g_norm_sum/(static_cast<double>(Op.n_hor));
 }
 
@@ -486,9 +455,6 @@ ILQRSolverADMM::traj ILQRSolverADMM::getLastSolvedTrajectory()
     lastTraj.finalCost = accumulate(costList.begin(), costList.end(), 0.0);
     lastTraj.finalGrad = Op.g_norm;
     lastTraj.finalLambda = log10(Op.lambda);
-    lastTraj.time_forward = Op.time_forward;
-    lastTraj.time_backward = Op.time_backward;
-    lastTraj.time_derivative = Op.time_derivative;
     return lastTraj;
 }
 
@@ -497,10 +463,8 @@ bool ILQRSolverADMM::isPositiveDefinite(const commandMat_t & Quu_p)
     //Eigen::JacobiSVD<commandMat_t> svd_Quu (Quu, ComputeThinU | ComputeThinV);
     Eigen::VectorXcd singular_values = Quu_p.eigenvalues();
 
-    for(long i = 0; i < Quu_p.cols(); ++i)
-    {
-        if (singular_values[i].real() < 0.)
-        {
+    for(long i = 0; i < Quu_p.cols(); ++i) {
+        if (singular_values[i].real() < 0.0) {
             TRACE("Matrix is not SDP");
             return false;
         }

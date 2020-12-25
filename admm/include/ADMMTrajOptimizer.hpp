@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 
 #include "ADMMMultiBlock.hpp"
-#include "SoftContactModel.h"
 
 
 class ADMMTrajOptimizer {
