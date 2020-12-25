@@ -1,10 +1,8 @@
 #ifndef KUKA_MODEL_H
 #define KUKA_MODEL_H
 
-#include <iostream>
 
 #include <Eigen/Dense>
-#include <algorithm>
 #include <kdl/frames.hpp>
 #include <kdl/frames_io.hpp>
 #include <kdl/framevel.hpp>
@@ -20,6 +18,8 @@
 
 #include <memory>
 #include <string.h>
+#include <iostream>
+#include <algorithm>
 
 #include "models.h"
 #include "RobotAbstract.h"

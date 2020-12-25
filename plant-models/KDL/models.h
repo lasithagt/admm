@@ -29,7 +29,67 @@
 namespace KDL
 {
 
-Chain KukaDHKdl();
+struct KukaDHKdl {
+	KukaDHKdl() = default;
+	~KukaDHKdl() = default;
+
+	Chain operator()() {
+		Chain KukaDHKdl_;
+		
+		//joint 0
+		KukaDHKdl_.addSegment(Segment(Joint(Joint::None),
+					  Frame::DH_Craig1989(0, 0, 0.36, 3.1416)));
+
+		//joint 1
+		KukaDHKdl_.addSegment(Segment(Joint(Joint::RotZ,1,0,0,0,100000),
+					  Frame::DH_Craig1989(0.0,1.5707963, 0.0, 0.0),
+					  Frame::DH_Craig1989(0.0, 1.5707963, 0.0, 0.0).Inverse()*RigidBodyInertia(3.9,
+													 Vector::Zero(),
+													 RotationalInertia(0.0,0.0,0.0115343,0.0,0.0,0.0))));
+					   
+		//joint 2 
+		KukaDHKdl_.addSegment(Segment(Joint(Joint::RotZ,1,0,0,0,100000),
+					  Frame::DH_Craig1989(0.0, -1.5707963, 0.42, 0.0),
+					  Frame::DH_Craig1989(0.0, -1.5707963, 0.42, 0.0).Inverse()*RigidBodyInertia(4.5,
+													   Vector(0.0,-0.3120511,-0.0038871),
+													   RotationalInertia(-0.5471572,-0.0000302,-0.5423253,0.0,0.0,0.0018828))));
+					  
+		//joint 3
+		KukaDHKdl_.addSegment(Segment(Joint(Joint::RotZ,1,0,0,0,100000),
+					  Frame::DH_Craig1989(0.0, -1.5707963, 0.0, 0.0),
+					  Frame::DH_Craig1989(0.0, -1.5707963, 0.0, 0.0).Inverse()*RigidBodyInertia(2.45,
+													   Vector(0.0,-0.0015515,0.0),
+													   RotationalInertia(0.0063507,0.0,0.0107804,0.0,0.0,-0.0005147))));
+					  
+		//joint 4
+		KukaDHKdl_.addSegment(Segment(Joint(Joint::RotZ,1,0,0,0,100000),
+					  Frame::DH_Craig1989(0.0, 1.5707963, 0.4, 0.0),
+					  Frame::DH_Craig1989(0.0, 1.5707963, 0.4, 0.0).Inverse()*RigidBodyInertia(2.61,
+													   Vector(0.0,0.5216809,0.0),
+													   RotationalInertia(-1.0436952,0.0,-1.0392780,0.0,0.0,0.0005324))));
+					  
+		//joint 5
+		KukaDHKdl_.addSegment(Segment(Joint(Joint::RotZ,1,0,0,0,100000),
+					  Frame::DH_Craig1989(0.0, 1.5707963, 0.0, 0.0),
+					  Frame::DH_Craig1989(0.0, 1.5707963, 0.0, 0.0).Inverse()*RigidBodyInertia(3.41,
+													   Vector(0.0,0.0119891,0.0),
+													   RotationalInertia(0.0036654,0.0,0.0060429,0.0,0.0,0.0004226))));
+					  
+		//joint 6
+		KukaDHKdl_.addSegment(Segment(Joint(Joint::RotZ,1,0,0,0,100000),
+					  Frame::DH_Craig1989(0.0, -1.5707963, 0.0, 0.0),
+					  Frame::DH_Craig1989(0.0, -1.5707963, 0.0, 0.0).Inverse()*RigidBodyInertia(3.38,
+													   Vector(0.0,0.0080787,0.0),
+													   RotationalInertia(0.0010431,0.0,0.0036376,0.0,0.0,0.0000101))));
+		//joint 7
+		KukaDHKdl_.addSegment(Segment(Joint(Joint::RotZ,1,0,0,0,100000),
+					   Frame::DH_Craig1989(0.0, 0, 0.241, 0.0),
+					   Frame::DH_Craig1989(0.0, 0, 0.241, 0.0).Inverse()*RigidBodyInertia(0.35,
+													   Vector::Zero(),
+													   RotationalInertia(0.000001,0.0,0.0001203,0.0,0.0,0.0))));
+	    return KukaDHKdl_;
+	}
+};
 
 }
 #endif

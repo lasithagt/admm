@@ -1,25 +1,26 @@
 # create library
-set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/KukaModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/models.cpp)
-add_library(kuka-models STATIC ${SOURCES})
+find_package(ct_core)
+find_package(ct_rbd)
 
-# add_library(MathFunctions::Addition ALIAS Addition)
+set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/KDL/KukaModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/RobCodGenModel.cpp)
+add_library(kuka-models STATIC ${SOURCES})
+target_link_libraries(kuka-models ct_core ct_rbd)
 
 # add include directories
 target_include_directories(kuka-models
                            PUBLIC
-                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/KDL>"
                            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Screws>"
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen>"
                            $<INSTALL_INTERFACE:include>
 )
 
-find_package(ct_core)
-find_package(ct_rbd)
 
-# test scripts
-add_executable(test_rbd_models main_test_models.cpp models.cpp KukaModel.cpp)
+
+# # test scripts
+add_executable(test_rbd_models main_test_models.cpp)
 target_include_directories(test_rbd_models PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/KDL ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen)
-target_link_libraries(test_rbd_models ModernRoboticsCpp orocos-kdl ct_core ct_rbd)
+target_link_libraries(test_rbd_models kuka-models ModernRoboticsCpp orocos-kdl)
 
 
 # install the target and create export-set
@@ -32,7 +33,7 @@ install(TARGETS kuka-models
 )
 
 # install header file
-install(FILES KDL/KukaModel.h KDL/models.h Screws/KukaKinematicsScrews.hpp DESTINATION include)
+install(FILES KDL/KukaModel.h KDL/models.h RobCodGen/RobCodGenModel.h Screws/KukaKinematicsScrews.hpp DESTINATION include)
 
 # generate and install export file
 install(EXPORT PlantModelTargets
