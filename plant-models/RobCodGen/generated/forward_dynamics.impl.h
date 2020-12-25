@@ -25,7 +25,6 @@ iit::Kuka::dyn::tpl::ForwardDynamics<TRAIT>::ForwardDynamics(iit::Kuka::dyn::tpl
     link7_c.setZero();
 
     vcross.setZero();
-    Ia_p.setZero();
     Ia_r.setZero();
 
 }
@@ -68,11 +67,11 @@ void iit::Kuka::dyn::tpl::ForwardDynamics<TRAIT>::fd(
     // + Link link2
     //  - The spatial velocity:
     link2_v = (motionTransforms-> fr_link2_X_fr_link1) * link1_v;
-    link2_v(iit::rbd::LZ) += qd(JB);
+    link2_v(iit::rbd::AZ) += qd(JB);
     
     //  - The velocity-product acceleration term:
     iit::rbd::motionCrossProductMx<Scalar>(link2_v, vcross);
-    link2_c = vcross.col(iit::rbd::LZ) * qd(JB);
+    link2_c = vcross.col(iit::rbd::AZ) * qd(JB);
     
     //  - The bias force term:
     link2_p += iit::rbd::vxIv(link2_v, link2_AI);
@@ -92,11 +91,11 @@ void iit::Kuka::dyn::tpl::ForwardDynamics<TRAIT>::fd(
     // + Link link4
     //  - The spatial velocity:
     link4_v = (motionTransforms-> fr_link4_X_fr_link3) * link3_v;
-    link4_v(iit::rbd::LZ) += qd(JD);
+    link4_v(iit::rbd::AZ) += qd(JD);
     
     //  - The velocity-product acceleration term:
     iit::rbd::motionCrossProductMx<Scalar>(link4_v, vcross);
-    link4_c = vcross.col(iit::rbd::LZ) * qd(JD);
+    link4_c = vcross.col(iit::rbd::AZ) * qd(JD);
     
     //  - The bias force term:
     link4_p += iit::rbd::vxIv(link4_v, link4_AI);
@@ -176,13 +175,13 @@ void iit::Kuka::dyn::tpl::ForwardDynamics<TRAIT>::fd(
     link4_p += (motionTransforms-> fr_link5_X_fr_link4).transpose() * pa;
     
     // + Link link4
-    link4_u = tau(JD) - link4_p(iit::rbd::LZ);
-    link4_U = link4_AI.col(iit::rbd::LZ);
-    link4_D = link4_U(iit::rbd::LZ);
+    link4_u = tau(JD) - link4_p(iit::rbd::AZ);
+    link4_U = link4_AI.col(iit::rbd::AZ);
+    link4_D = link4_U(iit::rbd::AZ);
     
-    iit::rbd::compute_Ia_prismatic(link4_AI, link4_U, link4_D, Ia_p);  // same as: Ia_p = link4_AI - link4_U/link4_D * link4_U.transpose();
-    pa = link4_p + Ia_p * link4_c + link4_U * link4_u/link4_D;
-    ctransform_Ia_prismatic(Ia_p, motionTransforms-> fr_link4_X_fr_link3, IaB);
+    iit::rbd::compute_Ia_revolute(link4_AI, link4_U, link4_D, Ia_r);  // same as: Ia_r = link4_AI - link4_U/link4_D * link4_U.transpose();
+    pa = link4_p + Ia_r * link4_c + link4_U * link4_u/link4_D;
+    ctransform_Ia_revolute(Ia_r, motionTransforms-> fr_link4_X_fr_link3, IaB);
     link3_AI += IaB;
     link3_p += (motionTransforms-> fr_link4_X_fr_link3).transpose() * pa;
     
@@ -198,13 +197,13 @@ void iit::Kuka::dyn::tpl::ForwardDynamics<TRAIT>::fd(
     link2_p += (motionTransforms-> fr_link3_X_fr_link2).transpose() * pa;
     
     // + Link link2
-    link2_u = tau(JB) - link2_p(iit::rbd::LZ);
-    link2_U = link2_AI.col(iit::rbd::LZ);
-    link2_D = link2_U(iit::rbd::LZ);
+    link2_u = tau(JB) - link2_p(iit::rbd::AZ);
+    link2_U = link2_AI.col(iit::rbd::AZ);
+    link2_D = link2_U(iit::rbd::AZ);
     
-    iit::rbd::compute_Ia_prismatic(link2_AI, link2_U, link2_D, Ia_p);  // same as: Ia_p = link2_AI - link2_U/link2_D * link2_U.transpose();
-    pa = link2_p + Ia_p * link2_c + link2_U * link2_u/link2_D;
-    ctransform_Ia_prismatic(Ia_p, motionTransforms-> fr_link2_X_fr_link1, IaB);
+    iit::rbd::compute_Ia_revolute(link2_AI, link2_U, link2_D, Ia_r);  // same as: Ia_r = link2_AI - link2_U/link2_D * link2_U.transpose();
+    pa = link2_p + Ia_r * link2_c + link2_U * link2_u/link2_D;
+    ctransform_Ia_revolute(Ia_r, motionTransforms-> fr_link2_X_fr_link1, IaB);
     link1_AI += IaB;
     link1_p += (motionTransforms-> fr_link2_X_fr_link1).transpose() * pa;
     
@@ -222,7 +221,7 @@ void iit::Kuka::dyn::tpl::ForwardDynamics<TRAIT>::fd(
     
     link2_a = (motionTransforms-> fr_link2_X_fr_link1) * link1_a + link2_c;
     qdd(JB) = (link2_u - link2_U.dot(link2_a)) / link2_D;
-    link2_a(iit::rbd::LZ) += qdd(JB);
+    link2_a(iit::rbd::AZ) += qdd(JB);
     
     link3_a = (motionTransforms-> fr_link3_X_fr_link2) * link2_a + link3_c;
     qdd(JC) = (link3_u - link3_U.dot(link3_a)) / link3_D;
@@ -230,7 +229,7 @@ void iit::Kuka::dyn::tpl::ForwardDynamics<TRAIT>::fd(
     
     link4_a = (motionTransforms-> fr_link4_X_fr_link3) * link3_a + link4_c;
     qdd(JD) = (link4_u - link4_U.dot(link4_a)) / link4_D;
-    link4_a(iit::rbd::LZ) += qdd(JD);
+    link4_a(iit::rbd::AZ) += qdd(JD);
     
     link5_a = (motionTransforms-> fr_link5_X_fr_link4) * link4_a + link5_c;
     qdd(JE) = (link5_u - link5_U.dot(link5_a)) / link5_D;

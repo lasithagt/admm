@@ -49,13 +49,13 @@ const typename iit::Kuka::dyn::tpl::JSIM<TRAIT>& iit::Kuka::dyn::tpl::JSIM<TRAIT
     DATA(JG, JE) = F(iit::rbd::AZ);
     DATA(JE, JG) = DATA(JG, JE);
     F = frcTransf -> fr_link4_X_fr_link5 * F;
-    DATA(JG, JD) = F(iit::rbd::LZ);
+    DATA(JG, JD) = F(iit::rbd::AZ);
     DATA(JD, JG) = DATA(JG, JD);
     F = frcTransf -> fr_link3_X_fr_link4 * F;
     DATA(JG, JC) = F(iit::rbd::AZ);
     DATA(JC, JG) = DATA(JG, JC);
     F = frcTransf -> fr_link2_X_fr_link3 * F;
-    DATA(JG, JB) = F(iit::rbd::LZ);
+    DATA(JG, JB) = F(iit::rbd::AZ);
     DATA(JB, JG) = DATA(JG, JB);
     F = frcTransf -> fr_link1_X_fr_link2 * F;
     DATA(JG, JA) = F(iit::rbd::AZ);
@@ -72,13 +72,13 @@ const typename iit::Kuka::dyn::tpl::JSIM<TRAIT>& iit::Kuka::dyn::tpl::JSIM<TRAIT
     DATA(JF, JE) = F(iit::rbd::AZ);
     DATA(JE, JF) = DATA(JF, JE);
     F = frcTransf -> fr_link4_X_fr_link5 * F;
-    DATA(JF, JD) = F(iit::rbd::LZ);
+    DATA(JF, JD) = F(iit::rbd::AZ);
     DATA(JD, JF) = DATA(JF, JD);
     F = frcTransf -> fr_link3_X_fr_link4 * F;
     DATA(JF, JC) = F(iit::rbd::AZ);
     DATA(JC, JF) = DATA(JF, JC);
     F = frcTransf -> fr_link2_X_fr_link3 * F;
-    DATA(JF, JB) = F(iit::rbd::LZ);
+    DATA(JF, JB) = F(iit::rbd::AZ);
     DATA(JB, JF) = DATA(JF, JB);
     F = frcTransf -> fr_link1_X_fr_link2 * F;
     DATA(JF, JA) = F(iit::rbd::AZ);
@@ -92,13 +92,13 @@ const typename iit::Kuka::dyn::tpl::JSIM<TRAIT>& iit::Kuka::dyn::tpl::JSIM<TRAIT
     DATA(JE, JE) = F(iit::rbd::AZ);
 
     F = frcTransf -> fr_link4_X_fr_link5 * F;
-    DATA(JE, JD) = F(iit::rbd::LZ);
+    DATA(JE, JD) = F(iit::rbd::AZ);
     DATA(JD, JE) = DATA(JE, JD);
     F = frcTransf -> fr_link3_X_fr_link4 * F;
     DATA(JE, JC) = F(iit::rbd::AZ);
     DATA(JC, JE) = DATA(JE, JC);
     F = frcTransf -> fr_link2_X_fr_link3 * F;
-    DATA(JE, JB) = F(iit::rbd::LZ);
+    DATA(JE, JB) = F(iit::rbd::AZ);
     DATA(JB, JE) = DATA(JE, JB);
     F = frcTransf -> fr_link1_X_fr_link2 * F;
     DATA(JE, JA) = F(iit::rbd::AZ);
@@ -108,14 +108,14 @@ const typename iit::Kuka::dyn::tpl::JSIM<TRAIT>& iit::Kuka::dyn::tpl::JSIM<TRAIT
     iit::rbd::transformInertia<Scalar>(link4_Ic, frcTransf -> fr_link3_X_fr_link4, Ic_spare);
     link3_Ic += Ic_spare;
 
-    F = link4_Ic.col(iit::rbd::LZ);
-    DATA(JD, JD) = F(iit::rbd::LZ);
+    F = link4_Ic.col(iit::rbd::AZ);
+    DATA(JD, JD) = F(iit::rbd::AZ);
 
     F = frcTransf -> fr_link3_X_fr_link4 * F;
     DATA(JD, JC) = F(iit::rbd::AZ);
     DATA(JC, JD) = DATA(JD, JC);
     F = frcTransf -> fr_link2_X_fr_link3 * F;
-    DATA(JD, JB) = F(iit::rbd::LZ);
+    DATA(JD, JB) = F(iit::rbd::AZ);
     DATA(JB, JD) = DATA(JD, JB);
     F = frcTransf -> fr_link1_X_fr_link2 * F;
     DATA(JD, JA) = F(iit::rbd::AZ);
@@ -129,7 +129,7 @@ const typename iit::Kuka::dyn::tpl::JSIM<TRAIT>& iit::Kuka::dyn::tpl::JSIM<TRAIT
     DATA(JC, JC) = F(iit::rbd::AZ);
 
     F = frcTransf -> fr_link2_X_fr_link3 * F;
-    DATA(JC, JB) = F(iit::rbd::LZ);
+    DATA(JC, JB) = F(iit::rbd::AZ);
     DATA(JB, JC) = DATA(JC, JB);
     F = frcTransf -> fr_link1_X_fr_link2 * F;
     DATA(JC, JA) = F(iit::rbd::AZ);
@@ -139,8 +139,8 @@ const typename iit::Kuka::dyn::tpl::JSIM<TRAIT>& iit::Kuka::dyn::tpl::JSIM<TRAIT
     iit::rbd::transformInertia<Scalar>(link2_Ic, frcTransf -> fr_link1_X_fr_link2, Ic_spare);
     link1_Ic += Ic_spare;
 
-    F = link2_Ic.col(iit::rbd::LZ);
-    DATA(JB, JB) = F(iit::rbd::LZ);
+    F = link2_Ic.col(iit::rbd::AZ);
+    DATA(JB, JB) = F(iit::rbd::AZ);
 
     F = frcTransf -> fr_link1_X_fr_link2 * F;
     DATA(JB, JA) = F(iit::rbd::AZ);

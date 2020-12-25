@@ -78,11 +78,11 @@ void iit::Kuka::dyn::tpl::InverseDynamics<TRAIT>::C_terms(JointState& jForces, c
     
     // Link 'link2'
     link2_v = ((xm->fr_link2_X_fr_link1) * link1_v);
-    link2_v(iit::rbd::LZ) += qd(JB);
+    link2_v(iit::rbd::AZ) += qd(JB);
     
     iit::rbd::motionCrossProductMx<Scalar>(link2_v, vcross);
     
-    link2_a = (vcross.col(iit::rbd::LZ) * qd(JB));
+    link2_a = (vcross.col(iit::rbd::AZ) * qd(JB));
     
     link2_f = link2_I * link2_a + iit::rbd::vxIv(link2_v, link2_I);
     
@@ -98,11 +98,11 @@ void iit::Kuka::dyn::tpl::InverseDynamics<TRAIT>::C_terms(JointState& jForces, c
     
     // Link 'link4'
     link4_v = ((xm->fr_link4_X_fr_link3) * link3_v);
-    link4_v(iit::rbd::LZ) += qd(JD);
+    link4_v(iit::rbd::AZ) += qd(JD);
     
     iit::rbd::motionCrossProductMx<Scalar>(link4_v, vcross);
     
-    link4_a = (xm->fr_link4_X_fr_link3) * link3_a + vcross.col(iit::rbd::LZ) * qd(JD);
+    link4_a = (xm->fr_link4_X_fr_link3) * link3_a + vcross.col(iit::rbd::AZ) * qd(JD);
     
     link4_f = link4_I * link4_a + iit::rbd::vxIv(link4_v, link4_I);
     
@@ -152,12 +152,12 @@ void iit::Kuka::dyn::tpl::InverseDynamics<TRAIT>::firstPass(const JointState& qd
     
     // First pass, link 'link2'
     link2_v = ((xm->fr_link2_X_fr_link1) * link1_v);
-    link2_v(iit::rbd::LZ) += qd(JB);
+    link2_v(iit::rbd::AZ) += qd(JB);
     
     iit::rbd::motionCrossProductMx<Scalar>(link2_v, vcross);
     
-    link2_a = (xm->fr_link2_X_fr_link1) * link1_a + vcross.col(iit::rbd::LZ) * qd(JB);
-    link2_a(iit::rbd::LZ) += qdd(JB);
+    link2_a = (xm->fr_link2_X_fr_link1) * link1_a + vcross.col(iit::rbd::AZ) * qd(JB);
+    link2_a(iit::rbd::AZ) += qdd(JB);
     
     link2_f = link2_I * link2_a + iit::rbd::vxIv(link2_v, link2_I) - fext[LINK2];
     
@@ -174,12 +174,12 @@ void iit::Kuka::dyn::tpl::InverseDynamics<TRAIT>::firstPass(const JointState& qd
     
     // First pass, link 'link4'
     link4_v = ((xm->fr_link4_X_fr_link3) * link3_v);
-    link4_v(iit::rbd::LZ) += qd(JD);
+    link4_v(iit::rbd::AZ) += qd(JD);
     
     iit::rbd::motionCrossProductMx<Scalar>(link4_v, vcross);
     
-    link4_a = (xm->fr_link4_X_fr_link3) * link3_a + vcross.col(iit::rbd::LZ) * qd(JD);
-    link4_a(iit::rbd::LZ) += qdd(JD);
+    link4_a = (xm->fr_link4_X_fr_link3) * link3_a + vcross.col(iit::rbd::AZ) * qd(JD);
+    link4_a(iit::rbd::AZ) += qdd(JD);
     
     link4_f = link4_I * link4_a + iit::rbd::vxIv(link4_v, link4_I) - fext[LINK4];
     
@@ -231,13 +231,13 @@ void iit::Kuka::dyn::tpl::InverseDynamics<TRAIT>::secondPass(JointState& jForces
     jForces(JE) = link5_f(iit::rbd::AZ);
     link4_f += xm->fr_link5_X_fr_link4.transpose() * link5_f;
     // Link 'link4'
-    jForces(JD) = link4_f(iit::rbd::LZ);
+    jForces(JD) = link4_f(iit::rbd::AZ);
     link3_f += xm->fr_link4_X_fr_link3.transpose() * link4_f;
     // Link 'link3'
     jForces(JC) = link3_f(iit::rbd::AZ);
     link2_f += xm->fr_link3_X_fr_link2.transpose() * link3_f;
     // Link 'link2'
-    jForces(JB) = link2_f(iit::rbd::LZ);
+    jForces(JB) = link2_f(iit::rbd::AZ);
     link1_f += xm->fr_link2_X_fr_link1.transpose() * link2_f;
     // Link 'link1'
     jForces(JA) = link1_f(iit::rbd::AZ);
