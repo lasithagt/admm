@@ -6,25 +6,20 @@ RobotDynamics::RobotDynamics(double dt_, unsigned int N_, std::shared_ptr<RobotA
       num_diff_(diff_), dt(dt_), N(N_)
 {
     q.resize(NDOF), qd.resize(NDOF);
-
+    qdd.resize(NDOF);
     fxList.resize(N + 1), fuList.resize(N);
-
     tau_ext.resize(NDOF);
     manip_jacobian.resize(6, NDOF);
-
     poseM_vec.setZero();
-
-
     H_c << 1, 0, 0, 0, 1, 0, 0, 0, 1;
     xdot_new.setZero();
-
 
     // initialize contact model and the manipulator model
     m_contact_model = contact_model;
     m_kukaRobot     = kukaRobot;          
 }
 
-RobotDynamics::State RobotDynamics::f(const stateVec_t& X, const commandVec_t& tau)
+const RobotDynamics::State& RobotDynamics::f(const stateVec_t& X, const commandVec_t& tau)
 {
 
     q  = X.head(NDOF);
@@ -34,7 +29,6 @@ RobotDynamics::State RobotDynamics::f(const stateVec_t& X, const commandVec_t& t
     // compute manipualator dynamics
     m_kukaRobot->getSpatialJacobian(q.data(), manip_jacobian);
     tau_ext = tau + manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
-
     m_kukaRobot->getForwardDynamics(q.data(), qd.data(), tau_ext, qdd);
 
     /*  contact model dynamics */
@@ -56,6 +50,7 @@ RobotDynamics::State RobotDynamics::f(const stateVec_t& X, const commandVec_t& t
 }
 
 
+// TODO: autodiff here
 void RobotDynamics::fx(const stateVecTab_t& xList, const commandVecTab_t& uList)
 {
     // TODO parallalize here
@@ -63,7 +58,6 @@ void RobotDynamics::fx(const stateVecTab_t& xList, const commandVecTab_t& uList)
     {
         /* Numdiff Eigen */
         num_diff_.df((typename Differentiable<double, stateSize, commandSize>::InputType() << xList.col(k), uList.col(k)).finished(), j_);
-
         fxList[k] = j_.leftCols(stateSize) * dt + Eigen::Matrix<double, stateSize, stateSize>::Identity();
         fuList[k] = j_.rightCols(commandSize) * dt;
     }
@@ -71,7 +65,7 @@ void RobotDynamics::fx(const stateVecTab_t& xList, const commandVecTab_t& uList)
 }
 
 
-
+// TODO: optimize the code here, move semantics
 commandVec_t RobotDynamics::getLowerCommandBounds()
 {
     return lowerCommandBounds;
@@ -82,12 +76,12 @@ commandVec_t RobotDynamics::getUpperCommandBounds()
     return upperCommandBounds;
 }
 
-stateMatTab_t RobotDynamics::getfxList()
+const stateMatTab_t& RobotDynamics::getfxList()
 {
     return fxList;
 }
 
-stateR_commandC_tab_t RobotDynamics::getfuList()
+const stateR_commandC_tab_t& RobotDynamics::getfuList()
 {
     return fuList;
 }

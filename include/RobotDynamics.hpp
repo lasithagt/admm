@@ -9,7 +9,6 @@
 
 #include <cstdio>
 #include <iostream>
-#include <Eigen/Dense>
 #include <unsupported/Eigen/NumericalDiff>
 #include <Eigen/Geometry>
 
@@ -67,8 +66,6 @@ class RobotDynamics
     };
 
 
-
-
 protected:
     commandVec_t lowerCommandBounds;
     commandVec_t upperCommandBounds;
@@ -85,7 +82,6 @@ private:
     bool initial_phase_flag_;
 
 public:
-    // static const double mc, mp, l, g;
     std::shared_ptr<RobotAbstract> m_kukaRobot;
 
 private:
@@ -120,13 +116,13 @@ public:
 
     ~RobotDynamics(){};
     RobotDynamics(double dt, unsigned int N,  std::shared_ptr<RobotAbstract> robot, const ContactModel::SoftContactModel& contact_model);
-    State f(const stateVec_t& X, const commandVec_t& tau);
+    const State& f(const stateVec_t& X, const commandVec_t& tau);
     void fx(const stateVecTab_t& xList, const commandVecTab_t& uList);
 
     commandVec_t getLowerCommandBounds();
     commandVec_t getUpperCommandBounds();
-    stateMatTab_t getfxList();
-    stateR_commandC_tab_t getfuList();
+    const stateMatTab_t& getfxList();
+    const stateR_commandC_tab_t& getfuList();
 };
 
 

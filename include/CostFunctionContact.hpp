@@ -2,8 +2,7 @@
 #define COSTFUNCTIONCONTACT_H
 
 #include "config.h"
-#include <Eigen/Dense>
-
+#include "RobotAbstract.h"
 
 using Jacobian = Eigen::Matrix<double, 1, stateSize + commandSize>;
 using Hessian = Eigen::Matrix<double, 1, stateSize + commandSize>;

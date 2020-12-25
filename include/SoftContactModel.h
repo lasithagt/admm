@@ -5,8 +5,6 @@
 #include <iostream>
 #include <math.h>      
 
-using namespace Eigen;
-
 namespace ContactModel {
 
 struct ContactParams {

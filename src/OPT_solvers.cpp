@@ -152,6 +152,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std:
 
   // admm optimizer
   ADMMTrajOptimizer admm_full = ADMMTrajOptimizer(N, TimeStep);
+
   admm_full.run(kukaRobot, init_state, solverOptions, ADMM_OPTS, IK_OPT, LIMITS, cp_, cartesianPoses);
 
 

@@ -18,8 +18,9 @@ int main() {
 	robotParams.Kp = Eigen::MatrixXd(7,7);
 
 	/* ---------------------------------- Define the robot and contact model ---------------------------------- */
-	KDL::Chain robot = KDL::KukaDHKdl();
-	std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
+	KDL::KukaDHKdl robot = KDL::KukaDHKdl();
+  	KDL::Chain chain = robot();
+	std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(chain, robotParams));
 
 	ContactModel::ContactParams cp_;
 	cp_.E = 300;

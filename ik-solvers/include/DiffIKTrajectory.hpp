@@ -6,7 +6,6 @@
 #include "modern_robotics.h"
 #include <cmath>
 #include <functional>
-#define NDOF 7
 
 
 
@@ -48,8 +47,8 @@ public:
 		FK_current_pos.resize(3, N_steps);
 
 		// joint space variables q, q_dot
-		thetalist  = Eigen::MatrixXd::Zero(NDOF, N_steps);
-	    thetalistd = Eigen::MatrixXd::Zero(NDOF, N_steps);
+		thetalist  = Eigen::MatrixXd::Zero(7, N_steps);
+	    thetalistd = Eigen::MatrixXd::Zero(7, N_steps);
 
 	    IK = IK_solver(Slist,  M, joint_limits, eomg, ev, rho);
 
@@ -70,7 +69,7 @@ public:
 	   	Eigen::VectorXd thetalist0  = q0;
 	    Eigen::VectorXd thetalistd0 = qd0;
 
-	    Eigen::VectorXd thetalist_ret(NDOF);
+	    Eigen::VectorXd thetalist_ret(7);
 	    thetalist_ret = q0;
 
 	    FK_current.at(0) = mr::FKinSpace(M, Slist, q0);

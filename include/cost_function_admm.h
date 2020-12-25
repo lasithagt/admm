@@ -5,11 +5,6 @@
 #include <iostream>
 #include "CostFunctionContact.hpp"
 
-#include <Eigen/Dense>
-
-using namespace Eigen;
-
-
 // template <class DynamicsT, class PlantT, class costFunctionT, class OptimizerT, class OptimizerResultT>
 class CostFunctionADMM
 {
@@ -165,33 +160,29 @@ public:
         cxx_new[Nl-1]    = Q;
         cxx_new[Nl-1]   += m_;
         cxx_new[Nl-1]   += n_;
-
-        // cuu_new[Nl-1]    = R ; //+ rho(1) * Eigen::MatrixXd::Identity(7, 7);  TODO: check this line
-
-        // c_new = 0; // TODO: move this to somewhere.
     }
 
 
 
-	const Eigen::Matrix<double,6,6>& getT() const {return T;};
+	const Eigen::Matrix<double,6,6>& getT()  {return T;};
 
-	const stateMat_t& getQ() const {return Q;};
+	const stateMat_t& getQ() {return Q;};
 
-	const stateMat_t& getQf() const {return Qf;};
+	const stateMat_t& getQf() {return Qf;};
 
-	const commandMat_t& getR() const {return R;};
+	const commandMat_t& getR() {return R;};
 
-	const stateVecTab_t& getcx() const {return cx_new;};
+	const stateVecTab_t& getcx() {return cx_new;};
 
-	const commandVecTab_t& getcu() const {return cu_new;};
+	const commandVecTab_t& getcu() {return cu_new;};
 
-	const stateMatTab_t& getcxx() const {return cxx_new;};
+	const stateMatTab_t& getcxx() {return cxx_new;};
 
-	const commandR_stateC_tab_t& getcux() const {return cux_new;};
+	const commandR_stateC_tab_t& getcux() {return cux_new;};
 
-	const commandMatTab_t& getcuu() const {return cuu_new;};
+	const commandMatTab_t& getcuu() {return cuu_new;};
 
-	const double& getc() const {return c_new;};
+	const double& getc() {return c_new;};
 
 	
 protected:

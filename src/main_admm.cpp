@@ -3,7 +3,11 @@
 
 
 #include "ADMMTrajOptimizer.hpp"
+
 #include "config.h"
+#include "KukaModel.h"
+#include "models.h"
+#include "RobCodGenModel.h"
 
 void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
 
@@ -12,13 +16,15 @@ int main(int argc, char *argv[]) {
 
   /* -------------------- orocos kdl robot initialization-------------------------*/
   KUKAModelKDLInternalData robotParams;
-  robotParams.numJoints = NDOF;
+  robotParams.numJoints = 7;
   robotParams.Kv = Eigen::MatrixXd(7,7);
   robotParams.Kp = Eigen::MatrixXd(7,7);
 
   // ---------------------------------- Define the robot and contact model ---------------------------------- 
-  KDL::Chain robot = KDL::KukaDHKdl();
-  std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
+  KDL::KukaDHKdl robot = KDL::KukaDHKdl();
+  KDL::Chain chain = robot();
+
+  std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(chain, robotParams));
 
   optimizer::ILQRSolverADMM::traj result;
   stateVec_t xinit;

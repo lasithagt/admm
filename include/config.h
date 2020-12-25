@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -12,31 +11,23 @@
 #define ENABLE_FULLDDP 0
 #define DISABLE_FULLDDP 1
 
-#define SOFT_CONTACT 1
+#define SOFT_CONTACT
 #define CONTACT_EN 0
 #define DEBUG 
-// #define PRINT 0
 
-#define MULTI_THREAD 0
-#if MULTI_THREAD
-#include <thread>
-#define NUMBER_OF_THREAD 1 
-#endif
 
-#define stateSize 17 
-#define commandSize 7 
-#define fullstatecommandSize 24
-#define NDOF 7
+const int stateSize = 17;
+const int commandSize = 7;
+const int fullstatecommandSize = 24;
+const int NDOF = 7;
 
-#define TimeHorizon 10
-#define TimeStep 0.01 // 0.01s works for soft contact dynamics
+const double TimeHorizon = 10;
+const double TimeStep = 0.01; // 0.01s works for soft contact dynamics
 
-#define NumberofKnotPt TimeHorizon / TimeStep
-#define InterpolationScale 10 
+const unsigned int NumberofKnotPt = TimeHorizon / TimeStep;
+const double InterpolationScale = 10;
 const int32_t kNumJoints = 7;
 
-
-#define BOXWEIGHT 0.122
 
 
 // typedef for stateSize types
@@ -157,4 +148,4 @@ public:
     }
 };
 
-#endif // CONFIG_H
+// #endif // CONFIG_H

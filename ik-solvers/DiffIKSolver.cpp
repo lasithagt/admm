@@ -36,7 +36,7 @@ void IK_FIRST_ORDER::getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& the
     }
 
     int i = 0;
-    Eigen::MatrixXd J(6, NDOF);
+    Eigen::MatrixXd J(6, 7);
 
     while (err && i < maxIterations) {
 
@@ -105,7 +105,7 @@ void IK_SECOND_ORDER::getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& th
     }
 
     int i = 0;
-    Eigen::MatrixXd J(6, NDOF);
+    Eigen::MatrixXd J(6, 7);
 
     while (err && i < maxIterations) {
 
