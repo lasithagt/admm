@@ -1,10 +1,11 @@
 # create library
 find_package(ct_core)
 find_package(ct_rbd)
+find_package(ct_optcon)
 
 set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/KDL/KukaModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/RobCodGenModel.cpp)
 add_library(kuka-models STATIC ${SOURCES})
-target_link_libraries(kuka-models ct_core ct_rbd)
+target_link_libraries(kuka-models ct_core ct_rbd ct_optcon)
 
 # add include directories
 target_include_directories(kuka-models
@@ -21,6 +22,13 @@ target_include_directories(kuka-models
 add_executable(test_rbd_models main_test_models.cpp)
 target_include_directories(test_rbd_models PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/KDL ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen)
 target_link_libraries(test_rbd_models kuka-models ModernRoboticsCpp orocos-kdl)
+
+set(CT_MODELS_LIBRARIES "")
+
+add_executable(KUKALinearizationCodegen ./KUKACodGenLinearizer.cpp)
+target_include_directories(KUKALinearizationCodegen PUBLIC ${ct_models_target_include_dirs})
+target_link_libraries(KUKALinearizationCodegen ct_rbd ct_core)
+list(APPEND CT_MODELS_BINARIES KUKALinearizationCodegen)
 
 
 # install the target and create export-set

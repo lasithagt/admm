@@ -21,6 +21,7 @@
 #include <ct/rbd/systems/linear/RbdLinearizer.h>
 #include "ct/rbd/systems/FixBaseFDSystem.h"
 #include "ct/rbd/systems/FloatingBaseFDSystem.h"
+#include <ct/rbd/robot/jacobian/ConstraintJacobian.h>
 
 
 #include "KUKA.h"
@@ -87,6 +88,9 @@ private:
 
     // jacobian
     KUKA::Kinematics::Jacobian jac;
+    KUKA::Kinematics::Jacobian jacDot;
+    ConstraintJacobian<KUKA::Kinematics, 3, KUKA::Kinematics::NJOINTS>::jacobian_t dJdt;
+    ConstraintJacobian<KUKA::Kinematics, 3, KUKA::Kinematics::NJOINTS> Jc_t;
 
     // gravity
     Eigen::VectorXd gravity_u;

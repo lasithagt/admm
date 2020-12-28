@@ -24,13 +24,13 @@ Licensed under the BSD-2 license (see LICENSE file in main directory)
 
 // define the links
 #define CT_BASE fr_base0
-#define CT_L0 fr_Link0
-#define CT_L1 fr_Link1
-#define CT_L2 fr_Link2
-#define CT_L3 fr_Link3
-#define CT_L4 fr_Link4
-#define CT_L5 fr_Link5
-#define CT_L6 fr_Link6
+#define CT_L0 fr_link1
+#define CT_L1 fr_link2
+#define CT_L2 fr_link3
+#define CT_L3 fr_link4
+#define CT_L4 fr_link5
+#define CT_L5 fr_link6
+#define CT_L6 fr_link7
 
 // define single end effector (could also be multiple)
 #define CT_N_EE 1

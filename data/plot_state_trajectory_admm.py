@@ -14,9 +14,9 @@ if __name__ == "__main__":
 
 	# Plot data for motion
 	# for i in range(6):
-	xline = data[5,0,::]
-	yline = data[5,1,::]
-	zline = data[5,2,::]
+	xline = data[4,0,::]
+	yline = data[4,1,::]
+	zline = data[4,2,::]
 	line_name = 'Iteration' + str(5)
 	ax.plot3D(xline, yline, zline, label = line_name)
 

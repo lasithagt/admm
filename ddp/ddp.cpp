@@ -48,8 +48,9 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
     robotParams.Kp = Eigen::MatrixXd(7,7);
 
 
-    KDL::Chain robot = KDL::KukaDHKdl();
-    std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot, robotParams));
+    KDL::KukaDHKdl robot = KDL::KukaDHKdl();
+    KDL::Chain chain = robot();
+    std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(chain, robotParams));
 
     //======================================
 

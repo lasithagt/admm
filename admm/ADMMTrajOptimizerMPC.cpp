@@ -31,7 +31,7 @@ void ADMMTrajOptimizerMPC::run(std::shared_ptr<RobotAbstract>& kukaRobot,  const
 
     /*------------------initialize control input----------------------- */
 
-    unsigned int horizon_mpc = 40;          // make these loadable from a cfg file
+    unsigned int horizon_mpc = 100;          // make these loadable from a cfg file
 
 
     gettimeofday(&tbegin,NULL);

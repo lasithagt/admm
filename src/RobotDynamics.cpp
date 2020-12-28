@@ -28,7 +28,9 @@ const RobotDynamics::State& RobotDynamics::f(const stateVec_t& X, const commandV
 
     // compute manipualator dynamics
     m_kukaRobot->getSpatialJacobian(q.data(), manip_jacobian);
-    tau_ext = tau + manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
+    tau_ext = tau + 0*manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
+
+
     m_kukaRobot->getForwardDynamics(q.data(), qd.data(), tau_ext, qdd);
 
     /*  contact model dynamics */

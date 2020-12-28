@@ -80,9 +80,10 @@ target_include_directories(admm-contact-rcg PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(admm-contact-rcg orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers ct_core ct_rbd)
 
 
-# add_executable(admm-mpc-contact admm/admm_mpc_main.cpp)
-# target_include_directories(admm-mpc-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
-# target_link_libraries(admm-mpc-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers)
+add_executable(admm-mpc-contact-rcg src/OPT_solvers.cpp src/main_admm_rcg_mpc.cpp)
+target_include_directories(admm-mpc-contact-rcg PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(admm-mpc-contact-rcg orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers)
+
 
 add_executable(admm-mpc-contact src/OPT_solvers.cpp src/main_admm_mpc.cpp)
 target_include_directories(admm-mpc-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)

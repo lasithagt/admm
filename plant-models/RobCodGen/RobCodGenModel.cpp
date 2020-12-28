@@ -25,6 +25,7 @@ int RobCodGenModel::initRobot()
 
     gravity_u.resize(KUKA::Kinematics::NJOINTS);
 
+
     return 0;
     
 }
@@ -41,10 +42,26 @@ void RobCodGenModel::getForwardKinematics(double* q, double* qd, double *qdd, Ei
     poseM = ee_pose.getRotationMatrix().matrix();
     poseP = ee_pose.position().vector();
 
+    Jc_t.ee_indices_.push_back(0);
+    Jc_t.eeInContact_[0] = true;
+
+    RBD.joints() = joint_state;
+
     // Kinematics, velocity
     vel = m_kyn.getEEVelocityInBase(ind, RBD).vector();
 
     // Kinematics, acceleration
+    if (computeOther == true) {
+        Eigen::MatrixXd temp(6,7);
+        Eigen::VectorXd temp_qdd(7);
+        memcpy(temp_qdd.data(), qdd, 7 * sizeof(double));
+
+        getSpatialJacobian(q, temp);
+        accel = temp.block(0,0,3,7) * temp_qdd;
+
+        getSpatialJacobianDot(q, qd, temp);
+        accel += temp.block(0,0,3,7) * joint_state.getVelocities();
+    }
     // TODO
 
 }
@@ -85,6 +102,7 @@ void RobCodGenModel::getMassMatrix(double* q, Eigen::MatrixXd& massMatrix)
 
 void RobCodGenModel::getCoriolisMatrix(double* q, double* qd, Eigen::VectorXd& coriolis) // change
 {
+    double qdd[7] = {0, 0, 0, 0, 0, 0, 0};
 
 }
  
@@ -100,14 +118,59 @@ void RobCodGenModel::getSpatialJacobian(double* q, Eigen::MatrixXd& jacobian)
 {
     memcpy(robot_state.head(7).data(), q, 7*sizeof(double));
     size_t ee_id = 0;
+    RBD.joints() = joint_state;
+
     jac = m_kyn.getJacobianBaseEEbyId(ee_id, RBD);
-    memcpy(jacobian.data(), jac.data(), 42*sizeof(double));
+
+    jacobian.block(0,0,3,7) = jac.template bottomRows<3>();
+    jacobian.block(3,0,3,7) = jac.template topRows<3>();
+
+    // chnage this
+    // memcpy(jacobian.data(), jac.data(), 42*sizeof(double));
 
 } 
 
 void RobCodGenModel::getSpatialJacobianDot(double* q, double* qd, Eigen::MatrixXd& jacobianDot)
 {   
+    memcpy(robot_state.head(7).data(), q, 7*sizeof(double));
+    memcpy(robot_state.tail(7).data(), qd, 7*sizeof(double));
+    RBD.joints() = joint_state;
 
+
+    Eigen::Matrix<double, 3, KUKA::Kinematics::NJOINTS> Jc_Rotational, Jc_Translational, dJdt;
+    Eigen::Matrix<double, 3, 1> dJidqj;
+
+    dJdt.setZero();
+    size_t ee_id = 0;
+
+    jac = m_kyn.getJacobianBaseEEbyId(ee_id, RBD);
+
+    // Collect current contact Jacobians
+    // Jc_geometric  = m_dyn.robcogen().getJacobianBaseEEbyId(ee_indices_[0], state.joints().getPositions());
+    Jc_Rotational = jac.template topRows<3>();
+    Jc_Translational = jac.template bottomRows<3>();
+
+    // Compute dJdt for the joint columns
+    for (size_t i = 0; i < KUKA::Kinematics::NJOINTS; i++)
+    {  // Loop over columns i of dJdt_joints
+     for (size_t j = 0; j < KUKA::Kinematics::NJOINTS; j++)
+     {  // Loop over derivative w.r.t each joint j and sum
+         if (i >= j)
+         {
+             dJidqj = (Jc_Rotational.template block<3, 1>(0, j))
+                          .template cross(Jc_Translational.template block<3, 1>(0, i));
+         }
+         else
+         {  // i < j
+             dJidqj = (Jc_Rotational.template block<3, 1>(0, i))
+                          .template cross(Jc_Translational.template block<3, 1>(0, j));
+         }
+         dJdt.template block<3, 1>(0, i) += dJidqj * joint_state.getVelocities()(j);
+     }
+    }
+
+    // Fill in the rows of the full dJdt
+    jacobianDot.block(0,0,3,7) = dJdt;
 }
 
 void RobCodGenModel::ik()

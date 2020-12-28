@@ -3,6 +3,8 @@
 
 #include "config.h"
 #include "ADMMTrajOptimizerMPC.hpp"
+#include "RobCodGenModel.h"
+
 
 void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
 
@@ -16,8 +18,8 @@ int main(int argc, char *argv[]) {
   robotParams.Kp = Eigen::MatrixXd(7,7);
 
   // ---------------------------------- Define the robot and contact model ---------------------------------- 
-  KDL::KukaDHKdl robot = KDL::KukaDHKdl();
-  std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot(), robotParams));
+
+  std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new RobCodGenModel());
 
   optimizer::ILQRSolverADMM::traj result;
   stateVec_t xinit;

@@ -12,7 +12,7 @@
 #define DISABLE_FULLDDP 1
 
 #define SOFT_CONTACT
-#define CONTACT_EN 0
+#define CONTACT_EN 1
 #define DEBUG 
 
 

@@ -38,7 +38,7 @@ void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_
   stateVec_t xinit;
   stateVecTab_t xtrack;
   xtrack.resize(stateSize, NumberofKnotPt + 1);
-  xtrack.row(16) = 0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
+  xtrack.row(16) = 2 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
 
   /* initialize xinit, xgoal, xtrack - for the hozizon*/
