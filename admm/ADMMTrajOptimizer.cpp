@@ -7,7 +7,7 @@ ADMMTrajOptimizer::ADMMTrajOptimizer(unsigned int N_, double dt_) : N(N_), dt(dt
 ADMMTrajOptimizer::~ADMMTrajOptimizer() {}
 
 void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
- Saturation& LIMITS, ContactModel::ContactParams& cp, std::vector<Eigen::MatrixXd>& cartesianPoses) 
+ Saturation& LIMITS, ContactModel::ContactParams<double>& cp, std::vector<Eigen::MatrixXd>& cartesianPoses) 
 
 {
   
@@ -19,7 +19,7 @@ void ADMMTrajOptimizer::run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_
   CostFunctionADMM costFunction_admm(N, kukaRobot);
 
 
-  ContactModel::SoftContactModel contactModel(cp);
+  ContactModel::SoftContactModel<double> contactModel(cp);
   // kukaRobot->initRobot();
 
 

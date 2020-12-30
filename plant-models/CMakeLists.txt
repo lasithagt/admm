@@ -31,6 +31,12 @@ target_link_libraries(KUKALinearizationCodegen ct_rbd ct_core)
 list(APPEND CT_MODELS_BINARIES KUKALinearizationCodegen)
 
 
+add_executable(KUKASoftContactLinearizationCodegen ./KUKASoftContactSystemCodGenLinearizer.cpp)
+target_include_directories(KUKASoftContactLinearizationCodegen PUBLIC ${ct_models_target_include_dirs})
+target_link_libraries(KUKASoftContactLinearizationCodegen ct_rbd ct_core)
+list(APPEND CT_MODELS_BINARIES KUKASoftContactLinearizationCodegen)
+
+
 # install the target and create export-set
 install(TARGETS kuka-models
         EXPORT PlantModelTargets

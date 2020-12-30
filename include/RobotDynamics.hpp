@@ -86,7 +86,7 @@ public:
 
 private:
     
-    ContactModel::SoftContactModel m_contact_model;
+    ContactModel::SoftContactModel<double> m_contact_model;
     stateR_half_commandC_t Bu; //input mapping
     stateVec_t xdot_new;
     stateVec_half_t vd;
@@ -115,7 +115,7 @@ public:
     RobotDynamics() {}
 
     ~RobotDynamics(){};
-    RobotDynamics(double dt, unsigned int N,  std::shared_ptr<RobotAbstract> robot, const ContactModel::SoftContactModel& contact_model);
+    RobotDynamics(double dt, unsigned int N,  const std::shared_ptr<RobotAbstract>& robot, const ContactModel::SoftContactModel<double>& contact_model);
     const State& f(const stateVec_t& X, const commandVec_t& tau);
     void fx(const stateVecTab_t& xList, const commandVecTab_t& uList);
 

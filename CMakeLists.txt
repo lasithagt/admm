@@ -31,7 +31,8 @@ endif()
 
 # find_package(Eigen3 REQUIRED)
 
-
+find_package(blasfeo QUIET)
+find_package(hpipm QUIET)
 
 find_package(OROCOS_KDL)
 find_package(ModernRoboticsCpp)

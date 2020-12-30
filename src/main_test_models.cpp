@@ -22,7 +22,7 @@ int main() {
   	KDL::Chain chain = robot();
 	std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(chain, robotParams));
 
-	ContactModel::ContactParams cp_;
+	ContactModel::ContactParams<double> cp_;
 	cp_.E = 300;
 	cp_.mu = 0.4340;
 	cp_.nu = 0.55;
@@ -30,7 +30,7 @@ int main() {
 	cp_.R_path = 1000;
 	cp_.Kd = 100;
 
-	ContactModel::SoftContactModel contactModel(cp_);
+	ContactModel::SoftContactModel<double> contactModel(cp_);
 	kukaRobot->initRobot();
 
 	// // ----------------------------------------------------------------------------------------------------------

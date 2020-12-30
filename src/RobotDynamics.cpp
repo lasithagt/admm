@@ -1,7 +1,7 @@
 #include "RobotDynamics.hpp"
 
 
-RobotDynamics::RobotDynamics(double dt_, unsigned int N_, std::shared_ptr<RobotAbstract> kukaRobot, const ContactModel::SoftContactModel& contact_model) 
+RobotDynamics::RobotDynamics(double dt_, unsigned int N_, const std::shared_ptr<RobotAbstract>& kukaRobot, const ContactModel::SoftContactModel<double>& contact_model) 
 : diff_([this](const stateVec_t& x, const commandVec_t& u) -> stateVec_t{ return this->f(x, u); }),
       num_diff_(diff_), dt(dt_), N(N_)
 {

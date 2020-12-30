@@ -45,14 +45,14 @@ void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, 
 
 
   // contact model dynamics
-  ContactModel::ContactParams cp_;
+  ContactModel::ContactParams<double> cp_;
   cp_.E = 1000;
   cp_.mu = 0.5;
   cp_.nu = 0.55;
   cp_.R  = 0.005;
   cp_.R_path = 1000;
   cp_.Kd = 10;
-  ContactModel::SoftContactModel contactModel(cp_);
+  ContactModel::SoftContactModel<double> contactModel(cp_);
   kukaRobot->initRobot();
 
 
@@ -118,14 +118,14 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std:
   solverOptions.max_iter = iterMax;
 
 
-  ContactModel::ContactParams cp_;
+  ContactModel::ContactParams<double> cp_;
   cp_.E = 1000;
   cp_.mu = 0.5;
   cp_.nu = 0.4;
   cp_.R  = 0.005;
   cp_.R_path = 1000;
   cp_.Kd = 10;
-  ContactModel::SoftContactModel contactModel(cp_);
+  ContactModel::SoftContactModel<double> contactModel(cp_);
   kukaRobot->initRobot();
 
   /* ---------------------------------------------------------------------------------------------- */

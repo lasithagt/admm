@@ -35,7 +35,7 @@ public:
     ADMMTrajOptimizerMPC();
     ~ADMMTrajOptimizerMPC();
 
-    void run(std::shared_ptr<RobotAbstract>& kukaRobot,  const stateVec_t& init_state, const ContactModel::SoftContactModel& contactModel, const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
+    void run(std::shared_ptr<RobotAbstract>& kukaRobot,  const stateVec_t& init_state, const ContactModel::SoftContactModel<double>& contactModel, const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
      const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
 
     optimizer::ILQRSolverADMM::traj getOptimizerResult(); 
