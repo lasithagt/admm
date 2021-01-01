@@ -16,8 +16,9 @@ Licensed under the BSD-2 license (see LICENSE file in main directory)
 
 #include <ct/models/CodegenOutputDirs.h>
 
-const size_t state_dim = ct::rbd::FixBaseFDSystem<ct::rbd::KUKA::Dynamics>::STATE_DIM;
-const size_t control_dim = ct::rbd::FixBaseFDSystem<ct::rbd::KUKA::Dynamics>::CONTROL_DIM;
+const size_t force_dim = 0;
+const size_t state_dim = ct::rbd::KUKASoftContactFDSystem<ct::rbd::KUKA::Dynamics>::STATE_DIM + force_dim;
+const size_t control_dim = ct::rbd::KUKASoftContactFDSystem<ct::rbd::KUKA::Dynamics>::CONTROL_DIM;
 const size_t njoints = ct::rbd::KUKA::Dynamics::NJOINTS;
 
 typedef ct::core::ADCodegenLinearizer<state_dim, control_dim>::ADCGScalar Scalar;

@@ -3,7 +3,7 @@ find_package(ct_core)
 find_package(ct_rbd)
 find_package(ct_optcon)
 
-set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/KDL/KukaModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/RobCodGenModel.cpp)
+set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/KDL/KukaModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/RobCodGenModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/codegen/KUKASoftContactSystemLinearizedForward.cpp)
 add_library(kuka-models STATIC ${SOURCES})
 target_link_libraries(kuka-models ct_core ct_rbd ct_optcon)
 
@@ -19,7 +19,7 @@ target_include_directories(kuka-models
 
 
 # # test scripts
-add_executable(test_rbd_models main_test_models.cpp)
+add_executable(test_rbd_models main_test_models.cpp RobCodGen/codegen/KUKASoftContactSystemLinearizedForward.cpp)
 target_include_directories(test_rbd_models PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/KDL ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen)
 target_link_libraries(test_rbd_models kuka-models ModernRoboticsCpp orocos-kdl)
 

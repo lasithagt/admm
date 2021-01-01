@@ -54,14 +54,14 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
 
     //======================================
 
-    ContactModel::ContactParams cp_;
+    ContactModel::ContactParams<double> cp_;
     cp_.E = 1000;
     cp_.mu = 0.5;
     cp_.nu = 0.4;
     cp_.R  = 0.005;
     cp_.R_path = 1000;
     cp_.Kd = 10;
-    ContactModel::SoftContactModel contactModel(cp_);
+    ContactModel::SoftContactModel<double> contactModel(cp_);
     kukaRobot->initRobot();
 
     // get the initial goal pose

@@ -74,7 +74,7 @@ public:
         double last_head;
         Eigen::VectorXd alphaList;
 
-        OptSet() : debug_level(2), n_alpha(11), lambdaMin(1e-6), lambdaMax(1e10), lambdaInit(1), dlambdaInit(1), lambdaFactor(1.3), max_iter(500), 
+        OptSet() : debug_level(2), n_alpha(3), lambdaMin(1e-6), lambdaMax(1e10), lambdaInit(1), dlambdaInit(1), lambdaFactor(1.3), max_iter(500), 
                     tolGrad(1e-4), tolFun(1e-4), tolConstraint(1e-7), zMin(0.0), regType(1), print(2) {}
 
     };
@@ -149,7 +149,7 @@ private:
     bool isUNan;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-    std::chrono::duration<float, std::milli> elapsed;
+    std::chrono::duration<float, std::nano> elapsed;
 
     // std::mutex mu;
 

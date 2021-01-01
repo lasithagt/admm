@@ -68,7 +68,6 @@ public:
         /* compute the contact terms. */
         Eigen::Vector2d contact_terms = computeContact->computeContactTerms(xList_k, R_c(index_k));
 
-        // std::cout << x_track.transpose() << std::endl;
         if (index_k == N) 
         {
             cost_ = 0.5 * (xList_k.transpose() - x_track.transpose()) * Qf * (xList_k - x_track); 

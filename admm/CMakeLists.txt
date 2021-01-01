@@ -1,5 +1,5 @@
 # create library
-set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ilqrsolver_admm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../src/RobotDynamics.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMMultiBlock.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMTrajOptimizer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMTrajOptimizerMPC.cpp)
+set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ilqrsolver_admm.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMMultiBlock.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMTrajOptimizer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ADMMTrajOptimizerMPC.cpp)
 add_library(admm-solver STATIC ${SOURCES})
 target_link_libraries(admm-solver PUBLIC kuka-models ik-solvers cnpy ModernRoboticsCpp)
 

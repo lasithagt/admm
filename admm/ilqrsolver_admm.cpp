@@ -67,8 +67,8 @@ ILQRSolverADMM::ILQRSolverADMM(RobotDynamics& DynamicModel, CostFunctionADMM& Co
     dV.setZero();
 
     // parameters for line search
-    Op.alphaList.resize(11);
-    Op.alphaList << 1.0, 0.5012, 0.2512, 0.1259, 0.0631, 0.0316, 0.0158, 0.0079, 0.0040, 0.0020, 0.0010;
+    Op.alphaList.resize(3);
+    Op.alphaList << 1.0, 0.5012, 0.2512;// 0.1259, 0.0631, 0.0316, 0.0158, 0.0079, 0.0040, 0.0020, 0.0010;
 
     debugging_print = 0;
 
@@ -123,7 +123,7 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
         }
 
 
-        // TRACE("====== STEP 2: backward pass, compute optimal control law and cost-to-go\n");
+        // STEP 2: backward pass, compute optimal control law and cost-to-go;
         backPassDone = 0;
         while (!backPassDone)
         {
@@ -151,20 +151,17 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
         {
             Op.dlambda = min(Op.dlambda / Op.lambdaFactor, 1.0/Op.lambdaFactor);
             Op.lambda = Op.lambda * Op.dlambda * (Op.lambda > Op.lambdaMin);
-            if (Op.debug_level >= 1)
-            {
+            if (Op.debug_level >= 1) {
                 TRACE(("\nSUCCESS: gradient norm < tolGrad\n"));
             }
             break;
         }
 
-
-
-        //====== STEP 3: line-search to find new control sequence, trajectory, cost
+        // STEP 3: line-search to find new control sequence, trajectory, cost
         fwdPassDone = 0;
         if (backPassDone)
         {
-            //only implement serial backtracking line-search
+            // only implement serial backtracking line-search
             for (int alpha_index = 0; alpha_index < Op.alphaList.size(); alpha_index++)
             {
                 alpha = Op.alphaList[alpha_index];
@@ -178,7 +175,7 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
                     z = Op.dcost / Op.expected;
                 } else {
                     z = static_cast<double>(-signbit(Op.dcost)); // [TODO:doublecheck]
-                    TRACE("non-positive expected reduction: should not occur \n"); //warning
+                    TRACE("non-positive expected reduction: should not occur \n"); 
                 }
 
                 if(z > Op.zMin) { 
@@ -189,7 +186,7 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             if(!fwdPassDone) alpha = sqrt(-1.0);
         }
                 
-        //====== STEP 4: accept step (or not), draw graphics, print status
+        // STEP 4: accept step (or not), draw graphics, print status
         if (Op.debug_level > 1 && Op.last_head == Op.print_head)
         {
             Op.last_head = 0;
@@ -226,8 +223,8 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
                 break;
             }
         }
-        else 
-        {   // no cost improvement
+        else {   
+            // no cost improvement
             // increase lambda
             Op.dlambda= max(Op.dlambda * Op.lambdaFactor, Op.lambdaFactor);
             Op.lambda= max(Op.lambda * Op.dlambda, Op.lambdaMin);
@@ -290,11 +287,11 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
     for (unsigned int i = 0; i < N; i++) 
     {
         updateduList.col(i)     = uList.col(i);
-        // costList[i]             = costFunction->cost_func_expre(i, updatedxList.col(i), updateduList.col(i));
         costList[i]             = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho, R_c);
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
 
     }
+
     costList[N]  = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), u_NAN_loc, thetaList_bar.col(N), rho, R_c);
 
 
@@ -329,14 +326,27 @@ void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x
     commandVec_t u_NAN_loc;
     u_NAN_loc(0) = sqrt(-1.0);
 
+    // std::cout << updatedxList << std::endl;
     isUNan = 0;
     // start = std::chrono::high_resolution_clock::now();
     for (unsigned int i = 0; i < N; i++) 
     {
         updateduList.col(i)     = uList.col(i) + alpha * kList.col(i) + KList[i] * (updatedxList.col(i) - xList.col(i));
+
         costListNew[i]          = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho, R_c);
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
+
     }
+
+    // std::cout << alpha * kList << std::endl;
+
+    // for (int k = 0;k<N;k++) {
+    //     std::cout << (updatedxList - xList) << std::endl;
+    // }
+
+    // Eigen::VectorXd br;
+    // br(0) = 0;
+
     costListNew[N] = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), uList_bar.col(N-1), thetaList_bar.col(N-1), rho, R_c);
     // end = std::chrono::high_resolution_clock::now();
     // elapsed = end - start;
@@ -347,7 +357,9 @@ void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x
 /* --------------------- 4th-order Runge-Kutta step --------------------- */
 inline stateVec_t ILQRSolverADMM::forward_integration(const stateVec_t& x, const commandVec_t& u)
 {
+
     x_dot1 = dynamicModel->f(x, u);
+
     x_dot2 = dynamicModel->f(x + 0.5 * dt * x_dot1, u);
     x_dot3 = dynamicModel->f(x + 0.5 * dt * x_dot2, u);
     x_dot4 = dynamicModel->f(x + dt * x_dot3, u);
@@ -378,8 +390,7 @@ void ILQRSolverADMM::doBackwardPass()
         Quu = costFunction->getcuu()[i]     + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfuList()[i];
         Qux = costFunction->getcux()[i]     + dynamicModel->getfuList()[i].transpose() * Vxx[i + 1]  * dynamicModel->getfxList()[i];
 
-        if (Op.regType == 1)
-        {
+        if (Op.regType == 1) {
             QuuF = Quu + Op.lambda * commandMat_t::Identity();
         } else {
             QuuF = Quu;
@@ -387,8 +398,7 @@ void ILQRSolverADMM::doBackwardPass()
         
         QuuInv = QuuF.inverse();
 
-        if (!isPositiveDefinite(Quu))
-        {
+        if (!isPositiveDefinite(Quu)) {
             //To be Implemented : Regularization (is Quu definite positive ?)
             TRACE("Quu is not positive definite ");
             if (Op.lambda==0.0) {
@@ -442,7 +452,7 @@ void ILQRSolverADMM::doBackwardPass()
         g_norm_sum += g_norm_max;
     }
 
-    Op.g_norm = g_norm_sum/(static_cast<double>(Op.n_hor));
+    Op.g_norm = g_norm_sum / (static_cast<double>(Op.n_hor));
 }
 
 

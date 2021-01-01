@@ -39,7 +39,7 @@ find_package(ModernRoboticsCpp)
 find_package(CNPY)
 find_package(ct_core)
 find_package(ct_rbd)
-
+find_package(ct_optcon)
 
 
 
@@ -55,7 +55,7 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -pthread")
 
 
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${OROCOS_KDL_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${OROCOS_KDL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/plant-models)
 
 # find ModernRobotics package
 add_subdirectory(plant-models)
@@ -74,11 +74,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 add_executable(admm-contact src/OPT_solvers.cpp src/main_admm.cpp)
 target_include_directories(admm-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(admm-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers ct_core ct_rbd)
+target_link_libraries(admm-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers ct_core ct_rbd ct_optcon)
 
 add_executable(admm-contact-rcg src/OPT_solvers.cpp src/main_admm_rcg.cpp)
 target_include_directories(admm-contact-rcg PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(admm-contact-rcg orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers ct_core ct_rbd)
+target_link_libraries(admm-contact-rcg orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers ct_core ct_rbd ct_optcon)
 
 
 add_executable(admm-mpc-contact-rcg src/OPT_solvers.cpp src/main_admm_rcg_mpc.cpp)

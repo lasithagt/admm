@@ -16,6 +16,9 @@
 #include <ct/rbd/operationalSpace/rigid_body/OperationalModel.h>
 #include <ct/rbd/operationalSpace/rigid_body/OperationalModelRBD.h>
 
+#include "KUKASoftContactFDSystem.h"
+#include "RobCodGen/codegen/KUKASoftContactSystemLinearizedForward.h"
+
 using namespace ct::rbd;
 
 
@@ -213,13 +216,40 @@ void TEST_OPERATIONAL_MODEL() {
 
 }
 
+void TEST_AUTODIFF() {
+
+  typedef KUKASoftContactFDSystem<KUKA::Dynamics> KUKASystem;
+
+  const size_t STATE_DIM = KUKASystem::STATE_DIM;
+  const size_t CONTROL_DIM = KUKASystem::CONTROL_DIM;
+
+  ct::models::KUKA::KUKASoftContactSystemLinearizedForward kukaLinear;
+
+  ct::core::StateVector<STATE_DIM> x;
+  ct::core::ControlVector<CONTROL_DIM> u;
+
+
+  x.setRandom();
+  u.setRandom();
+
+  auto A_gen = kukaLinear.getDerivativeState(x, u, 0.0);
+
+  std::cout << A_gen << std::endl;
+
+  // auto B_gen = kukaLinear.getDerivativeControl(x, u, 0.0);
+
+  // std::cout << B_gen << std::endl;
+  
+}
+
 
 int main() {
 
 	// TEST_DYNAMICS();
 	// TEST_OPERATIONAL_MODEL();
 	// TEST_JACOBIAN();
-	TEST_RCG();
+	// TEST_RCG();
+  TEST_AUTODIFF();
 }
 
 
