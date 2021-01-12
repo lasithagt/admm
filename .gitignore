@@ -1,4 +1,3 @@
-
 # Created by https://www.gitignore.io/api/c++,c,qt,cmake,jetbrains,windows,linux,osx,python
 
 ### C++ ###
@@ -343,3 +342,4 @@ ENV/
 **/install
 **/cmake
 
+/*.npy
