@@ -23,7 +23,7 @@ int KUKAModelKDL::initRobot()
     jacobian_.resize(7);
 
     robotParams_.Kv = Eigen::MatrixXd::Zero(7, 7);
-    robotParams_.Kv.diagonal() << 0.7, 0.5, 0.5, 0.4, 0.01, 0.01, 0.01;
+    robotParams_.Kv.diagonal() << 3.7, 1.5, 1.7, 1.9, 2, 2, 2;
 
 
     return true;
@@ -96,17 +96,7 @@ void KUKAModelKDL::getForwardDynamics(double* q, double* qd, const Eigen::Vector
     Eigen::LLT<Eigen::Ref<Eigen::MatrixXd> > llt(inertia_mat_.data); // Do LU decomposition. This is faster than the SVD approach.
 
 
-    qdd = std::move(llt.solve(force_ext - robotParams_.Kv * qd_.data - coriolis_.data - 0 * gravity_.data)); 
-
-    // TODO: Not working, seems faster though
-    // KDL::ChainFdSolver_RNE fdSolver(robotChain_, KDL::Vector(0,0,9.8));
-    // KDL::JntArray torques(7);
-    // KDL::Wrench f_ext(KDL::Vector(0,0,9.8), KDL::Vector(0,0,9.8));
-    // std::vector<KDL::Wrench> f_;
-    // f_.push_back(f_ext);
-    // fdSolver.CartToJnt(q_, qd_, torques, f_, qdd_);
-    // std::cout << q_(5);
-    // qdd = qdd_.data;
+    qdd = std::move(llt.solve(force_ext - robotParams_.Kv * qd_.data - coriolis_.data + 0 * gravity_.data)); 
 }
 
 void KUKAModelKDL::getMassMatrix(double* q, Eigen::MatrixXd& massMatrix)

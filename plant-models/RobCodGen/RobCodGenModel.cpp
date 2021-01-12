@@ -2,14 +2,22 @@
 #include <mutex>
 
 
-// std::mutex mu;
 
 RobCodGenModel::RobCodGenModel() : robot_state(joint_state.toImplementation())
 {
     // initRobot();
 }
 
-RobCodGenModel::~RobCodGenModel() {};
+RobCodGenModel::~RobCodGenModel() = default;
+// RobCodGenModel::RobCodGenModel(const RobCodGenModel& other)
+// {
+
+// }
+
+// RobCodGenModel& RobCodGenModel::operator=(const RobCodGenModel& other) 
+// {
+
+// }
 
 int RobCodGenModel::initRobot() 
 {
@@ -33,14 +41,16 @@ int RobCodGenModel::initRobot()
 void RobCodGenModel::getForwardKinematics(double* q, double* qd, double *qdd, Eigen::Matrix<double,3,3>& poseM, Eigen::Vector3d& poseP, Eigen::Vector3d& vel, Eigen::Vector3d& accel, bool computeOther)
 {
     // set the states
+    // std::lock_guard<std::mutex> lk(mu);
     memcpy(robot_state.head(7).data(), q, 7*sizeof(double));
     memcpy(robot_state.tail(7).data(), qd, 7*sizeof(double));
 
     // Kinematics, position
     size_t ind = 0;
-    ee_pose = m_kyn.getEEPoseInWorld(ind, base_pose, joint_state.getPositions());
-    poseM = ee_pose.getRotationMatrix().matrix();
-    poseP = ee_pose.position().vector();
+    ee_pos = m_kyn.getEEPositionInWorld(ind, base_pose, joint_state.getPositions());
+    // poseM = ee_pose.getRotationMatrix().matrix();
+
+    poseP = ee_pos.vector();
 
     Jc_t.ee_indices_.push_back(0);
     Jc_t.eeInContact_[0] = true;
@@ -62,14 +72,13 @@ void RobCodGenModel::getForwardKinematics(double* q, double* qd, double *qdd, Ei
         getSpatialJacobianDot(q, qd, temp);
         accel += temp.block(0,0,3,7) * joint_state.getVelocities();
     }
-    // TODO
-
 }
 
 /* given q, qdot, qddot, outputs torque output*/
 void RobCodGenModel::getInverseDynamics(double* q, double* qd, double* qdd, Eigen::VectorXd& torque)
 {
     // set the states
+    // std::lock_guard<std::mutex> lk(mu);
     memcpy(robot_state.head(7).data(), q, 7*sizeof(double));
     memcpy(robot_state.tail(7).data(), qd, 7*sizeof(double));
 
@@ -82,6 +91,7 @@ void RobCodGenModel::getInverseDynamics(double* q, double* qd, double* qdd, Eige
 void RobCodGenModel::getForwardDynamics(double* q, double* qd, const Eigen::VectorXd& torque_ext, Eigen::VectorXd& xd)
 {
     // set the states
+    // std::lock_guard<std::mutex> lk(mu);
     memcpy(robot_state.head(7).data(), q, 7*sizeof(double));
     memcpy(robot_state.tail(7).data(), qd, 7*sizeof(double));
 
@@ -109,6 +119,7 @@ void RobCodGenModel::getCoriolisMatrix(double* q, double* qd, Eigen::VectorXd& c
 
 void RobCodGenModel::getGravityVector(double* q, Eigen::VectorXd& gravityTorque)
 {
+    // std::lock_guard<std::mutex> lk(mu);
     double qd[7] = {0, 0, 0, 0, 0, 0, 0};
     getInverseDynamics(q, qd, qd, gravityTorque);
 }
@@ -116,6 +127,7 @@ void RobCodGenModel::getGravityVector(double* q, Eigen::VectorXd& gravityTorque)
 
 void RobCodGenModel::getSpatialJacobian(double* q, Eigen::MatrixXd& jacobian)
 {
+    // std::lock_guard<std::mutex> lk(mu);
     memcpy(robot_state.head(7).data(), q, 7*sizeof(double));
     size_t ee_id = 0;
     RBD.joints() = joint_state;
@@ -125,13 +137,12 @@ void RobCodGenModel::getSpatialJacobian(double* q, Eigen::MatrixXd& jacobian)
     jacobian.block(0,0,3,7) = jac.template bottomRows<3>();
     jacobian.block(3,0,3,7) = jac.template topRows<3>();
 
-    // chnage this
-    // memcpy(jacobian.data(), jac.data(), 42*sizeof(double));
 
 } 
 
 void RobCodGenModel::getSpatialJacobianDot(double* q, double* qd, Eigen::MatrixXd& jacobianDot)
 {   
+    // std::lock_guard<std::mutex> lk(mu);
     memcpy(robot_state.head(7).data(), q, 7*sizeof(double));
     memcpy(robot_state.tail(7).data(), qd, 7*sizeof(double));
     RBD.joints() = joint_state;

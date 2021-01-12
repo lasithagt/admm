@@ -121,7 +121,9 @@ public:
         derivative.template topRows<BASE::NJOINTS>() = robotState.joints().getVelocities();
 
         // temporary variable for the control (will get modified by the actuator dynamics, if applicable)
-        control_vector_t control = controlIn;
+        control_vector_t Kv;
+        Kv << SCALAR(0.5), SCALAR(0.5), SCALAR(0.5), SCALAR(0.3), SCALAR(1), SCALAR(0.5), SCALAR(0.2);
+        control_vector_t control = controlIn + SCALAR(-1) * Kv.asDiagonal() * robotState.joints().getVelocities();
 
         // compute actuator dynamics and their control output
         computeActuatorDynamics(robotState, t, controlIn, derivative, control);

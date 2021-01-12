@@ -48,11 +48,15 @@ class RobCodGenModel : public RobotAbstract
     using ExtLinkForces_t = typename KUKA::Dynamics::ExtLinkForces_t;
 
 public:
+    // std::mutex mu;
+
     RobCodGenModel();
     ~RobCodGenModel();
     int initRobot();
+    // RobCodGenModel(const RobCodGenModel& other) {}
+    // RobCodGenModel& operator=(const RobCodGenModel& other);
+
     void getForwardKinematics(double* q, double* qd, double *qdd, Eigen::Matrix<double,3,3>& poseM, Eigen::Vector3d& poseP, Eigen::Vector3d& vel, Eigen::Vector3d& accel, bool computeOther);
-    /* given q, qdot, qddot, outputs torque output*/
     void getInverseDynamics(double* q, double* qd, double* qdd, Eigen::VectorXd& torque);
     void getForwardDynamics(double* q, double* qd, const Eigen::VectorXd& force_ext, Eigen::VectorXd& qdd);
     void getMassMatrix(double* q, Eigen::MatrixXd& massMatrix);
@@ -84,6 +88,7 @@ private:
     RigidBodyState base_state;
     RigidBodyPose base_pose;
     RigidBodyPose ee_pose;
+    kindr::Position3D ee_pos;
     kindr::Velocity3D vel;
 
     // jacobian

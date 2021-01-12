@@ -43,11 +43,11 @@ install(TARGETS kuka-models
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include KDL Screws
+        INCLUDES DESTINATION include
 )
 
 # install header file
-install(FILES KDL/KukaModel.h KDL/models.h RobCodGen/RobCodGenModel.h Screws/KukaKinematicsScrews.hpp DESTINATION include)
+install(FILES KDL/KukaModel.h KDL/models.h RobCodGen/RobCodGenModel.h Screws/KukaKinematicsScrews.hpp RobCodGen/KUKA.h DESTINATION include)
 
 # generate and install export file
 install(EXPORT PlantModelTargets
