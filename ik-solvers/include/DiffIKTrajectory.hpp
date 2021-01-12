@@ -17,6 +17,7 @@ public:
 
 	// data structure for IK options
 	struct IKopt {
+		IKopt() = default;
 		IKopt(int NDOF_) : NDOFS(NDOF_) {
 			joint_limits.resize(2, NDOFS);
 			Slist.resize(6, NDOFS);
