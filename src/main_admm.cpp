@@ -9,7 +9,7 @@
 #include "models.h"
 #include "RobCodGenModel.h"
 
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
 
 int main(int argc, char *argv[]) {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
 
   std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(chain, robotParams));
 
-  optimizer::ILQRSolverADMM::traj result;
+  optimizer::IterativeLinearQuadraticRegulatorADMM::traj result;
   stateVec_t xinit;
   xinit.setZero();
 

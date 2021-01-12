@@ -7,7 +7,7 @@
 #include "config.h"
 #include "RobCodGenModel.h"
 
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
 
 int main(int argc, char *argv[]) {
@@ -16,10 +16,11 @@ int main(int argc, char *argv[]) {
   // ---------------------------------- Define the robot and contact model ---------------------------------- 
 
   std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new RobCodGenModel());
+  kukaRobot->initRobot();
 
   // ---------------------------------- --------- ---------------------------------- 
 
-  optimizer::ILQRSolverADMM::traj result;
+  optimizer::IterativeLinearQuadraticRegulatorADMM::traj result;
   stateVec_t xinit;
   xinit.setZero();
 
@@ -60,5 +61,6 @@ int main(int argc, char *argv[]) {
 
 
   admm(kukaRobot, xinit, cartesianPoses, result);
+
 
 }

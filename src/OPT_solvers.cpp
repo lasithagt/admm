@@ -9,7 +9,7 @@
 
 
 /* -------------------------------------------------------------- admm mpc solver -------------------------------------------------------- */ 
-void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result)
+void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result)
 {
 
   ADMMTrajOptimizerMPC optimizerADMM;
@@ -81,7 +81,7 @@ void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, 
 }
 
 /* -------------------------------------------  run admm  full trajectory optimization ------------------------------------------------ */
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result)
+void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result)
 {
 
   unsigned int N = NumberofKnotPt;
@@ -111,7 +111,7 @@ void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std:
   unsigned int iterMax = 10; // DDP iteration max
 
   /* -------------------- Optimizer Params ------------------------ */
-  optimizer::ILQRSolverADMM::OptSet solverOptions;
+  optimizer::IterativeLinearQuadraticRegulatorADMM::OptSet solverOptions;
   solverOptions.n_hor    = N;
   solverOptions.tolFun   = ADMM_OPTS.tolFun;
   solverOptions.tolGrad  = ADMM_OPTS.tolGrad;

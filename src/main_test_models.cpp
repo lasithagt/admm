@@ -2,7 +2,7 @@
 #include "RobotDynamics.hpp"
 #include "SoftContactModel.h"
 #include "KukaModel.h"
-#include "cost_function_admm.h"
+#include "CostFunctionADMM.hpp"
 #include "models.h"
 #include "config.h"
 

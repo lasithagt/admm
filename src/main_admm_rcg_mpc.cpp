@@ -6,7 +6,7 @@
 #include "RobCodGenModel.h"
 
 
-void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
+void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
 
 int main(int argc, char *argv[]) {
@@ -20,8 +20,9 @@ int main(int argc, char *argv[]) {
   // ---------------------------------- Define the robot and contact model ---------------------------------- 
 
   std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new RobCodGenModel());
+  kukaRobot->initRobot();
 
-  optimizer::ILQRSolverADMM::traj result;
+  optimizer::IterativeLinearQuadraticRegulatorADMM::traj result;
   stateVec_t xinit;
   xinit.setZero();
 
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
   double Tf = 2 * M_PI;
   double z_depth = 1.17;
   double r       = 0.05;
-  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 1, r, r, NumberofKnotPt, Tf);
+  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 3, r, r, NumberofKnotPt, Tf);
 
 
 
