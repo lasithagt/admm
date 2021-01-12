@@ -13,6 +13,7 @@
 
   // data structure for admm options
   struct ADMMopt {
+    ADMMopt() = default;
     ADMMopt(double dt_, double tolFun_, double tolGrad_, unsigned int iterMax_, 
       int ADMMiterMax_) : dt(dt_), tolFun(tolFun_), tolGrad(tolGrad_), iterMax(iterMax_), ADMMiterMax(ADMMiterMax_) {}
     double dt;

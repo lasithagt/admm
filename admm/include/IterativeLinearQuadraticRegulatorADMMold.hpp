@@ -3,7 +3,7 @@
 
 #include "config.h"
 #include "RobotDynamics.hpp"
-#include "cost_function_admm.h"
+#include "CostFunctionADMM.hpp"
 #include "SoftContactModel.h"
 
 #include <numeric>
@@ -33,7 +33,7 @@
 
 namespace optimizer {
 
-class ILQRSolverADMM {
+class IterativeLinearQuadraticRegulatorADMM {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -41,6 +41,8 @@ public:
     {
         stateVecTab_t xList;
         commandVecTab_t uList;
+        commandR_stateC_tab_t KList;
+        commandVecTab_t kList;
         unsigned int iter;
         double finalCost;
         double finalGrad;
@@ -154,12 +156,13 @@ private:
     // std::mutex mu;
 
 public:
-    ILQRSolverADMM(RobotDynamics& DynamicModel, CostFunctionADMM& Cost, const OptSet& solverOptions, int time_steps, double dt_, bool fullDDP, bool QPBox);
+    IterativeLinearQuadraticRegulatorADMM(RobotDynamics& DynamicModel, CostFunctionADMM& Cost, const OptSet& solverOptions, int time_steps, double dt_, bool fullDDP, bool QPBox);
     void solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, 
-        const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c);
+    const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c);
     void initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar,
-     const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c);
-    struct traj getLastSolvedTrajectory();
+    const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c);
+    const struct traj& getLastSolvedTrajectory();
+    const commandR_stateC_tab_t& getStateGains() const; 
 
 private:
     inline stateVec_t forward_integration(const stateVec_t& X, const commandVec_t& U);

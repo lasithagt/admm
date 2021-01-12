@@ -7,9 +7,14 @@
 
 using namespace Eigen;
 
-ADMMMultiBlock::ADMMMultiBlock(std::shared_ptr<RobotAbstract>& kukaRobot, const CostFunctionADMM& costFunction, 
-    const optimizer::ILQRSolverADMM& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) : N(Time_steps), kukaRobot_(kukaRobot), 
-ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(costFunction), solver_(solver) 
+// ADMMMultiBlock::ADMMMultiBlock()
+// {
+//     std::cout << "Initialized the 3 Block Arch...." << std::endl;
+// }
+
+ADMMMultiBlock::ADMMMultiBlock(const std::shared_ptr<RobotAbstract>& kukaRobot, const std::shared_ptr<CostFunctionADMM>& costFunction, 
+                               const optimizer::IterativeLinearQuadraticRegulatorADMM& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) : N(Time_steps), kukaRobot_(kukaRobot), 
+                               ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(costFunction), solver_(solver) 
 {
     /* Initalize Primal and Dual variables */
 
@@ -92,14 +97,13 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
   const stateVecTab_t& xtrack, const std::vector<Eigen::MatrixXd>& cartesianTrack,
    const Eigen::VectorXd& rho, const Saturation& L) {
 
-
     struct timeval tbegin,tend;
     double texec = 0.0;
 
     /* ---------------------------------------- Initial Trajectory ---------------------------------------- */
     // Initialize Trajectory to get xnew with u_0 
     // optimizer::ILQRSolverADMM::traj lastTraj; 
-    solver_.initializeTraj(xinit, u_0, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
+    solver_.initializeTrajectory(xinit, u_0, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 
     lastTraj = solver_.getLastSolvedTrajectory();
     xnew = lastTraj.xList;
@@ -178,7 +182,7 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     rho_ddp << rho(0), rho(1), rho(2), 0, 0;
 
     /* ------------------------------------------------ Run ADMM ---------------------------------------------- */
-    std::cout << "\n ================================= begin ADMM =================================" << std::endl;
+    std::cout << "begin ADMM..." << std::endl;
 
     gettimeofday(&tbegin, NULL);
 
@@ -186,7 +190,7 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     for (unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
 
         // TODO: Stopping criterion is needed
-        std::cout << "\n ============================== ADMM iteration " << i + 1 << " ============================= \n";
+        std::cout << "in ADMM iteration " << i + 1 << std::endl;
 
        /* ---------------------------------------- iLQRADMM solver block ----------------------------------------   */
         start = std::chrono::high_resolution_clock::now();
@@ -221,7 +225,7 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
             }
             #endif
         }
-        std::cout << "DDP: " << error_fk << std::endl; 
+        std::cout << "DDP tracking error: " << error_fk << std::endl; 
 
         /* --------------------------------------------- END TESTING --------------------------------------------- */
 
@@ -232,10 +236,10 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         
 
         /* ------------------------------------------- IK block update -----------------------------------------   */ 
-        std::cout << "\n ================================= begin IK =================================" << std::endl;
+        std::cout << "begin differential IK..." << std::endl;
         joint_positions_IK.setZero();
         IK_solve.getTrajectory(cartesianTrack, xnew.col(0).head(7), xnew.col(0).segment(7, 7), xbar.block(0, 0, 7, N + 1) - q_lambda, xbar.block(7, 0, 7, N + 1), rho,  &joint_positions_IK);
-        std::cout << "\n ================================== End IK ==================================" << std::endl;
+        std::cout << "end differential IK..." << std::endl;
         
         /* ----------------------------------------------- TESTING ----------------------------------------------- */
 
@@ -245,7 +249,7 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
             temp = mr::TransInv(cartesianTrack.at(i)) * mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, joint_positions_IK.col(i));
             error_fk += temp.col(3).head(3).norm();
         }
-        std::cout << "IK: " << error_fk << std::endl; 
+        std::cout << "IK tracking error: " << error_fk << std::endl; 
         end = std::chrono::high_resolution_clock::now();
         elapsed = end - start;
         std::cout << "IK compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
@@ -304,7 +308,7 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
         cost = 0;
 
         for (int i = 0;i < N;i++) {
-            cost = cost + costFunction_.cost_func_expre(i, xnew.col(i), unew.col(i), xtrack.col(i));
+            cost = cost + costFunction_->cost_func_expre(i, xnew.col(i), unew.col(i), xtrack.col(i));
         }
 
 
@@ -314,7 +318,7 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
     gettimeofday(&tend, NULL);    
 
-    solver_.initializeTraj(xinit, unew, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
+    solver_.initializeTrajectory(xinit, unew, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 
     lastTraj = solver_.getLastSolvedTrajectory();
     xnew = lastTraj.xList;
@@ -328,28 +332,27 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     #endif
 
     #ifdef PRINT
-    cout << endl;
-    cout << "Final cost: " << lastTraj.finalCost << endl;
-    cout << "Final gradient: " << lastTraj.finalGrad << endl;
-    cout << "Final lambda: " << lastTraj.finalLambda << endl;
-    cout << "Total execution time of the solver (second): " << texec << endl;
+    // cout << "Final cost: " << lastTraj.finalCost << endl;
+    // cout << "Final gradient: " << lastTraj.finalGrad << endl;
+    // cout << "Final lambda: " << lastTraj.finalLambda << endl;
+    // cout << "Total execution time of the solver (second): " << texec << endl;
  
-    cout << "lastTraj.xList[" << N << "]:" << xnew.col(N).transpose() << endl;
-    cout << "lastTraj.uList[" << N-1 << "]:" << unew.col(N - 1).transpose() << endl;
+    // cout << "lastTraj.xList[" << N << "]:" << xnew.col(N).transpose() << endl;
+    // cout << "lastTraj.uList[" << N-1 << "]:" << unew.col(N - 1).transpose() << endl;
 
-    cout << "lastTraj.xList[0]:" << xnew.col(0).transpose() << endl;
-    cout << "lastTraj.uList[0]:" << unew.col(0).transpose() << endl;
+    // cout << "lastTraj.xList[0]:" << xnew.col(0).transpose() << endl;
+    // cout << "lastTraj.uList[0]:" << unew.col(0).transpose() << endl;
 
 
 
-    std::cout << "================================= ADMM Trajectory Generation Finished! =================================" << std::endl;
+    std::cout << "ADMM Trajectory Generation Finished!..." << std::endl;
 
 
     for (unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
-      cout << "res_x[" << i << "]:" << res_x[i] << endl;
-      cout << "res_u[" << i << "]:" << res_u[i] << endl;
-      cout << "res_c[" << i << "]:" << res_c[i] << endl;
-      cout << "final_cost[" << i << "]:" << final_cost[i] << endl;
+      std::cout << "res_x[" << i << "]:" << res_x[i] << std::endl;
+      std::cout << "res_u[" << i << "]:" << res_u[i] << std::endl;
+      std::cout << "res_c[" << i << "]:" << res_c[i] << std::endl;
+      std::cout << "final_cost[" << i << "]:" << final_cost[i] << std::endl;
     }
     #endif
 
@@ -359,7 +362,7 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 }
 
 
-optimizer::ILQRSolverADMM::traj ADMMMultiBlock::getLastSolvedTrajectory() {
+optimizer::IterativeLinearQuadraticRegulatorADMM::traj ADMMMultiBlock::getLastSolvedTrajectory() {
     return lastTraj;
 }
 

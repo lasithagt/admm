@@ -8,17 +8,17 @@
 #include <stdio.h>
 
 #include "config.h"
-#include "ilqrsolver_admm.hpp"
+#include "IterativeLinearQuadraticRegulatorADMM.hpp"
 #include "RobotDynamics.hpp"
 #include "SoftContactModel.h"
-#include "cost_function_admm.h"
+#include "CostFunctionADMM.hpp"
 
 #include "modern_robotics.h"
 #include "DiffIKTrajectory.hpp"
 #include "DiffIKSolver.hpp"
 #include "KukaKinematicsScrews.hpp"
 
-#include "curvature.hpp"
+#include "Curvature.hpp"
 #include "cnpy.h"
 
 #include "ProjectionOperator.hpp"
@@ -27,29 +27,31 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 
 
-class ADMMMultiBlock {
+class ADMMMultiBlock 
+{
+
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
-  
-  ADMMMultiBlock(std::shared_ptr<RobotAbstract>& kukaModel, const CostFunctionADMM& costFunction, 
-    const optimizer::ILQRSolverADMM& solverDDP, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps);
+  // ADMMMultiBlock()
+  ADMMMultiBlock(const std::shared_ptr<RobotAbstract>& kukaModel, const std::shared_ptr<CostFunctionADMM>& costFunction, 
+    const optimizer::IterativeLinearQuadraticRegulatorADMM& solverDDP, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps);
 
   void solve(const stateVec_t& xinit, const commandVecTab_t& u_0, const stateVecTab_t& xtrack, 
     const std::vector<Eigen::MatrixXd>& cartesianTrack, const Eigen::VectorXd& rho, const Saturation& L);
 
   void contact_update(std::shared_ptr<RobotAbstract>& kukaRobot, const stateVecTab_t& xnew, Eigen::MatrixXd* cnew);
 
-  optimizer::ILQRSolverADMM::traj getLastSolvedTrajectory();
+  optimizer::IterativeLinearQuadraticRegulatorADMM::traj getLastSolvedTrajectory();
 
-  struct optimizer::ILQRSolverADMM::traj lastTraj;
+  struct optimizer::IterativeLinearQuadraticRegulatorADMM::traj lastTraj;
 
 
 protected:
   models::KUKA robotIK;
   std::shared_ptr<RobotAbstract> kukaRobot_;
-  CostFunctionADMM costFunction_;
-  optimizer::ILQRSolverADMM solver_;
+  std::shared_ptr<CostFunctionADMM> costFunction_;
+  optimizer::IterativeLinearQuadraticRegulatorADMM solver_;
   ProjectionOperator m_projectionOperator;
 
   Curvature curve;

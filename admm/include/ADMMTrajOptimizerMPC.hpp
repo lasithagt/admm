@@ -11,13 +11,8 @@
 #include <stdio.h>
 #include <string>
 
-#include <Eigen/Dense>
 
-#include "config.h"
-#include "ilqrsolver_admm.hpp"
-#include "SoftContactModel.h"
 #include "ADMMMultiBlock.hpp"
-#include "cost_function_admm.h"
 #include "RobotPlant.hpp"
 
 #include "modern_robotics.h"
@@ -35,13 +30,13 @@ public:
     ADMMTrajOptimizerMPC();
     ~ADMMTrajOptimizerMPC();
 
-    void run(std::shared_ptr<RobotAbstract>& kukaRobot,  const stateVec_t& init_state, const ContactModel::SoftContactModel<double>& contactModel, const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
-     const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::ILQRSolverADMM::traj& result);
+    void run(const std::shared_ptr<RobotAbstract>& kukaRobot,  const stateVec_t& init_state, const ContactModel::SoftContactModel<double>& contactModel, const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
+     const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
-    optimizer::ILQRSolverADMM::traj getOptimizerResult(); 
+    optimizer::IterativeLinearQuadraticRegulatorADMM::traj getOptimizerResult(); 
 
 protected:
-	optimizer::ILQRSolverADMM::traj resultTrajectory;
+	optimizer::IterativeLinearQuadraticRegulatorADMM::traj resultTrajectory;
     Eigen::MatrixXd joint_state_traj;
 
 };

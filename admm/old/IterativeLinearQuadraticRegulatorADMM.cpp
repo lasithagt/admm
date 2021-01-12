@@ -1,4 +1,4 @@
-#include "ilqrsolver_admm.hpp"
+#include "IterativeLinearQuadraticRegulatorADMM.hpp"
 
 /* Debug */
 #include <iostream>
@@ -10,7 +10,7 @@ using Eigen::VectorXd;
 
 namespace optimizer {
 
-ILQRSolverADMM::ILQRSolverADMM(RobotDynamics& DynamicModel, CostFunctionADMM& CostFunction, const OptSet& solverOptions, int time_steps, double dt_, bool fullDDP, bool QPBox) : 
+IterativeLinearQuadraticRegulatorADMM::IterativeLinearQuadraticRegulatorADMM(RobotDynamics& DynamicModel, CostFunctionADMM& CostFunction, const OptSet& solverOptions, int time_steps, double dt_, bool fullDDP, bool QPBox) : 
         N(time_steps), dt(dt_), Op(solverOptions)
 {
     // TRACE("initialize dynamic model and cost function\n");
@@ -67,20 +67,20 @@ ILQRSolverADMM::ILQRSolverADMM(RobotDynamics& DynamicModel, CostFunctionADMM& Co
     dV.setZero();
 
     // parameters for line search
-    Op.alphaList.resize(3);
-    Op.alphaList << 1.0, 0.5012, 0.2512;// 0.1259, 0.0631, 0.0316, 0.0158, 0.0079, 0.0040, 0.0020, 0.0010;
+    Op.alphaList.resize(11);
+    Op.alphaList << 1.0, 0.5012, 0.2512, 0.1259, 0.0631, 0.0316, 0.0158, 0.0079, 0.0040, 0.0020, 0.0010;
 
     debugging_print = 0;
 
 
 }
 
-void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track,
+void IterativeLinearQuadraticRegulatorADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track,
  const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
     // start = std::chrono::high_resolution_clock::now();
 
-    if(Op.debug_level > 0) {TRACE("\n  begin iterative LQR...  \n");}
+    if(Op.debug_level > 0) {TRACE("begin iterative LQR...");}
     initializeTraj(x_0, u_0, x_track, cList_bar, xList_bar, uList_bar, thetaList_bar, rho, R_c);
     // end = std::chrono::high_resolution_clock::now();
     // elapsed = end - start;
@@ -211,7 +211,6 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
             costList = costListNew;
             newDeriv = 1;
 
-            // terminate ?
             // TODO: add constraint tolerance check
             if(Op.dcost < Op.tolFun) 
             {
@@ -236,7 +235,6 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
                 Op.last_head = Op.last_head+1;
             }
 
-            // terminate ?
             if (Op.lambda > Op.lambdaMax) 
             {
                 if(Op.debug_level >= 1)
@@ -261,7 +259,7 @@ void ILQRSolverADMM::solve(const stateVec_t& x_0, const commandVecTab_t& u_0, co
     }
 }
 
-void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, 
+void IterativeLinearQuadraticRegulatorADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t& u_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, 
     const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
     xList.col(0) = x_0;
@@ -289,8 +287,8 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
         updateduList.col(i)     = uList.col(i);
         costList[i]             = costFunction->cost_func_expre_admm(i, updatedxList.col(i), updateduList.col(i), x_track.col(i), cList_bar.col(i), xList_bar.col(i), uList_bar.col(i), thetaList_bar.col(i), rho, R_c);
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
-
     }
+
 
     costList[N]  = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), u_NAN_loc, thetaList_bar.col(N), rho, R_c);
 
@@ -318,17 +316,14 @@ void ILQRSolverADMM::initializeTraj(const stateVec_t& x_0, const commandVecTab_t
 
 }
 
-void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
+void IterativeLinearQuadraticRegulatorADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x_track, const Eigen::MatrixXd& cList_bar, const stateVecTab_t& xList_bar, const commandVecTab_t& uList_bar, const Eigen::MatrixXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
 {
-
     updatedxList.col(0) = x_0;
 
     commandVec_t u_NAN_loc;
     u_NAN_loc(0) = sqrt(-1.0);
 
-    // std::cout << updatedxList << std::endl;
     isUNan = 0;
-    // start = std::chrono::high_resolution_clock::now();
     for (unsigned int i = 0; i < N; i++) 
     {
         updateduList.col(i)     = uList.col(i) + alpha * kList.col(i) + KList[i] * (updatedxList.col(i) - xList.col(i));
@@ -337,25 +332,11 @@ void ILQRSolverADMM::doForwardPass(const stateVec_t& x_0, const stateVecTab_t &x
         updatedxList.col(i + 1) = forward_integration(updatedxList.col(i), updateduList.col(i));
 
     }
-
-    // std::cout << alpha * kList << std::endl;
-
-    // for (int k = 0;k<N;k++) {
-    //     std::cout << (updatedxList - xList) << std::endl;
-    // }
-
-    // Eigen::VectorXd br;
-    // br(0) = 0;
-
     costListNew[N] = costFunction->cost_func_expre_admm(N, updatedxList.col(N), u_NAN_loc, x_track.col(N), cList_bar.col(N), xList_bar.col(N), uList_bar.col(N-1), thetaList_bar.col(N-1), rho, R_c);
-    // end = std::chrono::high_resolution_clock::now();
-    // elapsed = end - start;
-    // std::cout << "Forward Pass compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
-
 }
 
 /* --------------------- 4th-order Runge-Kutta step --------------------- */
-inline stateVec_t ILQRSolverADMM::forward_integration(const stateVec_t& x, const commandVec_t& u)
+inline stateVec_t IterativeLinearQuadraticRegulatorADMM::forward_integration(const stateVec_t& x, const commandVec_t& u)
 {
 
     x_dot1 = dynamicModel->f(x, u);
@@ -367,7 +348,7 @@ inline stateVec_t ILQRSolverADMM::forward_integration(const stateVec_t& x, const
     return x + (dt/6) * (x_dot1 + 2 * x_dot2 + 2 * x_dot3 + x_dot4);
 }
 
-void ILQRSolverADMM::doBackwardPass()
+void IterativeLinearQuadraticRegulatorADMM::doBackwardPass()
 {    
     if (Op.regType == 1) {
         lambdaEye = Op.lambda * stateMat_t::Identity();
@@ -457,10 +438,12 @@ void ILQRSolverADMM::doBackwardPass()
 
 
 
-ILQRSolverADMM::traj ILQRSolverADMM::getLastSolvedTrajectory()
+const IterativeLinearQuadraticRegulatorADMM::traj& IterativeLinearQuadraticRegulatorADMM::getLastSolvedTrajectory()
 {
     lastTraj.xList = xList;
     lastTraj.uList = uList;
+    lastTraj.KList = KList;
+    lastTraj.kList = kList;
     lastTraj.iter = iter;
     lastTraj.finalCost = accumulate(costList.begin(), costList.end(), 0.0);
     lastTraj.finalGrad = Op.g_norm;
@@ -468,7 +451,7 @@ ILQRSolverADMM::traj ILQRSolverADMM::getLastSolvedTrajectory()
     return lastTraj;
 }
 
-bool ILQRSolverADMM::isPositiveDefinite(const commandMat_t & Quu_p)
+bool IterativeLinearQuadraticRegulatorADMM::isPositiveDefinite(const commandMat_t & Quu_p)
 {
     //Eigen::JacobiSVD<commandMat_t> svd_Quu (Quu, ComputeThinU | ComputeThinV);
     Eigen::VectorXcd singular_values = Quu_p.eigenvalues();
@@ -480,6 +463,11 @@ bool ILQRSolverADMM::isPositiveDefinite(const commandMat_t & Quu_p)
         }
     }
     return true;
+}
+
+const commandR_stateC_tab_t& IterativeLinearQuadraticRegulatorADMM::getStateGains() const
+{
+    return KList;
 }
 
 }

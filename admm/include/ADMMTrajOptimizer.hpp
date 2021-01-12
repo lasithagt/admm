@@ -15,15 +15,15 @@ public:
     ADMMTrajOptimizer(unsigned int N_, double dt_);
     ~ADMMTrajOptimizer();
 
-    void run(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::ILQRSolverADMM::OptSet& solverOptions, ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
+    void run(const std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::IterativeLinearQuadraticRegulatorADMM::OptSet& solverOptions, ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
     	Saturation& LIMITS, ContactModel::ContactParams<double>& cp, std::vector<Eigen::MatrixXd>& cartesianPoses); 
-    optimizer::ILQRSolverADMM::traj getOptimizerResult(); 
+    optimizer::IterativeLinearQuadraticRegulatorADMM::traj getOptimizerResult(); 
 
 
 private:
     unsigned int N;
     double dt;
-    optimizer::ILQRSolverADMM::traj resultTrajectory;
+    optimizer::IterativeLinearQuadraticRegulatorADMM::traj resultTrajectory;
 };
 
 #endif  //ROBOT_ABSTRACT_H
