@@ -342,4 +342,4 @@ ENV/
 **/install
 **/cmake
 
-/*.npy
+*.npy
