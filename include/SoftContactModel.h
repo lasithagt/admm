@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <math.h>      
+#include <mutex>
 
 namespace ContactModel {
 
@@ -23,8 +24,11 @@ class SoftContactModel {
    ContactParams<SCALAR> m_cp;
 
 public:
+   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
    typedef typename Eigen::Matrix<SCALAR, 3, 1> Vector3s;
    typedef typename Eigen::Matrix<SCALAR, 3, 3> Matrix3s;
+   std::mutex mu;
 
 
 SoftContactModel() {
@@ -38,17 +42,35 @@ SoftContactModel(const ContactParams<SCALAR>& cp) : m_cp(cp)
    std::cout << "Initialized Contact Model with Params..." << std::endl;
 }
    
-/* Soft Contact Modelling Based off Contact Mechanics. */
-/*  given, end-effector pose, velocity and acceleration in CARTESIAN, returns next force value */
+SoftContactModel(const SoftContactModel<SCALAR>& other)
+{
+  m_cp = other.m_cp;
+}
+
+SoftContactModel& operator=(const SoftContactModel<SCALAR>& other)
+{
+  this->m_cp = other.m_cp;
+  return *this;
+}
+
+ /*
+  * Soft Contact Modelling Based off Contact Mechanics
+  * - states (STATE_DIM parameters)
+  * - controls (CONTROL_DIM parameters)
+  * - desired end-effector positions (3 parameters)
+  * - desired end-effector orientation (9 parameters)
+  * - time (1 parameter)
+  */
 void df(const Eigen::Matrix<SCALAR, 3, 3>& mass_matrix_cart, const Eigen::Matrix<SCALAR, 3, 1>& position, const Eigen::Matrix<SCALAR, 3, 3>& orientation, 
    const Eigen::Matrix<SCALAR, 3, 1>& velocity_, const Eigen::Matrix<SCALAR, 3, 1>& acceleration, const Eigen::Matrix<SCALAR, 3, 1>& force_current, Eigen::Matrix<SCALAR, 3, 1>& df_)
 {
+
+   std::lock_guard<std::mutex> lk(mu);
    Eigen::Matrix<SCALAR, 3, 1> vel_dir;
 
    /* -------------- Normal force calculation -------------- */
-   Eigen::Matrix<SCALAR, 3, 1> vel_norm(SCALAR(0.0), SCALAR(0.0), SCALAR(0.00001));
+   Eigen::Matrix<SCALAR, 3, 1> vel_norm(SCALAR(0.0), SCALAR(0.0), SCALAR(0.0000000001));
    Eigen::Matrix<SCALAR, 3, 1> velocity = velocity_ + vel_norm;
-   // SCALAR vel_norm = velocity.norm() + velocity.norm() *SCALAR(0.0001);
    vel_dir = velocity / velocity.norm();
      
    // get the surface normal direction.
@@ -67,18 +89,15 @@ void df(const Eigen::Matrix<SCALAR, 3, 3>& mass_matrix_cart, const Eigen::Matrix
 
    // ----------------- Normal force calculation ---------------- 
    Eigen::Matrix<SCALAR, 3, 1> F_n_dot = K * velocity_z + SCALAR(10.0) * acceleration_z; // Temp
-   /* -------------- End - Normal force calculation -------------- */
 
 
    /* ------------------ Frictional force calculation ---------------- */
    Eigen::Matrix<SCALAR, 3, 1> F_f_dot = m_cp.mu * K * velocity_z(2) * vel_dir + SCALAR(3.0) * m_cp.mu * (SCALAR(2.0) * m_cp.nu - SCALAR(1.0)) \
    * (SCALAR(0.0) * d * vel_dir  + force_z.norm() * velocity) / (SCALAR(10.0) * m_cp.R);
-   /* -------------- End - Frictional force calculation -------------- */
 
 
    /* -------------- Orthogonal force calculation -------------- */
    Eigen::Matrix<SCALAR, 3, 1> F_normal_dot = SCALAR(2.0) * mass_matrix_cart * velocity.cwiseProduct(acceleration) / m_cp.R_path;
-   /* -------------- End - Orthogonal force calculation -------------- */
 
    // df_ = F_f_dot + F_n_dot + 0*F_normal_dot;
 
