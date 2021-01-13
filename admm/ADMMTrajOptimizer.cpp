@@ -115,21 +115,20 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
 
 
 
+  // Eigen::MatrixXd cartesian_mpc_disturbance_logger;
+  // cartesian_mpc_disturbance_logger.resize(3, N + 1);
 
-  Eigen::MatrixXd cartesian_mpc_disturbance_logger;
-  cartesian_mpc_disturbance_logger.resize(3, N + 1);
+  // // save data
+  // for (int i = 0; i < N+1; i++) 
+  // {
+  //   auto actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, stateTrajectoryDisturbances.col(i).head(7));
+  //   cartesian_mpc_disturbance_logger.col(i) = actual_cartesian_pose.col(3).head(3);
 
-  // save data
-  for (int i = 0; i < N+1; i++) 
-  {
-    auto actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, stateTrajectoryDisturbances.col(i).head(7));
-    cartesian_mpc_disturbance_logger.col(i) = actual_cartesian_pose.col(3).head(3);
-
-  }
+  // }
   
-  cnpy::npy_save("../data/state_trajectory_admm_mpc_test.npy", cartesian_mpc_disturbance_logger.data(),
-                  {1, static_cast<unsigned long>(cartesian_mpc_disturbance_logger.cols()),
-                   static_cast<unsigned long>(cartesian_mpc_disturbance_logger.rows())}, "w");
+  // cnpy::npy_save("./state_trajectory_admm_mpc_test.npy", cartesian_mpc_disturbance_logger.data(),
+  //                 {1, static_cast<unsigned long>(cartesian_mpc_disturbance_logger.cols()),
+  //                  static_cast<unsigned long>(cartesian_mpc_disturbance_logger.rows())}, "w");
     
 
 

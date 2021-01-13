@@ -88,10 +88,8 @@ void publishCommands(RobotPublisher& publisher)
 
 						// wait for dt
 						std::this_thread::sleep_for(std::chrono::milliseconds(8));
-
 						++i;  
 					}
-
 
 					{
 				    	std::cout << "waiting for the new controls"  <<  std::endl;
@@ -102,8 +100,6 @@ void publishCommands(RobotPublisher& publisher)
 				        std::cout << "existing publishing..." << std::endl;
 				        newControlTrajectorySet = false;
 				    }
-					
-
 				} 
 			}
 		}
@@ -255,7 +251,6 @@ public:
 
 	    while(!terminate(robotPublisher.getCurrentStep(), x))
 	    {
-
 	        std::cout << "MPC loop started..." << std::endl;
 
 	        if(verbose_)
@@ -269,7 +264,6 @@ public:
 	            logger_->info("Entered MPC loop for time step %d\n", i);
 	            start = std::chrono::high_resolution_clock::now();
 	        }
-
 	       	
         	/* apply to the plant */
 		    {
@@ -288,8 +282,7 @@ public:
 		       	std::cout << "\nCurrent step :" << i << std::endl;
 		    }
 
-
-	        // Slide down the control trajectory
+	        /* Slide down the control trajectory */
 	        // control_trajectory.leftCols(H_ - 1) = result.uList.rightCols(H_ - 1);
 	        // control_trajectory = result.uList;
 	        if (optimizer_iter > 1)
@@ -308,20 +301,15 @@ public:
 		        {	// std::cout << 0 + i + k << std::endl;
 		    		cartesianTrack_mpc[k] = cartesianTrack_[0 + i + k];
 		    	}
-
 		    }
-
 
 	        // Run the optimizer to obtain the next control trajectory
 	        {	
-	        	
 		        opt_.solve(xold, initial_control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
 
 		        ++optimizer_iter;
 		        std::cout <<optimizer_iter << std::endl;
 	    	}
-
-
 	    	if(verbose_)
 	        {
 	            logger_->info("Obtained control from optimizer: ");
@@ -336,7 +324,6 @@ public:
 		        mpcComputeFinished = true;
 		        std::cout << "MPC compute finished...\n";
 		        end = std::chrono::high_resolution_clock::now();
-
 		    }
 
 	        result = opt_.getLastSolvedTrajectory();
@@ -350,7 +337,6 @@ public:
         		std::cout << "set publisher controls" << std::endl;
         		robotPublisher.setControlBuffer(control_trajectory);
 				newControlTrajectorySet = true;
-
 		
 				lk.unlock();
 
@@ -362,8 +348,6 @@ public:
 				// start publishing commands
 				if (optimizer_iter == 1) {init = true;};
 				cv_main.notify_one();
-
-
         	}
         	
         	robotPublisher.setOptimizerStatesGains(result.xList, std::move(result.KList), result.kList);
