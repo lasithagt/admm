@@ -107,10 +107,10 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
     contactModel_plant = contactModel;
     // Initialize Robot Model
-    RobotDynamics KukaModel_plant(dt, horizon_mpc, kukaRobot_plant, contactModel_plant);
+    std::shared_ptr<RobotDynamics> KukaModel_plant{new RobotDynamics(dt, horizon_mpc, kukaRobot_plant, contactModel_plant)};
 
-    using Plant = RobotPlant<RobotDynamics, stateSize, commandSize>;
-    std::shared_ptr<Plant> KukaModelPlant{new Plant(KukaModel_plant, dt, state_var, control_var)};
+    using Plant_ = RobotPlant<RobotDynamics, stateSize, commandSize>;
+    std::shared_ptr<Plant_> KukaModelPlant{new Plant_(KukaModel_plant, dt, state_var, control_var)};
 
     /* ------------------------------------------------------ MPC ---------------------------------------------------------------- */
 
@@ -120,10 +120,10 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     using Result = optimizer::IterativeLinearQuadraticRegulatorADMM::traj;
 
     /* ------------------------------------------------- Robot Publisher ----------------------------------------------------------*/
-    RobotPublisherMPC<Plant, stateSize, commandSize> KUKAPublisher(KukaModelPlant, static_cast<int>(horizon_mpc), static_cast<int>(N), dt);
+    RobotPublisherMPC<Plant_, stateSize, commandSize> KUKAPublisher(KukaModelPlant, static_cast<int>(horizon_mpc), static_cast<int>(N), dt);
 
 
-    using RobotPublisher = RobotPublisherMPC<Plant, stateSize, commandSize>;
+    using RobotPublisher = RobotPublisherMPC<Plant_, stateSize, commandSize>;
     using CostFunction   = std::shared_ptr<CostFunctionADMM>;
 
     ModelPredictiveControllerADMM<RobotPublisher, CostFunction, Optimizer, Result> mpc_admm(dt, horizon_mpc,

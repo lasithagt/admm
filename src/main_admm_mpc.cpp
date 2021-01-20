@@ -4,7 +4,7 @@
 #include "config.h"
 #include "ADMMTrajOptimizerMPC.hpp"
 
-void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
+void admm_mpc(const std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
 
 int main(int argc, char *argv[]) {

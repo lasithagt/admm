@@ -9,7 +9,7 @@
 
 
 /* -------------------------------------------------------------- admm mpc solver -------------------------------------------------------- */ 
-void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result)
+void admm_mpc(const std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result)
 {
 
   ADMMTrajOptimizerMPC optimizerADMM;
@@ -81,7 +81,7 @@ void admm_mpc(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, 
 }
 
 /* -------------------------------------------  run admm  full trajectory optimization ------------------------------------------------ */
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result)
+void admm(const std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result)
 {
 
   unsigned int N = NumberofKnotPt;

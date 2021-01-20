@@ -9,7 +9,7 @@
 #include "models.h"
 #include "RobCodGenModel.h"
 
-void admm(std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
+void admm(const std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
 
 int main(int argc, char *argv[]) {
