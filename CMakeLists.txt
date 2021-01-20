@@ -128,7 +128,7 @@ install (TARGETS kuka-models ik-solvers ddp-solver admm-solver
 # )
 
 # install header file
-install(FILES include/Curvature.hpp include/CostFunctionADMM.hpp include/CostFunctionContact.hpp include/config.h include/RobotDynamics.hpp include/RobotAbstract.h include/SoftContactModel.h include/RobotPlant.hpp include/eigenmvn.hpp include/RobotAbstract.h include/utils.h DESTINATION include)
+install(FILES include/Curvature.hpp include/CostFunctionADMM.hpp include/CostFunctionContact.hpp include/config.h include/RobotDynamics.hpp include/RobotAbstract.h include/SoftContactModel.h include/RobotPlant.hpp include/eigenmvn.hpp include/RobotAbstract.h include/utils.h include/Plant.hpp DESTINATION include)
 
 # # set version
 set(version 3.4.1)
