@@ -49,10 +49,10 @@ double delay{0.0};
 
 
 template <typename RobotPublisher>
-void publishCommands(RobotPublisher& publisher)
+void publishCommands(RobotPublisher& publisher, double dt)
 {
 	// run until optimizer is publishing
-	while (!publisher.terminate) {
+	while (!publisher->terminate) {
 		{
 			// round up the delay to nearest time step
 			std::cout << "\nIn publisher thread..." << std::endl;
@@ -64,7 +64,7 @@ void publishCommands(RobotPublisher& publisher)
 					// get current state
 					
 					// store the states
-					publisher.currentState = publisher.getCurrentState();
+					publisher->currentState = publisher->getCurrentState();
 					
 					{
 						std::unique_lock<std::mutex> lk(mu_main);
@@ -78,16 +78,16 @@ void publishCommands(RobotPublisher& publisher)
 
 					// account for delay
 					int i = static_cast<int>(delay_approx);
-					while (mpcComputeFinished==false & i<publisher.getHorizonTimeSteps() & init)
+					while (mpcComputeFinished==false & i<publisher->getHorizonTimeSteps() & init)
 					{
 						{
 							std::lock_guard<std::mutex> lk(mu_main);
-							publisher.publishCommand(i);
+							publisher->publishCommand(i);
 							std::cout << "Publishing Control Command..." << i << std::endl;	
 						}
 
 						// wait for dt
-						std::this_thread::sleep_for(std::chrono::milliseconds(8));
+						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000)));
 						++i;  
 					}
 
@@ -122,7 +122,7 @@ public:
     using StateTrajectory       = stateVecTab_t;   
     using ControlTrajectory     = commandVecTab_t; 
     using StateGainMatrix   	= commandR_stateC_tab_t;
-    using RobotPublisher 	 	= RobotPublisherT;
+    using RobotPublisher 	 	= std::shared_ptr<RobotPublisherT>;
     using Result                = OptimizerResultT;            ///< Type of result returned by the optimizer
     using TerminationCondition =
         std::function<bool(int, State)>;     ///< Type of termination condition function
@@ -155,13 +155,13 @@ public:
      * @param verbose       True if informational and warning messages should be passed to the logger; error messages are always passed
      * @param args          Arbitrary arguments to pass to the trajectory optimizer at initialization time
      */
-    ModelPredictiveControllerADMM(Scalar dt, int time_steps, int iterations, bool verbose, Logger *logger, \
+    ModelPredictiveControllerADMM(Scalar dt, int time_steps,  int iterations, bool verbose, Logger *logger, \
 	         CostFunction                   &cost_function,
 	         Optimizer 						&opt,
 	         const StateTrajectory  		&x_track, 
 	         const std::vector<Eigen::MatrixXd> &cartesianTrack,
-    		 const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT_)
-    : dt_(dt), H_MPC(time_steps), verbose_(verbose), cost_function_(cost_function), opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack), IK_OPT(IK_OPT_)
+    		 const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT_) : dt_(dt), H_MPC(time_steps), verbose_(verbose), cost_function_(cost_function),
+    		  opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack), IK_OPT(IK_OPT_)
     {
     	logger_ = logger;
     	control_trajectory.resize(commandSize, H_MPC);
@@ -189,7 +189,7 @@ public:
      * @param terminal_cost_function        Terminal cost function V(xN) to pass to the optimizer
      * @param args                          Arbitrary arguments to pass to the trajectory optimizer at run time
      */
-    template <typename TerminationCondition>
+	template <typename TerminationCondition>
 	void run(const Eigen::Ref<const State>  &initial_state,
 	         ControlTrajectory              initial_control_trajectory,
 	         RobotPublisher                 &robotPublisher,
@@ -233,14 +233,13 @@ public:
 	    std::chrono::duration<float, std::milli> elapsed;
 
 	    // get the state strajectory storing vector
-	    Eigen::MatrixXd& stateTrajectory = robotPublisher.getStateTrajectory();
+	    Eigen::MatrixXd& stateTrajectory = robotPublisher->getStateTrajectory();
 
     	// to store the state evolution
-    	// robotPublisher.setStateBuffer(&stateBuffer);
-    	robotPublisher.setInitialState(initial_state);
+    	robotPublisher->setInitialState(initial_state);
 
     	// call the thread
-		std::thread robotPublishThread(publishCommands<RobotPublisher>, std::ref(robotPublisher));
+		std::thread robotPublishThread(publishCommands<RobotPublisher>, std::ref(robotPublisher), dt_);
 
 		// start MPC
  	    int64_t i = 0;
@@ -249,7 +248,7 @@ public:
  	    StateTrajectory test;
  	    test.resize(stateSize, static_cast<int>(NumberofKnotPt));
 
-	    while(!terminate(robotPublisher.getCurrentStep(), x))
+	    while(!terminate(robotPublisher->getCurrentStep(), x))
 	    {
 	        std::cout << "MPC loop started..." << std::endl;
 
@@ -272,12 +271,11 @@ public:
 		        cv_main.wait(lk, []{return currentStateReceived;});
 
 		        start = std::chrono::high_resolution_clock::now();
-		        xold = robotPublisher.getCurrentState();
+		        xold = robotPublisher->getCurrentState();
 		        lk.unlock();
 		       	currentStateReceived = false;
 
-		       	// i = (optimizer_iter == 0) ? 0 : robotPublisher.getCurrentStep();
-		       	i = robotPublisher.getCurrentStep();
+		       	i = robotPublisher->getCurrentStep();
 		       	std::cout << "\nX_current" << xold.transpose() << std::endl;
 		       	std::cout << "\nCurrent step :" << i << std::endl;
 		    }
@@ -298,7 +296,7 @@ public:
 
 
 		        for (int k = 0;k < H_TRACK;k++) 
-		        {	// std::cout << 0 + i + k << std::endl;
+		        {	
 		    		cartesianTrack_mpc[k] = cartesianTrack_[0 + i + k];
 		    	}
 		    }
@@ -335,7 +333,7 @@ public:
         		std::unique_lock<std::mutex> lk(mu_main);
         		control_trajectory = result.uList;
         		std::cout << "set publisher controls" << std::endl;
-        		robotPublisher.setControlBuffer(control_trajectory);
+        		robotPublisher->setControlBuffer(control_trajectory);
 				newControlTrajectorySet = true;
 		
 				lk.unlock();
@@ -350,7 +348,7 @@ public:
 				cv_main.notify_one();
         	}
         	
-        	robotPublisher.setOptimizerStatesGains(result.xList, std::move(result.KList), result.kList);
+        	robotPublisher->setOptimizerStatesGains(result.xList, std::move(result.KList), result.kList);
 
 	        if(verbose_)
 	        {
@@ -368,7 +366,6 @@ public:
 
 	    robotPublishThread.join();
 
-	    // std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 	    // save data
         #ifdef DEBUG

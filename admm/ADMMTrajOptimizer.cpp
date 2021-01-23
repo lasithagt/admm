@@ -26,10 +26,13 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
 
 
   // dynamic model of the manipulator and the contact model
-  std::shared_ptr<RobotDynamics> KukaDynModel = std::make_shared<RobotDynamics>(dt, N, kukaRobot, contactModel);
+  using Dynamics = admm::Dynamics<RobotAbstract, stateSize, commandSize>;
+  std::shared_ptr<Dynamics> KukaDynModel = std::shared_ptr<Dynamics>(new RobotDynamics(dt, N, kukaRobot, contactModel));
+  // std::shared_ptr<RobotDynamics> KukaDynModel = std::make_shared<RobotDynamics>(dt, N, kukaRobot, contactModel);
 
   // TODO: make this updatable, for speed
-  optimizer::IterativeLinearQuadraticRegulatorADMM solverDDP(KukaDynModel, costFunction_admm, solverOptions, N, ADMM_OPTS.dt, ENABLE_FULLDDP, ENABLE_QPBOX);
+  using Optimizer = optimizer::IterativeLinearQuadraticRegulatorADMM;
+  std::shared_ptr<Optimizer> solverDDP = std::make_shared<Optimizer>(KukaDynModel, costFunction_admm, solverOptions, N, ADMM_OPTS.dt, ENABLE_FULLDDP, ENABLE_QPBOX);
 
 
   // admm optimizer

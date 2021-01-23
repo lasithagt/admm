@@ -13,6 +13,8 @@
 
 #include <mutex>
 
+namespace admm {
+
 template<typename System, int StateDim, int ControlDim>
 class Dynamics
 {
@@ -100,8 +102,11 @@ public:
     }
 
     const std::shared_ptr<System>& getSystem() {return m_system;}
-
+    virtual const JacobianState& getfxList() const {return fxList;}
+    virtual const JacobianControl& getfuList() const {return fuList;}
 };
+
+}
 
 #endif
 

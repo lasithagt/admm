@@ -19,6 +19,8 @@
 
 #include <mutex>
 
+using namespace admm;
+
 // template<typename System, int StateDim, int ControlDim>
 class RobotDynamics : public Dynamics<RobotAbstract, stateSize, commandSize>
 {
@@ -147,8 +149,8 @@ public:
 
     const Control& getLowerCommandBounds() const {return lowerCommandBounds;}
     const Control& getUpperCommandBounds() const {return upperCommandBounds;}
-    const JacobianState& getfxList() const {return fxList;}
-    const JacobianControl& getfuList() const {return fuList;}
+    const JacobianState& getfxList() const override {return fxList;}
+    const JacobianControl& getfuList() const override {return fuList;}
 };
 
 

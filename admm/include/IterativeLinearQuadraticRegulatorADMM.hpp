@@ -96,7 +96,9 @@ public:
 
 
 private:
-    std::shared_ptr<RobotDynamics> dynamicModel;
+    using Dynamics = admm::Dynamics<RobotAbstract, stateSize, commandSize>;
+
+    std::shared_ptr<Dynamics> dynamicModel;
     std::shared_ptr<CostFunctionADMM> costFunction;
     unsigned int stateNb, commandNb;
 
@@ -159,7 +161,7 @@ public:
 
     }
     
-    IterativeLinearQuadraticRegulatorADMM(const std::shared_ptr<RobotDynamics>& DynamicModel, const std::shared_ptr<CostFunctionADMM>& CostFunction, 
+    IterativeLinearQuadraticRegulatorADMM(const std::shared_ptr<Dynamics>& DynamicModel, const std::shared_ptr<CostFunctionADMM>& CostFunction, 
         const OptSet& solverOptions, int time_steps, double dt_, bool fullDDP, bool QPBox) : 
         dynamicModel(DynamicModel), costFunction(CostFunction), N(time_steps), dt(dt_), Op(solverOptions)
     {

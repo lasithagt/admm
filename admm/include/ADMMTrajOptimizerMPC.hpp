@@ -13,24 +13,29 @@
 
 
 #include "ADMMMultiBlock.hpp"
-#include "RobotPlant.hpp"
+#include "Plant.hpp"
 
 #include "modern_robotics.h"
 #include "DiffIKTrajectory.hpp"
 #include "DiffIKSolver.hpp"
+#include "RobotDynamics.hpp"
+#include "RobotPublisherMPC.hpp"
 
 
-using namespace std;
-
+// using namespace std;
+// template<>
 class ADMMTrajOptimizerMPC {
 
 public:
+	using State 		 = Eigen::Matrix<double, stateSize, 1>;
+	using PlantPublisher = RobotPublisherMPC<Plant<stateSize, commandSize>, stateSize, commandSize>;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     ADMMTrajOptimizerMPC();
     ~ADMMTrajOptimizerMPC();
 
-    void run(const std::shared_ptr<RobotAbstract>& kukaRobot,  const stateVec_t& init_state, const ContactModel::SoftContactModel<double>& contactModel, const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
+    void run(const std::shared_ptr<RobotAbstract>& kukaRobot,  std::shared_ptr<PlantPublisher>& plant, const State& init_state, const ContactModel::SoftContactModel<double>& contactModel,
+     const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
      const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
     optimizer::IterativeLinearQuadraticRegulatorADMM::traj getOptimizerResult(); 

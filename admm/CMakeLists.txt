@@ -22,7 +22,7 @@ install(TARGETS admm-solver
 )
 
 # install header file
-install(FILES include/ADMMMultiBlock.hpp include/ADMMTrajOptimizer.hpp include/ProjectionOperator.hpp include/admmPublic.hpp include/ADMMTrajOptimizerMPC.hpp include/ModelPredictiveControlADMM.hpp include/IterativeLinearQuadraticRegulatorADMM.hpp DESTINATION include)
+install(FILES include/ADMMMultiBlock.hpp include/ADMMTrajOptimizer.hpp include/ProjectionOperator.hpp include/admmPublic.hpp include/ADMMTrajOptimizerMPC.hpp include/ModelPredictiveControlADMM.hpp include/IterativeLinearQuadraticRegulatorADMM.hpp include/RobotPublisherMPC.hpp DESTINATION include)
 
 # generate and install export file
 install(EXPORT ADMMSolversTargets

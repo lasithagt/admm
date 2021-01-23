@@ -1,12 +1,9 @@
 
 /* MPC trajectory generation */
-#include "RobotPublisherMPC.hpp"
-
 
 #include "ADMMTrajOptimizerMPC.hpp"
 #include "admmPublic.hpp"
 #include "ModelPredictiveControlADMM.hpp"
-#include "RobotDynamics.hpp"
 #include "RobCodGenModel.h"
 
 
@@ -14,7 +11,7 @@
 ADMMTrajOptimizerMPC::ADMMTrajOptimizerMPC() = default;
 ADMMTrajOptimizerMPC::~ADMMTrajOptimizerMPC() = default;
 
-void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot,  const stateVec_t& init_state,  const ContactModel::SoftContactModel<double>& contactModel,  const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
+void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, std::shared_ptr<ADMMTrajOptimizerMPC::PlantPublisher>& plantPublisher,  const stateVec_t& init_state,  const ContactModel::SoftContactModel<double>& contactModel,  const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
     const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses,  optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result) 
 {
 
@@ -30,12 +27,12 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
 
     /*------------------initialize control input----------------------- */
-
     unsigned int horizon_mpc = 100;          // make these loadable from a cfg file
 
 
     // Initialize Robot Model
-    std::shared_ptr<RobotDynamics> KukaDynModel = std::make_shared<RobotDynamics>(dt, horizon_mpc, kukaRobot, contactModel);
+    using Dynamics = admm::Dynamics<RobotAbstract, stateSize, commandSize>;
+    std::shared_ptr<Dynamics> KukaDynModel = std::shared_ptr<Dynamics>(new RobotDynamics(dt, horizon_mpc, kukaRobot, contactModel));
 
     // Initialize Cost Function 
     std::shared_ptr<CostFunctionADMM> costFunction_admm = std::make_shared<CostFunctionADMM>(horizon_mpc, kukaRobot);
@@ -47,7 +44,9 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     solverOptions.tolFun   = ADMM_OPTS.tolFun;
     solverOptions.tolGrad  = ADMM_OPTS.tolGrad;
     solverOptions.max_iter = iterMax;
-    optimizer::IterativeLinearQuadraticRegulatorADMM solver(KukaDynModel, costFunction_admm, solverOptions, horizon_mpc, dt, ENABLE_FULLDDP, ENABLE_QPBOX);
+
+    using OptimizerDDP = optimizer::IterativeLinearQuadraticRegulatorADMM;
+    std::shared_ptr<OptimizerDDP> solver = std::make_shared<OptimizerDDP>(KukaDynModel, costFunction_admm, solverOptions, horizon_mpc, dt, ENABLE_FULLDDP, ENABLE_QPBOX);
 
     // admm optimizer
     ADMMMultiBlock optimizerADMM(kukaRobot, costFunction_admm, solver, ADMM_OPTS, IK_OPT, horizon_mpc);
@@ -97,45 +96,27 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     u_0.setZero();
 
 
-    /* ----------------------------------------------------- Plant ----------------------------------------------------------------*/
-    double state_var   = 0.001;
-    double control_var = 0.0001;
-
-    std::shared_ptr<RobotAbstract> kukaRobot_plant = std::shared_ptr<RobotAbstract>(new RobCodGenModel());
-    kukaRobot_plant->initRobot();
-    ContactModel::SoftContactModel<double> contactModel_plant;
-
-    contactModel_plant = contactModel;
-    // Initialize Robot Model
-    std::shared_ptr<RobotDynamics> KukaModel_plant{new RobotDynamics(dt, horizon_mpc, kukaRobot_plant, contactModel_plant)};
-
-    using Plant_ = RobotPlant<RobotDynamics, stateSize, commandSize>;
-    std::shared_ptr<Plant_> KukaModelPlant{new Plant_(KukaModel_plant, dt, state_var, control_var)};
-
     /* ------------------------------------------------------ MPC ---------------------------------------------------------------- */
 
     // Initialize receding horizon controller
     bool verbose = true;
     using Optimizer = ADMMMultiBlock;
-    using Result = optimizer::IterativeLinearQuadraticRegulatorADMM::traj;
+    using Result    = optimizer::IterativeLinearQuadraticRegulatorADMM::traj;
 
     /* ------------------------------------------------- Robot Publisher ----------------------------------------------------------*/
-    RobotPublisherMPC<Plant_, stateSize, commandSize> KUKAPublisher(KukaModelPlant, static_cast<int>(horizon_mpc), static_cast<int>(N), dt);
-
-
-    using RobotPublisher = RobotPublisherMPC<Plant_, stateSize, commandSize>;
+    using RobotPublisher = ADMMTrajOptimizerMPC::PlantPublisher;
     using CostFunction   = std::shared_ptr<CostFunctionADMM>;
 
     ModelPredictiveControllerADMM<RobotPublisher, CostFunction, Optimizer, Result> mpc_admm(dt, horizon_mpc,
-                                                                                                    iterations, 
-                                                                                                    verbose, logger, 
-                                                                                                    costFunction_admm,
-                                                                                                     optimizerADMM, 
-                                                                                                     xtrack, cartesianPoses, 
-                                                                                                     IK_OPT) ;
+                                                                                                iterations, 
+                                                                                                verbose, logger, 
+                                                                                                costFunction_admm,
+                                                                                                optimizerADMM, 
+                                                                                                xtrack, cartesianPoses, 
+                                                                                                IK_OPT) ;
 
 
-    /* termination condition */
+    /* lambda function - termination condition */
     using StateRef = Eigen::Ref<const stateVec_t>;
     auto termination =
     [&](int i, const StateRef &x)
@@ -154,7 +135,7 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
 
     /* ----------------------------------------- run MPC ------------------------- ------------------------- */
-    mpc_admm.run(xinit, u_0.block(0, 0, commandSize, horizon_mpc), KUKAPublisher, joint_state_traj, termination, rho, LIMITS);
+    mpc_admm.run(xinit, u_0.block(0, 0, commandSize, horizon_mpc), plantPublisher, joint_state_traj, termination, rho, LIMITS);
 
     std::cout << "MPC_ADMM Trajectory Generation Finished! " << std::endl;
 

@@ -1,5 +1,5 @@
-// #ifndef PLANT_H
-// #define PLANT_H
+#ifndef PLANT_H
+#define PLANT_H
 
 #include <Eigen/Dense>
 #include <memory>
@@ -64,5 +64,5 @@ public:
     }
 };
 
-// #endif // KUKAARM_H
+#endif // KUKAARM_H
 
