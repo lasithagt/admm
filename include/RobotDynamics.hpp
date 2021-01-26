@@ -19,17 +19,16 @@
 
 #include <mutex>
 
-using namespace admm;
 
 // template<typename System, int StateDim, int ControlDim>
-class RobotDynamics : public Dynamics<RobotAbstract, stateSize, commandSize>
+class RobotDynamics : public admm::Dynamics<RobotAbstract, stateSize, commandSize>
 {
 
-    using Jacobian = Eigen::Matrix<double, stateSize, stateSize + commandSize>;
-    using State    = stateVec_t;
-    using Control  = commandVec_t;
-    using JacobianState   = Dynamics::JacobianState;
-    using JacobianControl = Dynamics::JacobianControl;
+    using Jacobian        = Eigen::Matrix<double, stateSize, stateSize + commandSize>;
+    using State           = stateVec_t;
+    using Control         = commandVec_t;
+    using JacobianState   = typename admm::Dynamics<RobotAbstract, stateSize, commandSize>::JacobianState;
+    using JacobianControl = typename admm::Dynamics<RobotAbstract, stateSize, commandSize>::JacobianControl;
 
     typedef ct::rbd::KUKASoftContactFDSystem<ct::rbd::KUKA::Dynamics> KUKASystem;
     const size_t STATE_DIM = KUKASystem::STATE_DIM;
@@ -64,17 +63,13 @@ public:
     std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
     std::chrono::duration<float, std::nano> elapsed;
 
-    using Dynamics::fxList;
-    using Dynamics::fuList;
-    using Dynamics::dt;
-
 public:
     RobotDynamics() 
     {
         std::cout << "Initilized the Robot Dynamic Model..." << std::endl;
     }
     RobotDynamics(double timeStep, unsigned int Nsteps, const std::shared_ptr<RobotAbstract>& kukaRobot, const ContactModel::SoftContactModel<double>& contact_model) 
-                    : Dynamics<RobotAbstract, stateSize, commandSize>(timeStep, Nsteps, kukaRobot), m_kukaRobot(kukaRobot), m_contact_model(contact_model)
+                    : admm::Dynamics<RobotAbstract, stateSize, commandSize>(timeStep, Nsteps, kukaRobot), m_kukaRobot(kukaRobot), m_contact_model(contact_model)
                       
     {
         q.resize(NDOF), qd.resize(NDOF);
@@ -142,15 +137,15 @@ public:
             auto A_gen = kukaLinear.getDerivativeState(x, u, 0.0);
             auto B_gen = kukaLinear.getDerivativeControl(x, u, 0.0);
 
-            fxList[k] = A_gen * dt + Eigen::Matrix<double, stateSize, stateSize>::Identity();
-            fuList[k] = B_gen * dt;
+            this->fxList[k] = A_gen * this->dt + Eigen::Matrix<double, stateSize, stateSize>::Identity();
+            this->fuList[k] = B_gen * this->dt;
         }
     }
 
     const Control& getLowerCommandBounds() const {return lowerCommandBounds;}
     const Control& getUpperCommandBounds() const {return upperCommandBounds;}
-    const JacobianState& getfxList() const override {return fxList;}
-    const JacobianControl& getfuList() const override {return fuList;}
+    const JacobianState& getfxList() const override {return this->fxList;}
+    const JacobianControl& getfuList() const override {return this->fuList;}
 };
 
 
