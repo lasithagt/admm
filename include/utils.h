@@ -1,100 +1,43 @@
-#pragma once
+#ifndef ADMM_UTILS_HPP
+#define ADMM_UTILS_HPP
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 #include <sys/time.h>
 #include <cstdarg>
+#include <cmath>
+
+// std::vector<Eigen::MatrixXd> admm::utils::generateLissajousTrajectories(const Eigen::MatrixXd& R, double z, int n, int m, double r1, double r2, int N, double Tf); 
 
 
-// for splining trajectoreis
-class Spline 
+namespace admm 
 {
-    Spline() = default;
-    Spline(const Spline &other) = default;;
-    Spline(Spline &&other) = default;
-    Spline& operator=(const Spline &other) = default;
-    Spline& operator=(Spline &&other) = default;
-    void compute(){}
-};
-
-
-// for loging
-class Logger
-{
-public:
-    Logger() = default;
-    Logger(const Logger &other) = default;
-    Logger(Logger &&other) = default;
-    virtual ~Logger() = default;
-    Logger& operator=(const Logger &other) = default;
-    Logger& operator=(Logger &&other) = default;
-
-    /**
-     * @brief       Pure virtual function to log informational messages.
-     * @param fmt   Format string (if additional arguments are passed) or message to display
-     */
-    virtual void info(const char *fmt, ...) = 0;
-    /**
-     * @brief       Pure virtual function to log warnings.
-     * @param fmt   Format string (if additional arguments are passed) or message to display
-     */
-    virtual void warning(const char *fmt, ...) = 0;
-    /**
-     * @brief       Pure virtual function to log errors.
-     * @param fmt   Format string (if additional arguments are passed) or message to display
-     */
-    virtual void error(const char *fmt, ...) = 0;
-    /**
-     * @brief       Pure virtual function to log errors.
-     * @param fmt   Format string (if additional arguments are passed) or message to display
-     */
-    // virtual void thread(const char *fmt, const char *threadName, ...) = 0;
-
-};
-
-/**
- * @brief   A logger that outputs to stdout for info messages and stderr for warnings and errors.
- */
-class DefaultLogger: public Logger
-{
-public:
-    /**
-     * @brief       Log info messages to stdout.
-     * @param fmt   Format string (if additional arguments are passed) or message to display
-     */
-    virtual void info(const char *fmt, ...)
+    namespace utils
     {
-        std::va_list argptr;
-        va_start(argptr, fmt);
-        std::vprintf(fmt, argptr);
-        va_end(argptr);
+
+        std::vector<Eigen::MatrixXd> generateLissajousTrajectories(const Eigen::MatrixXd& R, double z, int n, int m, double r1, double r2, int N, double Tf) 
+        {
+            double timegap = Tf / (N);
+            std::vector<Eigen::MatrixXd> traj(N + 1);
+            Eigen::Vector3d p;
+            Eigen::Matrix<double, 4, 4> T;
+            T(3,3) = 1;
+
+            double t = 0.0;
+
+            for (int i = 0;i < N+1; i++) 
+            {
+                p(0) = r1 * std::cos(n * t); p(1) = r2 * std::sin(m * t); p(2) = z;
+                T.block(0,0,3,3) = R;
+                T.block(0,3,3,1) = p;
+                traj.at(i) = T;
+                t = t + timegap;
+            }
+            return traj;
+
+        }
+
     }
+}
 
-    /**
-     * @brief       Log warnings to stderr.
-     * @param fmt   Format string (if additional arguments are passed) or message to display
-     */
-    virtual void warning(const char *fmt, ...)
-    {
-        std::va_list argptr;
-        va_start(argptr, fmt);
-        std::vfprintf(stderr, fmt, argptr);
-        va_end(argptr);
-    }
-
-    /**
-     * @brief       Log errors to stderr.
-     * @param fmt   Format string (if additional arguments are passed) or message to display
-     */
-    virtual void error(const char *fmt, ...)
-    {
-        std::va_list argptr;
-        va_start(argptr, fmt);
-        std::vfprintf(stderr, fmt, argptr);
-        va_end(argptr);
-    }
-
-    
-};
-
-// #endif // CONFIG_H
+#endif // CONFIG_H

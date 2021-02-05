@@ -7,10 +7,10 @@
 
 
 
-class IK {
+class InverseKinematics {
 public:
-	IK() = default;
-	~IK() = default;
+	InverseKinematics() = default;
+	~InverseKinematics() = default;
 
 	/* Get IK solution given the Td and initial thetalist */
 	virtual void getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& thetalist0, const Eigen::VectorXd& thetalistd0, const Eigen::VectorXd& q_bar, const Eigen::VectorXd& qd_bar,
@@ -32,7 +32,7 @@ protected:
 };
 
 /* First order IK solution */
-class IK_FIRST_ORDER : public IK {
+class IK_FIRST_ORDER : public InverseKinematics {
 
 public:
 	IK_FIRST_ORDER() {}
@@ -43,6 +43,10 @@ public:
 
 	void getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& thetalist0, const Eigen::VectorXd& thetalistd0, const Eigen::VectorXd& q_bar, const Eigen::VectorXd& qd_bar, 
 		bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist);
+
+
+	void getIK_initial(const Eigen::MatrixXd& Td, const Eigen::VectorXd& thetalist0, const Eigen::VectorXd& thetalistd0, const Eigen::VectorXd& q_bar,
+ 		const Eigen::VectorXd& qd_bar, bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist_ret); 
 	
 	void getRedundancyResolution(const Eigen::VectorXd& thetalist, Eigen::VectorXd* q_grad_ret);
 	
@@ -54,13 +58,15 @@ public:
 	Eigen::Matrix<double, 7, 1> q_range;
 	Eigen::Matrix<double, 7, 1> q_mid;
 
+	// Eigen::MatrixX<double, 6, 7> J;
+
 	Eigen::CompleteOrthogonalDecomposition<Eigen::Matrix<double, 6, 7> > cod;
 
 };
 
 
 /* Second order IK solution */
-class IK_SECOND_ORDER : public IK {
+class IK_SECOND_ORDER : public InverseKinematics {
 
 public:
 	IK_SECOND_ORDER();

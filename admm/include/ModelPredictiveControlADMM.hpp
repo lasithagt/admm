@@ -30,7 +30,7 @@
 #include "KukaKinematicsScrews.hpp"
 #include "admmPublic.hpp"
 #include "RobotPublisherMPC.hpp"
-
+#include "logger.hpp"
 
 /* MPC algorithm wiith compute delay
 
@@ -388,10 +388,13 @@ public:
 	    #endif
 
 	    #ifdef DEBUG
-	    cnpy::npy_save("../data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
+	    logger_->info("Saving Data...\n");
+	    cnpy::npy_save("/home/lasitha/Documents/ROS_ws/src/kuka-ddp/ddp_src/ddp_contact/standalone/data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
 		
-		cnpy::npy_save("../data/state_trajectory_admm_state_mpc.npy", cartesian_mpc_state_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_state_logger.cols()), static_cast<unsigned long>(cartesian_mpc_state_logger.rows())}, "w");
-		cnpy::npy_save("../data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
+		cnpy::npy_save("/home/lasitha/Documents/ROS_ws/src/kuka-ddp/ddp_src/ddp_contact/standalone/data/state_trajectory_admm_state_mpc.npy", cartesian_mpc_state_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_state_logger.cols()), static_cast<unsigned long>(cartesian_mpc_state_logger.rows())}, "w");
+		cnpy::npy_save("/home/lasitha/Documents/ROS_ws/src/kuka-ddp/ddp_src/ddp_contact/standalone/data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
+		logger_->info("Saveds Data...\n");
+
 		#endif
 
 		logger_->info("Finished the main thread...\n");

@@ -21,7 +21,6 @@
 #include "RobotDynamics.hpp"
 #include "RobotPublisherMPC.hpp"
 
-
 // using namespace std;
 // template<>
 class ADMMTrajOptimizerMPC {

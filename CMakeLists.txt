@@ -114,7 +114,7 @@ target_link_libraries(test_models ModernRoboticsCpp ik-solvers orocos-kdl kuka-m
 
 ###########################################INSTALL AND EXPORT##############################################
 include(CMakePackageConfigHelpers)
-install (TARGETS kuka-models ik-solvers ddp-solver admm-solver
+install (TARGETS kuka-models admm-solver ik-solvers ddp-solver 
         EXPORT ADMMTargets
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
@@ -128,7 +128,7 @@ install (TARGETS kuka-models ik-solvers ddp-solver admm-solver
 # )
 
 # install header file
-install(FILES include/Curvature.hpp include/CostFunctionADMM.hpp include/CostFunctionContact.hpp include/config.h include/RobotDynamics.hpp include/RobotAbstract.h include/SoftContactModel.h include/RobotPlant.hpp include/eigenmvn.hpp include/RobotAbstract.h include/utils.h include/Plant.hpp include/Dynamics.hpp DESTINATION include)
+install(FILES include/Curvature.hpp include/CostFunctionADMM.hpp include/CostFunctionContact.hpp include/config.h include/RobotDynamics.hpp include/RobotAbstract.h include/SoftContactModel.h include/RobotPlant.hpp include/eigenmvn.hpp include/RobotAbstract.h include/utils.h include/Plant.hpp include/Dynamics.hpp include/logger.hpp DESTINATION include)
 
 # # set version
 set(version 3.4.1)

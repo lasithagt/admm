@@ -6,13 +6,13 @@
 #include "ModelPredictiveControlADMM.hpp"
 #include "RobCodGenModel.h"
 
-
+using Result = optimizer::IterativeLinearQuadraticRegulatorADMM::traj;
 
 ADMMTrajOptimizerMPC::ADMMTrajOptimizerMPC() = default;
 ADMMTrajOptimizerMPC::~ADMMTrajOptimizerMPC() = default;
 
 void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, std::shared_ptr<ADMMTrajOptimizerMPC::PlantPublisher>& plantPublisher,  const stateVec_t& init_state,  const ContactModel::SoftContactModel<double>& contactModel,  const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
-    const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses,  optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result) 
+    const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses,  Result& result) 
 {
 
     struct timeval tbegin,tend;
@@ -56,7 +56,7 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     stateVec_t xinit;
     stateVecTab_t xtrack;
     xtrack.resize(stateSize, N + 1);
-    xtrack.row(16) = 5 * Eigen::VectorXd::Ones(N + 1); 
+    xtrack.row(16) = 0 * Eigen::VectorXd::Ones(N + 1); 
 
 
     /* initialize xinit, xgoal, xtrack - for the horizon*/
@@ -121,6 +121,7 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     auto termination =
     [&](int i, const StateRef &x)
     {
+        // auto N_ = 200  - i;
         auto N_ = (int)N  - i;
         // auto N_ = (int)N - (1 + (int)horizon_mpc + i);
         if (N_ <= 0) {

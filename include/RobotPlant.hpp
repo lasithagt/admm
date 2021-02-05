@@ -63,14 +63,14 @@ public:
     bool applyControl(const Eigen::Ref<const Control> &u, const Eigen::Ref<const State> &x) 
     {
         std::lock_guard<std::mutex> locker(mu);
-        commandVec_t u_noisy = u + 1*cdist_.samples(1);
+        commandVec_t u_noisy = u + 0*cdist_.samples(1);
 
         State f1 = m_plantDynamics->f(currentState, u_noisy);
         State f2 = m_plantDynamics->f(currentState + 0.5 * dt * f1, u_noisy);
         State f3 = m_plantDynamics->f(currentState + 0.5 * dt * f2, u_noisy);
         State f4 = m_plantDynamics->f(currentState + dt * f3, u_noisy);
 
-        currentState = currentState + (dt/6) * (f1 + 2 * f2 + 2 * f3 + f4) + 0.01*sdist_.samples(1);
+        currentState = currentState + (dt/6) * (f1 + 2 * f2 + 2 * f3 + f4) + 0.0*sdist_.samples(1);
         return true;
     }
 

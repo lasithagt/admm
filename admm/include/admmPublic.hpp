@@ -26,42 +26,13 @@
 
 
   // // data structure for admm options
-  // struct MPCopt {
-  //   ADMMopt(double dt_, double tolFun_, double tolGrad_, unsigned int iterMax_, 
-  //     int ADMMiterMax_) : dt(dt_), tolFun(tolFun_), tolGrad(tolGrad_), iterMax(iterMax_), ADMMiterMax(ADMMiterMax_) {}
-  //   double dt;
-  //   double tolFun; 
-  //   double tolGrad; 
-  //   unsigned int iterMax; // DDP iteration max
-  //   // parameters for ADMM, penelty terms
-  //   int ADMMiterMax;
-  // };
+  struct TrajectoryTrack 
+  {
+    TrajectoryTrack(double des_normal_force) {}
+    const std::vector<Eigen::MatrixXd> cartesianTrajectory;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> stateTrajectory;
 
-  // // data structure for admm options
-  // struct MPCopt {
-  //   ADMMopt(double dt_, double tolFun_, double tolGrad_, unsigned int iterMax_, 
-  //     int ADMMiterMax_) : dt(dt_), tolFun(tolFun_), tolGrad(tolGrad_), iterMax(iterMax_), ADMMiterMax(ADMMiterMax_) {}
-  //   double dt;
-  //   double tolFun; 
-  //   double tolGrad; 
-  //   unsigned int iterMax; // DDP iteration max
-  //   // parameters for ADMM, penelty terms
-  //   int ADMMiterMax;
-  // };
-
-
-  // // data structure for admm options
-  // struct iLORopt {
-  //   ADMMopt(double dt_, double tolFun_, double tolGrad_, unsigned int iterMax_, 
-  //     int ADMMiterMax_) : dt(dt_), tolFun(tolFun_), tolGrad(tolGrad_), iterMax(iterMax_), ADMMiterMax(ADMMiterMax_) {}
-  //   double dt;
-  //   double tolFun; 
-  //   double tolGrad; 
-  //   unsigned int iterMax; // DDP iteration max
-  //   // parameters for ADMM, penelty terms
-  //   int ADMMiterMax;
-  // };
-
+  };
 
 
   #endif
