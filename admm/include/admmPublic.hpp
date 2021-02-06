@@ -22,6 +22,7 @@
     unsigned int iterMax; // DDP iteration max
     // parameters for ADMM, penelty terms
     int ADMMiterMax;
+
   };
 
 
@@ -33,6 +34,31 @@
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> stateTrajectory;
 
   };
+
+
+  // data structure for admm options
+  struct ADMM_MPCopt {
+    ADMM_MPCopt() = default;
+    ADMM_MPCopt(const ADMMopt& admm_opt, const Saturation& limits, double dt, unsigned int horizon=100) : admm_opt_(admm_opt), limits_(limits), horizon_(horizon), dt_(dt) {}
+
+    ADMMopt admm_opt_;
+    Saturation limits_;
+    unsigned int horizon_;
+    double dt_;
+    
+  };
+
+
+    // data structure for admm options
+  struct ADMM_MPCconfig {
+    ADMM_MPCconfig() = default;
+    ADMM_MPCconfig(const ADMM_MPCopt& admm_mpc_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& ik_opt) : admm_mpc_opt_(admm_mpc_opt), ik_opt_(ik_opt) {}
+
+    ADMM_MPCopt admm_mpc_opt_;
+    IKTrajectory<IK_FIRST_ORDER>::IKopt ik_opt_;
+  };
+
+
 
 
   #endif

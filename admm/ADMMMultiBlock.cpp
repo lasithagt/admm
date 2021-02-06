@@ -87,18 +87,13 @@ ADMMMultiBlock::ADMMMultiBlock(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
     // for the projection
     m_projectionOperator = ProjectionOperator(N);
-
-
-
 }
 
 /* optimizer execution */
 void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
   const stateVecTab_t& xtrack, const std::vector<Eigen::MatrixXd>& cartesianTrack,
-   const Eigen::VectorXd& rho, const Saturation& L) {
-
-    struct timeval tbegin,tend;
-    double texec = 0.0;
+   const Eigen::VectorXd& rho, const Saturation& L) 
+{
 
     /* ---------------------------------------- Initial Trajectory ---------------------------------------- */
     // Initialize Trajectory to get xnew with u_0 
@@ -184,7 +179,6 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     /* ------------------------------------------------ Run ADMM ---------------------------------------------- */
     std::cout << "begin ADMM..." << std::endl;
 
-    gettimeofday(&tbegin, NULL);
 
 
     for (unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
@@ -316,7 +310,6 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
     }
 
-    gettimeofday(&tend, NULL);    
 
     solver_->initializeTrajectory(xinit, unew, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 

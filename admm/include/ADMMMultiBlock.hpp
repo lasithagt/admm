@@ -59,6 +59,8 @@ protected:
   ADMMopt ADMM_OPTS;
   IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
 
+  ADMM_MPCopt ADMM_MPC_opt;
+
   stateVecTab_t joint_state_traj;
 
   unsigned int N;

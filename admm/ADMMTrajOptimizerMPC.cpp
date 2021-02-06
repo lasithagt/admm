@@ -15,8 +15,8 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses,  Result& result) 
 {
 
-    struct timeval tbegin,tend;
-    double texec = 0.0;
+    // struct timeval tbegin,tend;
+    // double texec = 0.0;
 
     double dt      = TimeStep;
     unsigned int N = NumberofKnotPt;
@@ -27,7 +27,7 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
 
     /*------------------initialize control input----------------------- */
-    unsigned int horizon_mpc = 100;          // make these loadable from a cfg file
+    unsigned int horizon_mpc = 150;          // make these loadable from a cfg file
 
 
     // Initialize Robot Model
