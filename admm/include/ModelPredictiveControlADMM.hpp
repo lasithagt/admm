@@ -31,6 +31,7 @@
 #include "admmPublic.hpp"
 #include "RobotPublisherMPC.hpp"
 #include "logger.hpp"
+#include "admmPublic.hpp"
 
 /* MPC algorithm wiith compute delay
 
@@ -144,7 +145,6 @@ public:
     IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
     Eigen::MatrixXd actual_cartesian_pose;
 
-
 public:
     /**
      * @brief               Instantiate the receding horizon wrapper for the trajectory optimizer.
@@ -158,11 +158,13 @@ public:
     ModelPredictiveControllerADMM(Scalar dt, int time_steps,  int iterations, bool verbose, Logger *logger, \
 	         CostFunction                   &cost_function,
 	         Optimizer 						&opt,
-	         const StateTrajectory  		&x_track, 
-	         const std::vector<Eigen::MatrixXd> &cartesianTrack,
+			 const TrajectoryDesired<stateSize, NumberofKnotPt> &desiredTrajectory, 
     		 const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT_) : dt_(dt), H_MPC(time_steps), verbose_(verbose), cost_function_(cost_function),
-    		  opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack), IK_OPT(IK_OPT_)
+    		  opt_(opt), IK_OPT(IK_OPT_)
     {
+    	x_track_ = desiredTrajectory.stateTrajectory;
+    	cartesianTrack_ = desiredTrajectory.cartesianTrajectory;
+
     	logger_ = logger;
     	control_trajectory.resize(commandSize, H_MPC);
     	cartesian_desired_logger.resize(3, cartesianTrack_.size());
@@ -171,7 +173,8 @@ public:
 
     	cartesian_mpc_logger.setZero();
 
-    	for (int i=0;i<cartesianTrack_.size();i++) {
+    	for (int i=0;i<cartesianTrack_.size();i++) 
+    	{
     	}
 
     	actual_cartesian_pose.resize(4,4);
@@ -389,10 +392,10 @@ public:
 
 	    #ifdef DEBUG
 	    logger_->info("Saving Data...\n");
-	    cnpy::npy_save("/home/lasitha/Documents/ROS_ws/src/kuka-ddp/ddp_src/ddp_contact/standalone/data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
+	    cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
 		
-		cnpy::npy_save("/home/lasitha/Documents/ROS_ws/src/kuka-ddp/ddp_src/ddp_contact/standalone/data/state_trajectory_admm_state_mpc.npy", cartesian_mpc_state_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_state_logger.cols()), static_cast<unsigned long>(cartesian_mpc_state_logger.rows())}, "w");
-		cnpy::npy_save("/home/lasitha/Documents/ROS_ws/src/kuka-ddp/ddp_src/ddp_contact/standalone/data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
+		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_state_mpc.npy", cartesian_mpc_state_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_state_logger.cols()), static_cast<unsigned long>(cartesian_mpc_state_logger.rows())}, "w");
+		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
 		logger_->info("Saveds Data...\n");
 
 		#endif

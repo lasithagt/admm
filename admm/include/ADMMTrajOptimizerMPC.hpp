@@ -20,6 +20,8 @@
 #include "DiffIKSolver.hpp"
 #include "RobotDynamics.hpp"
 #include "RobotPublisherMPC.hpp"
+#include "admmPublic.hpp"
+
 
 // using namespace std;
 // template<>
@@ -34,8 +36,7 @@ public:
     ~ADMMTrajOptimizerMPC();
 
     void run(const std::shared_ptr<RobotAbstract>& kukaRobot,  std::shared_ptr<PlantPublisher>& plant, const State& init_state, const ContactModel::SoftContactModel<double>& contactModel,
-     const ADMMopt& ADMM_OPTS, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
-     const Saturation& LIMITS, const std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
+        const ADMM_MPCconfig& admmMPC_config, const TrajectoryDesired<stateSize, NumberofKnotPt>& desiredTrajectory, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
     optimizer::IterativeLinearQuadraticRegulatorADMM::traj getOptimizerResult(); 
 

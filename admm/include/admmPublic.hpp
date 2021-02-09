@@ -1,10 +1,13 @@
 #ifndef ADMMPUBLIC_H
 #define ADMMPUBLIC_H  
 
+#include "DiffIKTrajectory.hpp"
+
 
   // data structure for saturation limits
-  struct Saturation {
-    Saturation() {}
+  struct Saturation 
+  {
+    Saturation() = default;
 
     Eigen::Matrix<double, 2, stateSize> stateLimits;
     Eigen::Matrix<double, 2, commandSize> controlLimits;
@@ -20,42 +23,55 @@
     double tolFun; 
     double tolGrad; 
     unsigned int iterMax; // DDP iteration max
-    // parameters for ADMM, penelty terms
     int ADMMiterMax;
 
   };
 
 
-  // // data structure for admm options
-  struct TrajectoryTrack 
+  // desired trajectory to track
+  template<int StateSize, uint Horizon>
+  struct TrajectoryDesired 
   {
-    TrajectoryTrack(double des_normal_force) {}
-    const std::vector<Eigen::MatrixXd> cartesianTrajectory;
+    TrajectoryDesired() 
+    {
+      cartesianTrajectory.resize(static_cast<int>(Horizon) + 1);
+      stateTrajectory.resize(StateSize, static_cast<int>(Horizon) + 1);
+      stateTrajectory.setZero();
+    }
+
+    std::vector<Eigen::MatrixXd> cartesianTrajectory;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> stateTrajectory;
 
   };
 
 
-  // data structure for admm options
-  struct ADMM_MPCopt {
+  struct ADMM_MPCopt 
+  {
     ADMM_MPCopt() = default;
-    ADMM_MPCopt(const ADMMopt& admm_opt, const Saturation& limits, double dt, unsigned int horizon=100) : admm_opt_(admm_opt), limits_(limits), horizon_(horizon), dt_(dt) {}
-
-    ADMMopt admm_opt_;
+    ADMM_MPCopt(const ADMMopt& admm_opt, const Saturation& limits) : ADMM_opt_(admm_opt), limits_(limits) {}
+    ADMMopt ADMM_opt_;
     Saturation limits_;
-    unsigned int horizon_;
-    double dt_;
     
   };
 
 
-    // data structure for admm options
-  struct ADMM_MPCconfig {
+  // TODO: pass rho as a parameter
+  struct ADMM_MPCconfig 
+  {
     ADMM_MPCconfig() = default;
-    ADMM_MPCconfig(const ADMM_MPCopt& admm_mpc_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& ik_opt) : admm_mpc_opt_(admm_mpc_opt), ik_opt_(ik_opt) {}
+    ADMM_MPCconfig(const ADMM_MPCopt& admm_mpc_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& ik_opt, double dt, unsigned int horizon=100) : ADMM_MPC_opt_(admm_mpc_opt), IK_opt_(ik_opt)
+    , horizon_(horizon), dt_(dt) 
+    {
+      rho_.resize(5);
+      rho_ << 50, 0.1, 0.00001, 0, 2;
+    }
 
-    ADMM_MPCopt admm_mpc_opt_;
-    IKTrajectory<IK_FIRST_ORDER>::IKopt ik_opt_;
+    ADMM_MPCopt ADMM_MPC_opt_;
+    IKTrajectory<IK_FIRST_ORDER>::IKopt IK_opt_;
+
+    Eigen::VectorXd rho_;
+    unsigned int horizon_;
+    double dt_;
   };
 
 

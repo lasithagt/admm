@@ -6,7 +6,7 @@
 #include "RobotPlant.hpp"
 #include "RobotDynamics.hpp"
 #include "RobotPublisherMPC.hpp"
-
+#include "utils.h"
 
 
 int main(int argc, char *argv[]) {
@@ -30,7 +30,6 @@ int main(int argc, char *argv[]) {
   ADMMopt ADMM_OPTS(TimeStep, 1e-7, 1e-7, 15, ADMMiterMax);
 
 
-
   Eigen::MatrixXd joint_lims(2,7);
 
   double eomg = 0.00001;
@@ -52,17 +51,20 @@ int main(int argc, char *argv[]) {
   IK_OPT.M = M;
 
 
-  // parameters for ADMM, penelty terms. initial
-  Eigen::VectorXd rho_init(5);
-  rho_init << 0, 0, 0, 0, 0;
-  IKTrajectory<IK_FIRST_ORDER> IK_traj = IKTrajectory<IK_FIRST_ORDER>(IK_OPT.Slist, IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init, NumberofKnotPt);
+  TrajectoryDesired<stateSize, NumberofKnotPt> desiredTrajectory;
 
   Eigen::MatrixXd R(3,3);
-  R << 1, 0, 0, 0, 1, 0, 0, 0, 1;
-  double Tf = 2 * M_PI;
+  R << 1, 0, 0, 
+       0, 1, 0, 
+       0, 0, 1;
+  double Tf      = 2 * M_PI;
   double z_depth = 1.17;
   double r       = 0.05;
-  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 1, r, r, NumberofKnotPt, Tf);
+
+  std::vector<Eigen::MatrixXd> cartesianPoses = admm::utils::generateLissajousTrajectories(R, z_depth, 1, 3, r, r, NumberofKnotPt, Tf);
+
+  desiredTrajectory.cartesianTrajectory     = cartesianPoses;
+  desiredTrajectory.stateTrajectory.row(16) = 0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1);
 
 
   // contact model parameters
@@ -101,31 +103,21 @@ int main(int argc, char *argv[]) {
 
 
   Saturation LIMITS;
-  Eigen::VectorXd x_limits_lower(stateSize);
-  Eigen::VectorXd x_limits_upper(stateSize);
-  Eigen::VectorXd u_limits_lower(commandSize);
-  Eigen::VectorXd u_limits_upper(commandSize);
-  x_limits_lower << -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -10, -10, -10;    
-  x_limits_upper << M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 10, 10, 10;      
-  u_limits_lower << -20, -20, -20, -20, -20, -20, -20;
-  u_limits_upper << 20, 20, 20, 20, 20, 20, 20;
 
-  LIMITS.stateLimits.row(0)   = x_limits_lower;
-  LIMITS.stateLimits.row(1)   = x_limits_upper;
-  LIMITS.controlLimits.row(0) = u_limits_lower; 
-  LIMITS.controlLimits.row(1) = u_limits_upper; 
-
+  LIMITS.stateLimits.row(0)   << -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -M_PI, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -10, -10, -10;
+  LIMITS.stateLimits.row(1)   << M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, M_PI, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 10, 10, 10;
+  LIMITS.controlLimits.row(0) << -20, -20, -20, -20, -20, -20, -20; 
+  LIMITS.controlLimits.row(1) << 20, 20, 20, 20, 20, 20, 20; 
 
   xinit.head(7) << 0, 0.2, 0, 0.5, 0, 0.2, 0;
 
 
-  /* ------------------------ admm mpc ----------------------------- */
-  ADMMTrajOptimizerMPC optimizerADMM;
-  // admm_mpc(kukaRobot, plant, contactModel, xinit, cartesianPoses, result);
-  optimizerADMM.run(kukaRobot, plantPublisher, xinit, contactModel, ADMM_OPTS, IK_OPT, LIMITS, cartesianPoses, result);
-  /* ------------------------ admm mpc ----------------------------- */
+  ADMM_MPCopt ADMM_MPC_OPT       = ADMM_MPCopt(ADMM_OPTS, LIMITS);
+  ADMM_MPCconfig ADMM_MPC_CONFIG = ADMM_MPCconfig(ADMM_MPC_OPT, IK_OPT, dt, horizon_mpc);
 
-  // admm_mpc(kukaRobot, xinit, cartesianPoses, result);
+  // 
+  ADMMTrajOptimizerMPC optimizerADMM;
+  optimizerADMM.run(kukaRobot, plantPublisher, xinit, contactModel, ADMM_MPC_CONFIG, desiredTrajectory, result);
 
   return 0;
 
