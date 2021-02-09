@@ -1,4 +1,4 @@
-    
+
 #ifndef ROBOTDYNAMICS_H
 #define ROBOTDYNAMICS_H
 
@@ -6,83 +6,38 @@
 #include "SoftContactModel.h"
 #include "KukaModel.h"
 
-#include <cstdio>
-#include <iostream>
-#include <unsupported/Eigen/NumericalDiff>
-#include <Eigen/Geometry>
 #include <chrono>
-
-#include <math.h>
-#include <memory>
-#include <functional>
-#include <thread>
 
 #include <ct/rbd/rbd.h>
 #include <ct/optcon/optcon.h>
 
 #include "KUKA.h"
-
 #include "KUKASoftContactFDSystem.h"
 #include "RobCodGen/codegen/KUKASoftContactSystemLinearizedForward.h"
+
+#include "Dynamics.hpp"
 
 #include <mutex>
 
 
-class RobotDynamics
+// template<typename System, int StateDim, int ControlDim>
+class RobotDynamics : public admm::Dynamics<RobotAbstract, stateSize, commandSize>
 {
-    
 
-    using Jacobian = Eigen::Matrix<double, stateSize, stateSize + commandSize>;
-    using State    = stateVec_t;
-    using Control  = commandVec_t;
+    using Jacobian        = Eigen::Matrix<double, stateSize, stateSize + commandSize>;
+    using State           = stateVec_t;
+    using Control         = commandVec_t;
+    using JacobianState   = typename admm::Dynamics<RobotAbstract, stateSize, commandSize>::JacobianState;
+    using JacobianControl = typename admm::Dynamics<RobotAbstract, stateSize, commandSize>::JacobianControl;
 
     typedef ct::rbd::KUKASoftContactFDSystem<ct::rbd::KUKA::Dynamics> KUKASystem;
     const size_t STATE_DIM = KUKASystem::STATE_DIM;
     const size_t CONTROL_DIM = KUKASystem::CONTROL_DIM;
 
-    template <class T, int S, int C>
-    struct Differentiable
-    {
-        /*****************************************************************************/
-        /*** Replicate Eigen's generic functor implementation to avoid inheritance ***/
-        /*** We only use the fixed-size functionality ********************************/
-        /*****************************************************************************/
-        enum { InputsAtCompileTime = S + C, ValuesAtCompileTime = S };
-        using Scalar        = T;
-        using InputType     = Eigen::Matrix<T, InputsAtCompileTime, 1>;
-        using ValueType     = Eigen::Matrix<T, ValuesAtCompileTime, 1>;
-        using JacobianType  = Eigen::Matrix<T, ValuesAtCompileTime, InputsAtCompileTime>;
-        int inputs() const { return InputsAtCompileTime; }
-        int values() const { return ValuesAtCompileTime; }
-        int operator()(const Eigen::Ref<const InputType> &xu, Eigen::Ref<ValueType> dx) const
-        {
-            dx =  dynamics_(xu.template head<S>(), xu.template tail<C>());
-            return 0;
-        }
-        /*****************************************************************************/
-
-        using DiffFunc = std::function<Eigen::Matrix<T, S, 1>(const Eigen::Matrix<T, S, 1>&, const Eigen::Matrix<T, C, 1>&)>;
-        Differentiable(const DiffFunc &dynamics) : dynamics_(dynamics) {}
-        Differentiable() = default;
-
-    private:
-        DiffFunc dynamics_;
-    };
-
-    using Scalar          =  double;
-    using JacobianState   = stateMatTab_t;
-    using JacobianControl = stateR_commandC_tab_t;
-    // typedef ContactModel::SoftContactModel<Scalar> ContactModel;
-
 private:
-    Scalar dt;
-    int N;
 
     Control lowerCommandBounds;
     Control upperCommandBounds;
-
-    JacobianState fxList;
-    JacobianControl fuList;
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -104,10 +59,6 @@ public:
     Control dynamic_friction;
     Eigen::Vector3d force_dot;
 
-    Jacobian jacobian;
-    Differentiable<double, stateSize, commandSize> diff_;
-    Eigen::NumericalDiff<Differentiable<double, stateSize, commandSize>, Eigen::Forward> num_diff_;
-
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
     std::chrono::duration<float, std::nano> elapsed;
@@ -117,11 +68,9 @@ public:
     {
         std::cout << "Initilized the Robot Dynamic Model..." << std::endl;
     }
-    RobotDynamics(double dt_, unsigned int N_, const std::shared_ptr<RobotAbstract>& kukaRobot, const ContactModel::SoftContactModel<double>& contact_model) 
-                    : m_kukaRobot(kukaRobot), 
-                      m_contact_model(contact_model), 
-                      diff_([this](const stateVec_t& x, const commandVec_t& u) -> stateVec_t{ return this->f(x, u); }), 
-                      num_diff_(diff_), dt(dt_), N(N_) 
+    RobotDynamics(double timeStep, unsigned int Nsteps, const std::shared_ptr<RobotAbstract>& kukaRobot, const ContactModel::SoftContactModel<double>& contact_model) 
+                    : admm::Dynamics<RobotAbstract, stateSize, commandSize>(timeStep, Nsteps, kukaRobot), m_kukaRobot(kukaRobot), m_contact_model(contact_model)
+                      
     {
         q.resize(NDOF), qd.resize(NDOF);
         qdd.resize(NDOF);
@@ -138,20 +87,13 @@ public:
     }
 
     ~RobotDynamics() = default;
-    RobotDynamics(const RobotDynamics &other)  
-    {
-        // *this = other;
-    }
+    RobotDynamics(const RobotDynamics &other) {};
+    RobotDynamics& operator=(const RobotDynamics &other) {};
 
-    RobotDynamics& operator=(const RobotDynamics &other) 
-    {
-        // *this = other;
-        // return *this;
-    }
 
 
     // RobotDynamics(double dt, unsigned int N,  const std::shared_ptr<RobotAbstract>& robot, const ContactModel::SoftContactModel<double>& contact_model);
-    const State& f(const stateVec_t& x, const commandVec_t& tau)
+    const State& f(const stateVec_t& x, const commandVec_t& tau) override
     {
         std::lock_guard<std::mutex> lk(mu);
         q  = x.head(NDOF);
@@ -164,9 +106,6 @@ public:
         dynamic_friction = (-1) * Kv.asDiagonal() * qd;
 
         tau_ext = tau + dynamic_friction - 0 * manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
-        // std::cout << force_current.transpose() << std::endl;
-        // std::cout << tau_ext.transpose() << std::endl;
-
         m_kukaRobot->getForwardDynamics(q.data(), qd.data(), tau_ext, qdd);
 
         /*  contact model dynamics */
@@ -187,38 +126,26 @@ public:
         return xdot_new;
     }
 
-    // void fx(const stateVecTab_t& xList, const commandVecTab_t& uList) 
-    // {
-    //     // TODO parallalize here
-    //     for (unsigned int k=0; k < N; k++) 
-    //     {
-    //         x = xList.col(k); u = uList.col(k);
-    //         x(16) += 0.000000001;
-
-    //         auto A_gen = kukaLinear.getDerivativeState(x, u, 0.0);
-    //         auto B_gen = kukaLinear.getDerivativeControl(x, u, 0.0);
-
-    //         fxList[k] = A_gen * dt + Eigen::Matrix<double, stateSize, stateSize>::Identity();
-    //         fuList[k] = B_gen * dt;
-    //     }
-    // }
-
-    void fx(const stateVecTab_t& xList, const commandVecTab_t& uList)
+    void fx(const stateVecTab_t& xList, const commandVecTab_t& uList) override
     {
         // TODO parallalize here
         for (unsigned int k=0; k < N; k++) 
         {
-            /* Numdiff Eigen */
-            num_diff_.df((typename Differentiable<double, stateSize, commandSize>::InputType() << xList.col(k), uList.col(k)).finished(), jacobian);
-            fxList[k] = jacobian.leftCols(stateSize) * dt + Eigen::Matrix<double, stateSize, stateSize>::Identity();
-            fuList[k] = jacobian.rightCols(commandSize) * dt;
-        }
+            x = xList.col(k); u = uList.col(k);
+            x(16) += 0.000000001;
 
+            auto A_gen = kukaLinear.getDerivativeState(x, u, 0.0);
+            auto B_gen = kukaLinear.getDerivativeControl(x, u, 0.0);
+
+            this->fxList[k] = A_gen * this->dt + Eigen::Matrix<double, stateSize, stateSize>::Identity();
+            this->fuList[k] = B_gen * this->dt;
+        }
     }
+
     const Control& getLowerCommandBounds() const {return lowerCommandBounds;}
     const Control& getUpperCommandBounds() const {return upperCommandBounds;}
-    const JacobianState& getfxList() const {return fxList;}
-    const JacobianControl& getfuList() const {return fuList;}
+    const JacobianState& getfxList() const override {return this->fxList;}
+    const JacobianControl& getfuList() const override {return this->fuList;}
 };
 
 

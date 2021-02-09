@@ -1,6 +1,6 @@
 @PACKAGE_INIT@
 
-set(_supported_components DDPSolver PlantModel IKSolvers)
+set(_supported_components PlantModel IKSolvers ADMMSolvers)
 
 foreach(_comp ${ADMM_FIND_COMPONENTS})
   if (NOT _comp IN_LIST _supported_components)

@@ -59,6 +59,32 @@ void IK_FIRST_ORDER::getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& the
 
 }
 
+// void IK_FIRST_ORDER::getIK_initial(const Eigen::MatrixXd& Td, const Eigen::VectorXd& thetalist0, const Eigen::VectorXd& thetalistd0, const Eigen::VectorXd& q_bar,
+//  const Eigen::VectorXd& qd_bar, bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist_ret)  {
+    
+//     const int n_random_points = 50;
+//     std::vector<std::pair<double, Eigen::VectorXd>> diff(n_random_points);
+    
+//     for (int i = 0;i < n_random_points;i++)
+//     {
+//         // get random joint vectors
+
+//         getIK(Td, thetalist0, thetalistd0, q_bar, qd_bar, initial, rho, thetalist_ret);
+
+//         // check how far from desired
+//         auto diff = (mr::FKinSpace(M, Slist, thetalist_ret) - Td).norm(); 
+
+//         if (diff < )
+//         {
+//             break;
+//         }
+
+//     }
+
+//     // otherwise, get the joint positions with the smallest error
+
+// }
+
 
 void IK_FIRST_ORDER::getRedundancyResolution(const Eigen::VectorXd& thetalist, Eigen::VectorXd* q_grad_ret) {
 

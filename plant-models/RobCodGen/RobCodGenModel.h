@@ -16,8 +16,6 @@
 #include <memory>
 #include <array>
 
-// #include <gtest/gtest.h>
-
 #include <ct/rbd/systems/linear/RbdLinearizer.h>
 #include "ct/rbd/systems/FixBaseFDSystem.h"
 #include "ct/rbd/systems/FloatingBaseFDSystem.h"

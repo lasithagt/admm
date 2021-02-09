@@ -35,7 +35,7 @@ public:
   
   // ADMMMultiBlock()
   ADMMMultiBlock(const std::shared_ptr<RobotAbstract>& kukaModel, const std::shared_ptr<CostFunctionADMM>& costFunction, 
-    const optimizer::IterativeLinearQuadraticRegulatorADMM& solverDDP, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps);
+    const std::shared_ptr<optimizer::IterativeLinearQuadraticRegulatorADMM>& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps);
 
   void solve(const stateVec_t& xinit, const commandVecTab_t& u_0, const stateVecTab_t& xtrack, 
     const std::vector<Eigen::MatrixXd>& cartesianTrack, const Eigen::VectorXd& rho, const Saturation& L);
@@ -51,13 +51,15 @@ protected:
   models::KUKA robotIK;
   std::shared_ptr<RobotAbstract> kukaRobot_;
   std::shared_ptr<CostFunctionADMM> costFunction_;
-  optimizer::IterativeLinearQuadraticRegulatorADMM solver_;
+  std::shared_ptr<optimizer::IterativeLinearQuadraticRegulatorADMM> solver_;
   ProjectionOperator m_projectionOperator;
 
   Curvature curve;
   Saturation projectionLimits;
   ADMMopt ADMM_OPTS;
   IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
+
+  ADMM_MPCopt ADMM_MPC_opt;
 
   stateVecTab_t joint_state_traj;
 

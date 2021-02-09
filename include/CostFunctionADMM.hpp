@@ -2,7 +2,6 @@
 #define COSTFUNCTION_H
 
 #include "config.h"
-#include <iostream>
 #include "CostFunctionContact.hpp"
 #include <memory>
 
@@ -55,7 +54,10 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     CostFunctionADMM() = default;
-    ~CostFunctionADMM() = default;
+    ~CostFunctionADMM() 
+    {
+        delete m_contactCost;
+    }
 
     CostFunctionADMM(int time_steps,  const std::shared_ptr<RobotAbstract>& robotModel) : N(time_steps), plant(robotModel) {
 
@@ -85,43 +87,9 @@ public:
 
     }
 
-    CostFunctionADMM(const CostFunctionADMM& other) 
-    {
-        // this->Q  = other.Q;
-        // this->Qf = other.Qf;
-        // this->R  = other.R;
+    CostFunctionADMM(const CostFunctionADMM& other) {}
 
-        // this->x_w  = other.x_w;
-        // this->xf_w = other.xf_w;  
-        // this->u_w  = other.u_w;
-
-        // this->cx_new = other.cx_new;
-        // this->cu_new = other.cu_new; 
-
-        // this->cxx_new = other.cxx_new; 
-        // this->cux_new = other.cux_new; 
-        // this->cuu_new = other.cuu_new;
-        // this->c_new = other.c_new;
-        // this->N = other.N;
-
-        // // kuka model to get forward kinematics for te cost
-        // std::shared_ptr<RobotAbstract> plant;
-
-        // // structure to compute contact terms
-        // // std::shared_ptr<ContactTerms<double, stateSize, commandSize>> m_contactCost;
-        // ContactTerms<double, stateSize, commandSize>* m_contactCost;
-
-        // Eigen::Matrix<double, stateSize, 1> m_;
-        // Eigen::Matrix<double, stateSize, 1> n_;
-
-        // Eigen::Matrix<double, stateSize, stateSize> c_xx;
-        // Eigen::Matrix<double, stateSize, 1> c_x;
-    }
-
-    CostFunctionADMM& operator = (const CostFunctionADMM& other) 
-    {
-
-    }
+    CostFunctionADMM& operator = (const CostFunctionADMM& other) {}
 
 
     /* return the cost without admm terms */
@@ -143,14 +111,14 @@ public:
 
 
 
-    /* return the cost with admm */
+    // return the cost with admm 
     Scalar cost_func_expre_admm(unsigned int k, const State& x_k, const Control& u_k, const State &x_track,
                                 const Eigen::MatrixXd& c_bar, const State& x_bar, const Control& u_bar, 
                                 const Eigen::VectorXd& thetaList_bar, const Eigen::VectorXd& rho, const Eigen::VectorXd& R_c)
     {
         Scalar cost;
 
-        /* compute the contact terms. */
+        // compute the contact terms.
         Eigen::Vector2d contact_terms = m_contactCost->computeContactTerms(x_k, R_c(k));
 
         if (k == N) 
@@ -173,7 +141,7 @@ public:
             cost += 0.5 * rho(1) * (u_k.transpose() - u_bar.transpose()) * (u_k - u_bar);
 
 
-            /* -------------------------- compute the contact term ----------------------------------*/
+            // compute the contact term 
             if (CONTACT_EN)
             {
                 cost += 0.5 * rho(2) * (contact_terms.head(2).transpose() - c_bar.transpose()) * (contact_terms.head(2) - c_bar); // temp
@@ -245,29 +213,16 @@ public:
         cxx_new[N]   += n_.asDiagonal();
     }
 
-
-
 	const StateWeights& getQ() const {return Q;};
-
 	const StateWeights& getQf() const {return Qf;};
-
 	const ControlWeights& getR() const {return R;};
-
 	const StateTrajectory& getcx() const {return cx_new;};
-
 	const ControlTrajectory& getcu() const {return cu_new;};
-
 	const stateMatTab_t& getcxx() const {return cxx_new;};
-
 	const ControlStateJacobian& getcux() const {return cux_new;};
-
 	const commandMatTab_t& getcuu() const {return cuu_new;};
-
 	Scalar getc() const {return c_new;};
 
 };
-
-
-
 
 #endif // COSTFUNCTION_H

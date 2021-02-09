@@ -4,7 +4,7 @@
 #include <Eigen/StdVector>
 #include <sys/time.h>
 
-#include "utils.h"
+// #include "utils.h"
 
 #define ENABLE_QPBOX 0
 #define DISABLE_QPBOX 1

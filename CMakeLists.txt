@@ -72,21 +72,21 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # EXECUTABLES
 #######################################################################################
 
-add_executable(admm-contact src/OPT_solvers.cpp src/main_admm.cpp)
+add_executable(admm-contact src/main_admm.cpp)
 target_include_directories(admm-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(admm-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers ct_core ct_rbd ct_optcon)
 
-add_executable(admm-contact-rcg src/OPT_solvers.cpp src/main_admm_rcg.cpp)
+add_executable(admm-contact-rcg src/main_admm_rcg.cpp)
 target_include_directories(admm-contact-rcg PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(admm-contact-rcg orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers ct_core ct_rbd ct_optcon)
 
 
-add_executable(admm-mpc-contact-rcg src/OPT_solvers.cpp src/main_admm_rcg_mpc.cpp)
+add_executable(admm-mpc-contact-rcg src/main_admm_rcg_mpc.cpp)
 target_include_directories(admm-mpc-contact-rcg PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(admm-mpc-contact-rcg orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers)
 
 
-add_executable(admm-mpc-contact src/OPT_solvers.cpp src/main_admm_mpc.cpp)
+add_executable(admm-mpc-contact src/main_admm_mpc.cpp)
 target_include_directories(admm-mpc-contact PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(admm-mpc-contact orocos-kdl admm-solver kuka-models ModernRoboticsCpp ik-solvers)
 
@@ -114,7 +114,7 @@ target_link_libraries(test_models ModernRoboticsCpp ik-solvers orocos-kdl kuka-m
 
 ###########################################INSTALL AND EXPORT##############################################
 include(CMakePackageConfigHelpers)
-install (TARGETS kuka-models ik-solvers ddp-solver admm-solver
+install (TARGETS kuka-models admm-solver ik-solvers ddp-solver 
         EXPORT ADMMTargets
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
@@ -128,7 +128,7 @@ install (TARGETS kuka-models ik-solvers ddp-solver admm-solver
 # )
 
 # install header file
-install(FILES include/Curvature.hpp include/CostFunctionADMM.hpp include/CostFunctionContact.hpp include/config.h include/RobotDynamics.hpp include/RobotAbstract.h include/SoftContactModel.h include/RobotPlant.hpp include/eigenmvn.hpp include/RobotAbstract.h include/utils.h DESTINATION include)
+install(FILES include/Curvature.hpp include/CostFunctionADMM.hpp include/CostFunctionContact.hpp include/config.h include/RobotDynamics.hpp include/RobotAbstract.h include/SoftContactModel.h include/RobotPlant.hpp include/eigenmvn.hpp include/RobotAbstract.h include/utils.h include/Plant.hpp include/Dynamics.hpp include/logger.hpp DESTINATION include)
 
 # # set version
 set(version 3.4.1)

@@ -113,6 +113,7 @@ void RobCodGenModel::getMassMatrix(double* q, Eigen::MatrixXd& massMatrix)
 void RobCodGenModel::getCoriolisMatrix(double* q, double* qd, Eigen::VectorXd& coriolis) // change
 {
     double qdd[7] = {0, 0, 0, 0, 0, 0, 0};
+    coriolis.setZero();
 
 }
  

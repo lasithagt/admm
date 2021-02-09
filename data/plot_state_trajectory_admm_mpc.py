@@ -49,12 +49,12 @@ if __name__ == "__main__":
 	ax.scatter3D(xline[0], yline[0], zline[0], 'b+')
 
 
-	xline = data_mpc_state[0,::]
-	yline = data_mpc_state[1,::]
-	zline = data_mpc_state[2,::]
+	# xline = data_mpc_state[0,::]
+	# yline = data_mpc_state[1,::]
+	# zline = data_mpc_state[2,::]
 
-	ax.plot3D(xline, yline, zline, label='Actual_state')
-	ax.scatter3D(xline[0], yline[0], zline[0], 'k+')
+	# ax.plot3D(xline, yline, zline, label='Actual_state')
+	# ax.scatter3D(xline[0], yline[0], zline[0], 'k+')
 
 	plt.legend()
 

@@ -30,7 +30,8 @@
 #include "KukaKinematicsScrews.hpp"
 #include "admmPublic.hpp"
 #include "RobotPublisherMPC.hpp"
-
+#include "logger.hpp"
+#include "admmPublic.hpp"
 
 /* MPC algorithm wiith compute delay
 
@@ -49,10 +50,10 @@ double delay{0.0};
 
 
 template <typename RobotPublisher>
-void publishCommands(RobotPublisher& publisher)
+void publishCommands(RobotPublisher& publisher, double dt)
 {
 	// run until optimizer is publishing
-	while (!publisher.terminate) {
+	while (!publisher->terminate) {
 		{
 			// round up the delay to nearest time step
 			std::cout << "\nIn publisher thread..." << std::endl;
@@ -64,7 +65,7 @@ void publishCommands(RobotPublisher& publisher)
 					// get current state
 					
 					// store the states
-					publisher.currentState = publisher.getCurrentState();
+					publisher->currentState = publisher->getCurrentState();
 					
 					{
 						std::unique_lock<std::mutex> lk(mu_main);
@@ -78,20 +79,18 @@ void publishCommands(RobotPublisher& publisher)
 
 					// account for delay
 					int i = static_cast<int>(delay_approx);
-					while (mpcComputeFinished==false & i<publisher.getHorizonTimeSteps() & init)
+					while (mpcComputeFinished==false & i<publisher->getHorizonTimeSteps() & init)
 					{
 						{
 							std::lock_guard<std::mutex> lk(mu_main);
-							publisher.publishCommand(i);
+							publisher->publishCommand(i);
 							std::cout << "Publishing Control Command..." << i << std::endl;	
 						}
 
 						// wait for dt
-						std::this_thread::sleep_for(std::chrono::milliseconds(8));
-
+						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000)));
 						++i;  
 					}
-
 
 					{
 				    	std::cout << "waiting for the new controls"  <<  std::endl;
@@ -102,8 +101,6 @@ void publishCommands(RobotPublisher& publisher)
 				        std::cout << "existing publishing..." << std::endl;
 				        newControlTrajectorySet = false;
 				    }
-					
-
 				} 
 			}
 		}
@@ -126,7 +123,7 @@ public:
     using StateTrajectory       = stateVecTab_t;   
     using ControlTrajectory     = commandVecTab_t; 
     using StateGainMatrix   	= commandR_stateC_tab_t;
-    using RobotPublisher 	 	= RobotPublisherT;
+    using RobotPublisher 	 	= std::shared_ptr<RobotPublisherT>;
     using Result                = OptimizerResultT;            ///< Type of result returned by the optimizer
     using TerminationCondition =
         std::function<bool(int, State)>;     ///< Type of termination condition function
@@ -148,7 +145,6 @@ public:
     IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
     Eigen::MatrixXd actual_cartesian_pose;
 
-
 public:
     /**
      * @brief               Instantiate the receding horizon wrapper for the trajectory optimizer.
@@ -159,14 +155,16 @@ public:
      * @param verbose       True if informational and warning messages should be passed to the logger; error messages are always passed
      * @param args          Arbitrary arguments to pass to the trajectory optimizer at initialization time
      */
-    ModelPredictiveControllerADMM(Scalar dt, int time_steps, int iterations, bool verbose, Logger *logger, \
+    ModelPredictiveControllerADMM(Scalar dt, int time_steps,  int iterations, bool verbose, Logger *logger, \
 	         CostFunction                   &cost_function,
 	         Optimizer 						&opt,
-	         const StateTrajectory  		&x_track, 
-	         const std::vector<Eigen::MatrixXd> &cartesianTrack,
-    		 const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT_)
-    : dt_(dt), H_MPC(time_steps), verbose_(verbose), cost_function_(cost_function), opt_(opt), x_track_(x_track), cartesianTrack_(cartesianTrack), IK_OPT(IK_OPT_)
+			 const TrajectoryDesired<stateSize, NumberofKnotPt> &desiredTrajectory, 
+    		 const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT_) : dt_(dt), H_MPC(time_steps), verbose_(verbose), cost_function_(cost_function),
+    		  opt_(opt), IK_OPT(IK_OPT_)
     {
+    	x_track_ = desiredTrajectory.stateTrajectory;
+    	cartesianTrack_ = desiredTrajectory.cartesianTrajectory;
+
     	logger_ = logger;
     	control_trajectory.resize(commandSize, H_MPC);
     	cartesian_desired_logger.resize(3, cartesianTrack_.size());
@@ -175,7 +173,8 @@ public:
 
     	cartesian_mpc_logger.setZero();
 
-    	for (int i=0;i<cartesianTrack_.size();i++) {
+    	for (int i=0;i<cartesianTrack_.size();i++) 
+    	{
     	}
 
     	actual_cartesian_pose.resize(4,4);
@@ -193,7 +192,7 @@ public:
      * @param terminal_cost_function        Terminal cost function V(xN) to pass to the optimizer
      * @param args                          Arbitrary arguments to pass to the trajectory optimizer at run time
      */
-    template <typename TerminationCondition>
+	template <typename TerminationCondition>
 	void run(const Eigen::Ref<const State>  &initial_state,
 	         ControlTrajectory              initial_control_trajectory,
 	         RobotPublisher                 &robotPublisher,
@@ -237,14 +236,13 @@ public:
 	    std::chrono::duration<float, std::milli> elapsed;
 
 	    // get the state strajectory storing vector
-	    Eigen::MatrixXd& stateTrajectory = robotPublisher.getStateTrajectory();
+	    Eigen::MatrixXd& stateTrajectory = robotPublisher->getStateTrajectory();
 
     	// to store the state evolution
-    	// robotPublisher.setStateBuffer(&stateBuffer);
-    	robotPublisher.setInitialState(initial_state);
+    	robotPublisher->setInitialState(initial_state);
 
     	// call the thread
-		std::thread robotPublishThread(publishCommands<RobotPublisher>, std::ref(robotPublisher));
+		std::thread robotPublishThread(publishCommands<RobotPublisher>, std::ref(robotPublisher), dt_);
 
 		// start MPC
  	    int64_t i = 0;
@@ -253,9 +251,8 @@ public:
  	    StateTrajectory test;
  	    test.resize(stateSize, static_cast<int>(NumberofKnotPt));
 
-	    while(!terminate(robotPublisher.getCurrentStep(), x))
+	    while(!terminate(robotPublisher->getCurrentStep(), x))
 	    {
-
 	        std::cout << "MPC loop started..." << std::endl;
 
 	        if(verbose_)
@@ -269,7 +266,6 @@ public:
 	            logger_->info("Entered MPC loop for time step %d\n", i);
 	            start = std::chrono::high_resolution_clock::now();
 	        }
-
 	       	
         	/* apply to the plant */
 		    {
@@ -278,18 +274,16 @@ public:
 		        cv_main.wait(lk, []{return currentStateReceived;});
 
 		        start = std::chrono::high_resolution_clock::now();
-		        xold = robotPublisher.getCurrentState();
+		        xold = robotPublisher->getCurrentState();
 		        lk.unlock();
 		       	currentStateReceived = false;
 
-		       	// i = (optimizer_iter == 0) ? 0 : robotPublisher.getCurrentStep();
-		       	i = robotPublisher.getCurrentStep();
+		       	i = robotPublisher->getCurrentStep();
 		       	std::cout << "\nX_current" << xold.transpose() << std::endl;
 		       	std::cout << "\nCurrent step :" << i << std::endl;
 		    }
 
-
-	        // Slide down the control trajectory
+	        /* Slide down the control trajectory */
 	        // control_trajectory.leftCols(H_ - 1) = result.uList.rightCols(H_ - 1);
 	        // control_trajectory = result.uList;
 	        if (optimizer_iter > 1)
@@ -305,23 +299,18 @@ public:
 
 
 		        for (int k = 0;k < H_TRACK;k++) 
-		        {	// std::cout << 0 + i + k << std::endl;
+		        {	
 		    		cartesianTrack_mpc[k] = cartesianTrack_[0 + i + k];
 		    	}
-
 		    }
-
 
 	        // Run the optimizer to obtain the next control trajectory
 	        {	
-	        	
 		        opt_.solve(xold, initial_control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
 
 		        ++optimizer_iter;
 		        std::cout <<optimizer_iter << std::endl;
 	    	}
-
-
 	    	if(verbose_)
 	        {
 	            logger_->info("Obtained control from optimizer: ");
@@ -336,7 +325,6 @@ public:
 		        mpcComputeFinished = true;
 		        std::cout << "MPC compute finished...\n";
 		        end = std::chrono::high_resolution_clock::now();
-
 		    }
 
 	        result = opt_.getLastSolvedTrajectory();
@@ -348,9 +336,8 @@ public:
         		std::unique_lock<std::mutex> lk(mu_main);
         		control_trajectory = result.uList;
         		std::cout << "set publisher controls" << std::endl;
-        		robotPublisher.setControlBuffer(control_trajectory);
+        		robotPublisher->setControlBuffer(control_trajectory);
 				newControlTrajectorySet = true;
-
 		
 				lk.unlock();
 
@@ -362,11 +349,9 @@ public:
 				// start publishing commands
 				if (optimizer_iter == 1) {init = true;};
 				cv_main.notify_one();
-
-
         	}
         	
-        	robotPublisher.setOptimizerStatesGains(result.xList, std::move(result.KList), result.kList);
+        	robotPublisher->setOptimizerStatesGains(result.xList, std::move(result.KList), result.kList);
 
 	        if(verbose_)
 	        {
@@ -384,7 +369,6 @@ public:
 
 	    robotPublishThread.join();
 
-	    // std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 	    // save data
         #ifdef DEBUG
@@ -407,10 +391,13 @@ public:
 	    #endif
 
 	    #ifdef DEBUG
-	    cnpy::npy_save("../data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
+	    logger_->info("Saving Data...\n");
+	    cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_mpc.npy", cartesian_mpc_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_logger.cols()), static_cast<unsigned long>(cartesian_mpc_logger.rows())}, "w");
 		
-		cnpy::npy_save("../data/state_trajectory_admm_state_mpc.npy", cartesian_mpc_state_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_state_logger.cols()), static_cast<unsigned long>(cartesian_mpc_state_logger.rows())}, "w");
-		cnpy::npy_save("../data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
+		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_state_mpc.npy", cartesian_mpc_state_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_state_logger.cols()), static_cast<unsigned long>(cartesian_mpc_state_logger.rows())}, "w");
+		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
+		logger_->info("Saveds Data...\n");
+
 		#endif
 
 		logger_->info("Finished the main thread...\n");

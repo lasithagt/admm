@@ -11,31 +11,30 @@
 #include "eigenmvn.hpp"
 #include "RobotDynamics.hpp"
 #include <mutex>
+#include "Plant.hpp"
 
-template<class Dynamics_, int S, int C>
-class RobotPlant
+template<class Dynamics, int S, int C>
+class RobotPlant : public Plant<S, C>
 {
-    enum { StateSize = S, ControlSize = C };
-    using State             = stateVec_t;
-    using Scalar            = double;
-    using Control           = commandVec_t;
-    using StateTrajectory   = stateVecTab_t;
-    using ControlTrajectory = commandVecTab_t;
-    using Dynamics          = Dynamics_;
-    using StateNoiseVariance    = Eigen::Matrix<Scalar, stateSize, stateSize>;
-    using ControlNoiseVariance  = Eigen::Matrix<Scalar, commandSize, commandSize>;
-    // using Eigen::internal;
 
 public:
+    enum { StateSize = S, ControlSize = C };
+    using Scalar                = double;
+    using State                 = typename Plant<S, C>::State;
+    using Control               = typename Plant<S, C>::Control;
+    using StateNoiseVariance    = Eigen::Matrix<Scalar, stateSize, stateSize>;
+    using ControlNoiseVariance  = Eigen::Matrix<Scalar, commandSize, commandSize>;
+
+    using Plant<S, C>::currentState;
+    using Plant<S, C>::dt;
+
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    RobotPlant(Dynamics& kukaRobot, Scalar dt_, Scalar state_var, Scalar control_var)
-    : dt(dt_), sdist_(State::Zero(), state_var * StateNoiseVariance::Identity()),
-      cdist_(Control::Zero(), control_var * ControlNoiseVariance::Identity()) {
-        m_plantDynamics = &kukaRobot;
-        currentState.setZero();
-
-    }
+    RobotPlant(const std::shared_ptr<Dynamics>& robotDynamics, Scalar timeStep, Scalar state_var, Scalar control_var) 
+    : Plant<S, C>(timeStep), m_plantDynamics(robotDynamics), sdist_(State::Zero(), state_var * StateNoiseVariance::Identity()),
+      cdist_(Control::Zero(), control_var * ControlNoiseVariance::Identity()) {}
+        // currentState.setZero();
+    
 
     RobotPlant() = default;
     RobotPlant(const RobotPlant &other) {};
@@ -61,38 +60,39 @@ public:
      * @param u The control calculated by the optimizer for the current time window.
      * @return  The new state of the system.
      */
-    bool applyControl(const Eigen::Ref<const Control> &u, const Eigen::Ref<const State> &x)
+    bool applyControl(const Eigen::Ref<const Control> &u, const Eigen::Ref<const State> &x) 
     {
         std::lock_guard<std::mutex> locker(mu);
-        commandVec_t u_noisy = u + 1*cdist_.samples(1);
+        commandVec_t u_noisy = u + 0*cdist_.samples(1);
 
         State f1 = m_plantDynamics->f(currentState, u_noisy);
         State f2 = m_plantDynamics->f(currentState + 0.5 * dt * f1, u_noisy);
         State f3 = m_plantDynamics->f(currentState + 0.5 * dt * f2, u_noisy);
         State f4 = m_plantDynamics->f(currentState + dt * f3, u_noisy);
 
-        currentState = currentState + (dt/6) * (f1 + 2 * f2 + 2 * f3 + f4) + 0.01*sdist_.samples(1);
+        currentState = currentState + (dt/6) * (f1 + 2 * f2 + 2 * f3 + f4) + 0.0*sdist_.samples(1);
         return true;
     }
 
-    bool setInitialState(const Eigen::Ref<const State> &x)
+    bool setInitialState(const Eigen::Ref<const State> &x) 
     {
         currentState = x;
         return true;
     }
 
-    const State& getCurrentState()
-    {   std::lock_guard<std::mutex> locker(mu);
+    const State& getCurrentState() 
+    {   
+        std::lock_guard<std::mutex> locker(mu);
         return currentState;
     }
     
 private:
-    Dynamics* m_plantDynamics;
-    Scalar dt;
+    
+    // Scalar dt;
     Eigen::EigenMultivariateNormal<double, StateSize> sdist_;
     Eigen::EigenMultivariateNormal<double, ControlSize> cdist_;
-
-    State currentState{};
+    std::shared_ptr<Dynamics> m_plantDynamics;
+    // State currentState{};
 
     std::mutex mu;
 

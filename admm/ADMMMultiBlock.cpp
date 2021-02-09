@@ -13,7 +13,7 @@ using namespace Eigen;
 // }
 
 ADMMMultiBlock::ADMMMultiBlock(const std::shared_ptr<RobotAbstract>& kukaRobot, const std::shared_ptr<CostFunctionADMM>& costFunction, 
-                               const optimizer::IterativeLinearQuadraticRegulatorADMM& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) : N(Time_steps), kukaRobot_(kukaRobot), 
+                               const std::shared_ptr<optimizer::IterativeLinearQuadraticRegulatorADMM>& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) : N(Time_steps), kukaRobot_(kukaRobot), 
                                ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(costFunction), solver_(solver) 
 {
     /* Initalize Primal and Dual variables */
@@ -87,25 +87,20 @@ ADMMMultiBlock::ADMMMultiBlock(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
     // for the projection
     m_projectionOperator = ProjectionOperator(N);
-
-
-
 }
 
 /* optimizer execution */
 void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
   const stateVecTab_t& xtrack, const std::vector<Eigen::MatrixXd>& cartesianTrack,
-   const Eigen::VectorXd& rho, const Saturation& L) {
-
-    struct timeval tbegin,tend;
-    double texec = 0.0;
+   const Eigen::VectorXd& rho, const Saturation& L) 
+{
 
     /* ---------------------------------------- Initial Trajectory ---------------------------------------- */
     // Initialize Trajectory to get xnew with u_0 
     // optimizer::ILQRSolverADMM::traj lastTraj; 
-    solver_.initializeTrajectory(xinit, u_0, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
+    solver_->initializeTrajectory(xinit, u_0, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 
-    lastTraj = solver_.getLastSolvedTrajectory();
+    lastTraj = solver_->getLastSolvedTrajectory();
     xnew = lastTraj.xList;
     unew = lastTraj.uList;
 
@@ -184,7 +179,6 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     /* ------------------------------------------------ Run ADMM ---------------------------------------------- */
     std::cout << "begin ADMM..." << std::endl;
 
-    gettimeofday(&tbegin, NULL);
 
 
     for (unsigned int i = 0; i < ADMM_OPTS.ADMMiterMax; i++) {
@@ -194,13 +188,13 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
        /* ---------------------------------------- iLQRADMM solver block ----------------------------------------   */
         start = std::chrono::high_resolution_clock::now();
-        solver_.solve(xinit, unew, xtrack, cbar - c_lambda, xbar - x_lambda, ubar - u_lambda, qbar - q_lambda, rho_ddp, R_c);
+        solver_->solve(xinit, unew, xtrack, cbar - c_lambda, xbar - x_lambda, ubar - u_lambda, qbar - q_lambda, rho_ddp, R_c);
         end = std::chrono::high_resolution_clock::now();
         elapsed = end - start;
         std::cout << "DDP compute time " << static_cast<int>(elapsed.count()) << " ms" << std::endl;
 
 
-        lastTraj = solver_.getLastSolvedTrajectory();
+        lastTraj = solver_->getLastSolvedTrajectory();
         xnew     = lastTraj.xList;
         unew     = lastTraj.uList;
         qnew     = xnew.block(0, 0, 7, N + 1);
@@ -316,11 +310,10 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
 
     }
 
-    gettimeofday(&tend, NULL);    
 
-    solver_.initializeTrajectory(xinit, unew, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
+    solver_->initializeTrajectory(xinit, unew, xtrack, cbar, xbar, ubar, qbar, rho, R_c);
 
-    lastTraj = solver_.getLastSolvedTrajectory();
+    lastTraj = solver_->getLastSolvedTrajectory();
     xnew = lastTraj.xList;
 
     unew = lastTraj.uList;
@@ -356,7 +349,7 @@ void ADMMMultiBlock::solve(const stateVec_t& xinit, const commandVecTab_t& u_0,
     }
     #endif
 
-    lastTraj = solver_.getLastSolvedTrajectory();
+    lastTraj = solver_->getLastSolvedTrajectory();
 
 
 }

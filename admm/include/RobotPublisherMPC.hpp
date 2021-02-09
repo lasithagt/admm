@@ -1,5 +1,5 @@
-#ifndef PLANT_H
-#define PLANT_H
+#ifndef ROBOT_PUBLISHER_MPC_H
+#define ROBOT_PUBLISHER_MPC_H
 
 // from standard C++
 #include <chrono>
@@ -35,6 +35,7 @@
 template<typename Plant, int S, int C>
 class RobotPublisherMPC
 {
+protected:
     enum { StateSize = S, ControlSize = C };
     using State             = stateVec_t;
     using Scalar            = double;
@@ -43,7 +44,6 @@ class RobotPublisherMPC
     using ControlTrajectory = commandVecTab_t;
     using StateGainMatrix   = commandR_stateC_tab_t;
 
-private:
     std::shared_ptr<Plant> m_robotPlant{};
     int command_step{};
     int N_commands{}; // length of the MPC trajectory commands
@@ -87,7 +87,7 @@ public:
         for (auto& it : StateGainsK) {it.setZero();}
         stateTrajectory.resize(StateSize, N_commands + 1); stateTrajectory.setZero();
     }
-    ~RobotPublisherMPC() = default;
+    virtual ~RobotPublisherMPC() = default;
 
     RobotPublisherMPC(const RobotPublisherMPC &other) {}
     RobotPublisherMPC(RobotPublisherMPC &&other) = default;
@@ -115,16 +115,17 @@ public:
      * @param u The control calculated by the optimizer for the current time window.
      * @return  The new state of the system.
      */
-    bool publishCommand(int i)
+    virtual bool publishCommand(int i)
     {
         // TODO
       if (!isTerminate())
       {
         std::lock_guard<std::mutex> locker(mu);
         Control error = -1 * StateGainsK[i] * (stateTrajectory.col(i+1) - getCurrentState());
-        u = controlBuffer.col(i) + 0.0 * StateGainsk.col(i) + error;
+
+        u = controlBuffer.col(i) +  error;
         m_robotPlant->applyControl(u, stateTrajectory.col(i));
-        
+
         // save the state
         saveState();
       }
@@ -132,7 +133,7 @@ public:
       return isTerminate();
     }
 
-    inline bool saveState()
+    virtual inline bool saveState() 
     {
       stateBuffer.col(command_step++) = getCurrentState();
     }
@@ -176,7 +177,7 @@ public:
         ++command_step;
     }
 
-    const State& getCurrentState() 
+    virtual const State& getCurrentState() 
     {
         return m_robotPlant->getCurrentState();
     }

@@ -24,7 +24,7 @@ install(TARGETS ddp-solver
 )
 
 # install header file
-install(FILES include/mpc.hpp include/ddp.h include/cost_function.h include/ilqrsolver.h DESTINATION include)
+install(FILES include/mpc.hpp include/ddp.h include/CostFunction.hpp include/ilqrsolver.h DESTINATION include)
 
 # generate and install export file
 install(EXPORT DDPSolverTargets

@@ -5,7 +5,7 @@
 
 #include "config.h"
 #include "RobotDynamics.hpp"
-#include "cost_function.h"
+#include "CostFunction.hpp"
 #include "SoftContactModel.h"
 
 #include <numeric>
