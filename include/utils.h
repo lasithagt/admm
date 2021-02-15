@@ -21,6 +21,7 @@ namespace admm
             std::vector<Eigen::MatrixXd> traj(N + 1);
             Eigen::Vector3d p;
             Eigen::Matrix<double, 4, 4> T;
+            T.setZero();
             T(3,3) = 1;
 
             double t = 0.0;
