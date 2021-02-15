@@ -1,10 +1,12 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <DiffIKSolver.hpp>
+#include <random>
+#include <utility>
 
-
-
-IK_FIRST_ORDER::IK_FIRST_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::MatrixXd& M_, const Eigen::MatrixXd& joint_limits_, const double& eomg_, const double& ev_, const Eigen::VectorXd& rho_) {
+IK_FIRST_ORDER::IK_FIRST_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::MatrixXd& M_, const Eigen::MatrixXd& joint_limits_, 
+    const double& eomg_, const double& ev_, const Eigen::VectorXd& rho_) 
+{
     
     eomg = eomg_;
     ev = ev_;
@@ -21,7 +23,8 @@ IK_FIRST_ORDER::IK_FIRST_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::Matri
 
 
 void IK_FIRST_ORDER::getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& thetalist0, const Eigen::VectorXd& thetalistd0, const Eigen::VectorXd& q_bar,
- const Eigen::VectorXd& qd_bar, bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist_ret)  {
+ const Eigen::VectorXd& qd_bar, bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist_ret)  
+{
 
     Eigen::VectorXd thetalist = thetalist0;
 
@@ -59,41 +62,60 @@ void IK_FIRST_ORDER::getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& the
 
 }
 
-// void IK_FIRST_ORDER::getIK_initial(const Eigen::MatrixXd& Td, const Eigen::VectorXd& thetalist0, const Eigen::VectorXd& thetalistd0, const Eigen::VectorXd& q_bar,
-//  const Eigen::VectorXd& qd_bar, bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist_ret)  {
+void IK_FIRST_ORDER::getIK_random_initial(const Eigen::MatrixXd& Td, const Eigen::VectorXd& q_bar, 
+    const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist_ret)  
+{
+    const int n_random_points = 20;
+    std::vector<std::pair<double, Eigen::VectorXd>> diff_store;
+    Eigen::VectorXd initialRandomState(thetalist_ret.rows());
+    initialRandomState.setZero();
+
+    Eigen::VectorXd thetalistd0 = initialRandomState * 0;
+    Eigen::VectorXd qd_bar      = initialRandomState * 0;
     
-//     const int n_random_points = 50;
-//     std::vector<std::pair<double, Eigen::VectorXd>> diff(n_random_points);
-    
-//     for (int i = 0;i < n_random_points;i++)
-//     {
-//         // get random joint vectors
+    for (int i = 0;i < n_random_points;i++)
+    {
+        // get random joint vectors
+        getRandomState(initialRandomState);
 
-//         getIK(Td, thetalist0, thetalistd0, q_bar, qd_bar, initial, rho, thetalist_ret);
+        getIK(Td, initialRandomState, thetalistd0, q_bar, qd_bar, true, rho, thetalist_ret);
 
-//         // check how far from desired
-//         auto diff = (mr::FKinSpace(M, Slist, thetalist_ret) - Td).norm(); 
+        // check how far from desired
+        double diff = (mr::FKinSpace(M, Slist, thetalist_ret) - Td).norm(); 
+        diff_store.push_back({diff, thetalist_ret});
+        if (diff < 0.001)
+        {
+            break;
+        }
 
-//         if (diff < )
-//         {
-//             break;
-//         }
+    }
+    // otherwise, get the joint positions with the smallest error
+    std::sort(diff_store.begin(), diff_store.end(), [](const auto &it1, const auto &it2) {
+        return it1.first < it2.first;
+    });
 
-//     }
-
-//     // otherwise, get the joint positions with the smallest error
-
-// }
+    thetalist_ret = diff_store.at(0).second;
+}
 
 
-void IK_FIRST_ORDER::getRedundancyResolution(const Eigen::VectorXd& thetalist, Eigen::VectorXd* q_grad_ret) {
+void IK_FIRST_ORDER::getRandomState(Eigen::VectorXd& randomState)
+{
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> dis(-1.0, 1.0);
 
+    for (int n = 0; n < randomState.rows(); n++) 
+    {
+        randomState(n) = dis(gen);
+    }
+}
+
+void IK_FIRST_ORDER::getRedundancyResolution(const Eigen::VectorXd& thetalist, Eigen::VectorXd* q_grad_ret) 
+{
     (*q_grad_ret) = (thetalist - q_mid);
  
     // dcdq = q_lim_grad;
 }
-
-
 
 
 /* Second order motion ploicies */
