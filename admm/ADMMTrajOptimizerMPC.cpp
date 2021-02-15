@@ -49,44 +49,12 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     // admm optimizer
     ADMMMultiBlock optimizerADMM(kukaRobot, costFunction_admm, solver, ADMM_OPTS, IK_OPT, horizon_mpc);
 
-
-    stateVec_t xinit;
-    // stateVecTab_t xtrack;
-    // xtrack.resize(stateSize, NFullTrajectory + 1);
-    // xtrack.row(16) = 0 * Eigen::VectorXd::Ones(NFullTrajectory + 1); 
-
-
-    /* initialize xinit, xgoal, xtrack - for the horizon*/
-    Eigen::VectorXd thetalist0(7);
-    Eigen::VectorXd thetalistd0(7);
-    Eigen::VectorXd q_bar(7);
-    Eigen::VectorXd qd_bar(7);
-    Eigen::VectorXd thetalist_ret(7);
-
-
-    for (int i = 0;i < 7; i++) { thetalist0(i) = init_state(i);}
-
-    thetalistd0 << 0, 0, 0, 0, 0, 0, 0;
-    q_bar << 0, 0, 0, 0, 0, 0, 0;
-    qd_bar << 0, 0, 0, 0, 0, 0, 0;
-
-    Eigen::VectorXd rho_init(5);
-    rho_init << 0, 0, 0, 0, 0;
-    bool initial = true;
-    IK_FIRST_ORDER IK = IK_FIRST_ORDER(IK_OPT.Slist,  IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
-
-    IK.getIK(desiredTrajectory.cartesianTrajectory.at(0), thetalist0, thetalistd0, q_bar, qd_bar, initial, rho_init, thetalist_ret);
-    xinit.head(7) = thetalist_ret;
-
+    stateVec_t xinit = init_state;
 
     int iterations = 10;
 
-    //
     Eigen::VectorXd rho(5);
     rho << 50, 0.1, 0.00001, 0, 2;
-
-
-
 
 
     commandVecTab_t u_0;

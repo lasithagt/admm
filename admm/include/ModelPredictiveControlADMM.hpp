@@ -46,6 +46,9 @@ bool newControlTrajectorySet = false;
 bool init = false;
 int NMPC{};
 
+std::chrono::time_point<std::chrono::high_resolution_clock> start_, end_;
+std::chrono::duration<float, std::milli> elapsed_;
+
 double delay{0.0};
 
 
@@ -57,7 +60,7 @@ void publishCommands(RobotPublisher& publisher, double dt)
 		{
 			// round up the delay to nearest time step
 			std::cout << "\nIn publisher thread..." << std::endl;
-			double delay_approx = std::floor(delay/10);
+			double delay_approx =  std::floor(delay/10) + 22;
 			{
 				// if mpc comppute is not finished, keep publlishing the command
 				{
@@ -65,6 +68,7 @@ void publishCommands(RobotPublisher& publisher, double dt)
 					// get current state
 					
 					// store the states
+					start_ = std::chrono::high_resolution_clock::now();
 					publisher->currentState = publisher->getCurrentState();
 					
 					{
@@ -74,11 +78,14 @@ void publishCommands(RobotPublisher& publisher, double dt)
 						cv_main.notify_one();
 						mpcComputeFinished = false;
 						std::cout << "notified: state was recived\n" << std::endl;
-						std::this_thread::sleep_for(std::chrono::milliseconds(2));
+						// std::this_thread::sleep_for(std::chrono::milliseconds(2));
 					}
 
 					// account for delay
 					int i = static_cast<int>(delay_approx);
+					end_ = std::chrono::high_resolution_clock::now();
+					elapsed_ = end_ - start_;
+		        	std::cout << "DELAY From : " << static_cast<double>(elapsed_.count()) << std::endl;
 					while (mpcComputeFinished==false & i<publisher->getHorizonTimeSteps() & init)
 					{
 						{
@@ -229,6 +236,7 @@ public:
 	    
 	    Result result;
 	    control_trajectory = initial_control_trajectory;
+	    result.uList = initial_control_trajectory;
 	    control_trajectory.setZero();
 
 	    u = initial_control_trajectory.col(0);
@@ -273,12 +281,12 @@ public:
 		        std::unique_lock<std::mutex> lk(mu_main);
 		        cv_main.wait(lk, []{return currentStateReceived;});
 
-		        start = std::chrono::high_resolution_clock::now();
+		        // start = std::chrono::high_resolution_clock::now();
 		        xold = robotPublisher->getCurrentState();
 		        lk.unlock();
 		       	currentStateReceived = false;
 
-		       	i = robotPublisher->getCurrentStep();
+		       	i = robotPublisher->getCurrentStep() ;
 		       	std::cout << "\nX_current" << xold.transpose() << std::endl;
 		       	std::cout << "\nCurrent step :" << i << std::endl;
 		    }
@@ -289,7 +297,7 @@ public:
 	        if (optimizer_iter > 1)
 	        {
 	        	if(verbose_) logger_->info("Slide down the control trajectory\n");
-		        // control_trajectory = initial_control_trajectory;
+		        control_trajectory = initial_control_trajectory;
 
 		       	// slide down the control for state and cartesian state
 		       	if(verbose_) logger_->info("Slide down the desired trajectory\n");
@@ -306,7 +314,7 @@ public:
 
 	        // Run the optimizer to obtain the next control trajectory
 	        {	
-		        opt_.solve(xold, initial_control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
+		        opt_.solve(xold, control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
 
 		        ++optimizer_iter;
 		        std::cout <<optimizer_iter << std::endl;
@@ -324,7 +332,7 @@ public:
 		        std::lock_guard<std::mutex> lk(mu_main);
 		        mpcComputeFinished = true;
 		        std::cout << "MPC compute finished...\n";
-		        end = std::chrono::high_resolution_clock::now();
+		        // end = std::chrono::high_resolution_clock::now();
 		    }
 
 	        result = opt_.getLastSolvedTrajectory();
@@ -340,7 +348,7 @@ public:
 				newControlTrajectorySet = true;
 		
 				lk.unlock();
-
+				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
 
 		        delay = (optimizer_iter == 1) ? 0.0 : static_cast<double>(elapsed.count());

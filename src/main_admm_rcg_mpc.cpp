@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   stateVecTab_t xtrack;
   xtrack.resize(stateSize, NumberofKnotPt + 1);
 
-  int ADMMiterMax = 3;
+  int ADMMiterMax = 4;
   unsigned int ddpIter = 10;
   ADMMopt ADMM_OPTS(TimeStep, 1e-7, 1e-7, ddpIter, ADMMiterMax);
 
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   std::vector<Eigen::MatrixXd> cartesianPoses = admm::utils::generateLissajousTrajectories(R, z_depth, 1, 3, r, r, NumberofKnotPt, Tf);
 
   desiredTrajectory.cartesianTrajectory     = cartesianPoses;
-  desiredTrajectory.stateTrajectory.row(16) = 1 * Eigen::VectorXd::Ones(NumberofKnotPt + 1);
+  desiredTrajectory.stateTrajectory.row(16) = 0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1);
 
 
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
   double control_var       = 0.0001;
 
   double dt                = TimeStep;
-  unsigned int horizon_mpc = 25;          // make these loadable from a cfg file
+  unsigned int horizon_mpc = 100;          // make these loadable from a cfg file
 
 
   // state and control limits
@@ -121,9 +121,21 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<RobotPublisher> plantPublisher = std::shared_ptr<RobotPublisher>(new RobotPublisher(plant, static_cast<int>(horizon_mpc), static_cast<int>(NumberofKnotPt), dt));
 
 
-  xinit.head(7) << 0, 0.2, 0, 0.5, 0, 0.2, 0;
+  Eigen::VectorXd q_bar(7);
+  Eigen::VectorXd thetalist_ret(7);
 
-  // 
+  q_bar << 0, 0, 0, 0, 0, 0, 0;
+
+  Eigen::VectorXd rho_init(5);
+  rho_init << 0, 0, 0, 0, 0;
+  IK_FIRST_ORDER IK = IK_FIRST_ORDER(IK_OPT.Slist,  IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
+
+  IK.getIK_random_initial(desiredTrajectory.cartesianTrajectory.at(0), q_bar,rho_init, thetalist_ret);
+  std::cout << thetalist_ret << std::endl;
+
+  xinit.head(7) = thetalist_ret;
+
+
   ADMMTrajOptimizerMPC optimizerADMM;
   optimizerADMM.run(kukaRobot, plantPublisher, xinit, contactModel, ADMM_MPC_CONFIG, desiredTrajectory, result);
 
