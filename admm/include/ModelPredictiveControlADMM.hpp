@@ -46,11 +46,18 @@ bool newControlTrajectorySet = false;
 bool init = false;
 int NMPC{};
 
+std::once_flag command_start;
+
 std::chrono::time_point<std::chrono::high_resolution_clock> start_, end_;
 std::chrono::duration<float, std::milli> elapsed_;
 
-double delay{0.0};
+std::chrono::time_point<std::chrono::high_resolution_clock> start_command, end_command;
+std::chrono::duration<float, std::milli> elapsed_command;
 
+double delay_compute{0.0};
+double delay_network{0.0};
+
+int current_step{0};
 
 template <typename RobotPublisher>
 void publishCommands(RobotPublisher& publisher, double dt)
@@ -60,7 +67,8 @@ void publishCommands(RobotPublisher& publisher, double dt)
 		{
 			// round up the delay to nearest time step
 			std::cout << "\nIn publisher thread..." << std::endl;
-			double delay_approx =  std::floor(delay/10) + 22;
+			
+			double delay_approx = std::floor(delay_compute/10)  +  20; //std::floor(delay_network/10);
 			{
 				// if mpc comppute is not finished, keep publlishing the command
 				{
@@ -68,9 +76,8 @@ void publishCommands(RobotPublisher& publisher, double dt)
 					// get current state
 					
 					// store the states
-					start_ = std::chrono::high_resolution_clock::now();
 					publisher->currentState = publisher->getCurrentState();
-					
+					current_step            = publisher->getCurrentStep();
 					{
 						std::unique_lock<std::mutex> lk(mu_main);
 						currentStateReceived = true;
@@ -78,16 +85,17 @@ void publishCommands(RobotPublisher& publisher, double dt)
 						cv_main.notify_one();
 						mpcComputeFinished = false;
 						std::cout << "notified: state was recived\n" << std::endl;
-						// std::this_thread::sleep_for(std::chrono::milliseconds(2));
 					}
 
 					// account for delay
-					int i = static_cast<int>(delay_approx);
+					int i  = static_cast<int>(delay_approx);
+
 					end_ = std::chrono::high_resolution_clock::now();
 					elapsed_ = end_ - start_;
-		        	std::cout << "DELAY From : " << static_cast<double>(elapsed_.count()) << std::endl;
+					
 					while (mpcComputeFinished==false & i<publisher->getHorizonTimeSteps() & init)
 					{
+						// std::call_once(command_start, [](){ start_ = std::chrono::high_resolution_clock::now(); });
 						{
 							std::lock_guard<std::mutex> lk(mu_main);
 							publisher->publishCommand(i);
@@ -185,7 +193,6 @@ public:
     	}
 
     	actual_cartesian_pose.resize(4,4);
-    	
     }
 
     /**
@@ -255,9 +262,11 @@ public:
 		// start MPC
  	    int64_t i = 0;
  	    int64_t optimizer_iter = 0;
+ 	    int temp_time{0};
 
  	    StateTrajectory test;
  	    test.resize(stateSize, static_cast<int>(NumberofKnotPt));
+		// start_ = std::chrono::high_resolution_clock::now();
 
 	    while(!terminate(robotPublisher->getCurrentStep(), x))
 	    {
@@ -275,7 +284,6 @@ public:
 	            start = std::chrono::high_resolution_clock::now();
 	        }
 	       	
-        	/* apply to the plant */
 		    {
 		    	std::cout << "waiting for the current state in MPC thread"  <<  std::endl;
 		        std::unique_lock<std::mutex> lk(mu_main);
@@ -286,9 +294,16 @@ public:
 		        lk.unlock();
 		       	currentStateReceived = false;
 
-		       	i = robotPublisher->getCurrentStep() ;
+		       	// i = robotPublisher->getCurrentStep();
+		       	i = current_step;
+		       	// elapsed_command = std::chrono::high_resolution_clock::now() - start_;
+		       	// i = std::floor(static_cast<double>(elapsed_command.count()) / 10);
+		       	// if (i < 0 || i > 2000) {i = 0;}
+
+		       	temp_time = 10 * robotPublisher->getCurrentStep();
 		       	std::cout << "\nX_current" << xold.transpose() << std::endl;
-		       	std::cout << "\nCurrent step :" << i << std::endl;
+
+		       	std::cout << "\nCurrent step :" << robotPublisher->getCurrentStep() << " " << std::endl;
 		    }
 
 	        /* Slide down the control trajectory */
@@ -308,23 +323,16 @@ public:
 
 		        for (int k = 0;k < H_TRACK;k++) 
 		        {	
-		    		cartesianTrack_mpc[k] = cartesianTrack_[0 + i + k];
+		    		cartesianTrack_mpc[k] = cartesianTrack_[1 + i + k];
 		    	}
 		    }
 
 	        // Run the optimizer to obtain the next control trajectory
 	        {	
 		        opt_.solve(xold, control_trajectory, x_track_mpc, cartesianTrack_mpc, rho, L);
-
 		        ++optimizer_iter;
-		        std::cout <<optimizer_iter << std::endl;
+		        std::cout << "Optimizer Iteration: " << optimizer_iter << std::endl;
 	    	}
-	    	if(verbose_)
-	        {
-	            logger_->info("Obtained control from optimizer: ");
-	            for(int m = 0; m < u.rows(); ++m) { logger_->info("%f ", u(m)); }
-	            logger_->info("\n");
-	        }
 
 	        // Apply the control to the plant and obtain the new state
 	        x = xold; 
@@ -332,11 +340,9 @@ public:
 		        std::lock_guard<std::mutex> lk(mu_main);
 		        mpcComputeFinished = true;
 		        std::cout << "MPC compute finished...\n";
-		        // end = std::chrono::high_resolution_clock::now();
 		    }
 
 	        result = opt_.getLastSolvedTrajectory();
-	        u = result.uList.col(0);
 
         	/* ----------------------------- apply to the plant. call a child thread ----------------------------- */
         	// set the control trajectory
@@ -351,13 +357,18 @@ public:
 				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
 
-		        delay = (optimizer_iter == 1) ? 0.0 : static_cast<double>(elapsed.count());
-		        std::cout << "DELAY: " << delay << std::endl;
+			    // delay_network = (optimizer_iter < 2) ? 0.0 : static_cast<double>(elapsed_command.count()) - temp_time;
+		        delay_compute = (optimizer_iter == 1) ? 0.0 : static_cast<double>(elapsed.count());
+		        
+		        std::cout << "DELAY COMPUTE: " << delay_compute << std::endl;
+		        // std::cout << "DELAY NETWORK: " << delay_network << std::endl;
 
+		        start_ = std::chrono::high_resolution_clock::now();
 				// start publishing commands
 				if (optimizer_iter == 1) {init = true;};
 				cv_main.notify_one();
         	}
+        	
         	
         	robotPublisher->setOptimizerStatesGains(result.xList, std::move(result.KList), result.kList);
 
@@ -371,11 +382,15 @@ public:
 	        // Calculate the true cost for this time step
 	        true_cost = cost_function_->cost_func_expre(0, xold, u, x_track_.col(i));
 
-	        if(verbose_) logger_->info("True cost for time step %d: %f\n", i, true_cost);	    	        
+	        if(verbose_) logger_->info("True cost for time step %d: %f\n", i, true_cost);	
+	  
 
 	    }
 
 	    robotPublishThread.join();
+		// end_     = std::chrono::high_resolution_clock::now();
+		// elapsed_ = end_ - start_;
+		// std::cout << "Total Trajectory Time : " << static_cast<double>(elapsed_.count()) << std::endl;
 
 
 	    // save data

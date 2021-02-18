@@ -45,7 +45,7 @@ protected:
     using StateGainMatrix   = commandR_stateC_tab_t;
 
     std::shared_ptr<Plant> m_robotPlant{};
-    int command_step{};
+    int command_step{0};
     int N_commands{}; // length of the MPC trajectory commands
     int N_Trajectory{};
     Control u{};
@@ -128,6 +128,7 @@ public:
 
         // save the state
         saveState();
+        command_step++;
       }
 
       return isTerminate();
@@ -135,7 +136,7 @@ public:
 
     virtual inline bool saveState() 
     {
-      stateBuffer.col(command_step++) = getCurrentState();
+      stateBuffer.col(command_step) = getCurrentState();
     }
 
 
