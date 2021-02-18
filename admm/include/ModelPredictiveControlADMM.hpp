@@ -68,7 +68,7 @@ void publishCommands(RobotPublisher& publisher, double dt)
 			// round up the delay to nearest time step
 			std::cout << "\nIn publisher thread..." << std::endl;
 			
-			double delay_approx = std::floor(delay_compute/10)  +  20; //std::floor(delay_network/10);
+			double delay_approx = std::floor(delay_compute/10) + 20; //std::floor(delay_network/10);
 			{
 				// if mpc comppute is not finished, keep publlishing the command
 				{
@@ -92,7 +92,7 @@ void publishCommands(RobotPublisher& publisher, double dt)
 
 					end_ = std::chrono::high_resolution_clock::now();
 					elapsed_ = end_ - start_;
-					
+
 					while (mpcComputeFinished==false & i<publisher->getHorizonTimeSteps() & init)
 					{
 						// std::call_once(command_start, [](){ start_ = std::chrono::high_resolution_clock::now(); });

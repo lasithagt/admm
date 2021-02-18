@@ -65,6 +65,8 @@ public:
     StateTrajectory stateTrajectory{};
     StateGainMatrix StateGainsK{};
 
+    Eigen::Matrix<double, 7, 7> PDGain;
+
     ControlTrajectory StateGainsk{};
 
     std::mutex mu;
@@ -81,6 +83,7 @@ public:
         controlBuffer.setZero();
         StateGainsK.resize(N_commands + 1);
 
+        PDGain = 10 * Eigen::MatrixXd::Identity(7,7);
         StateGainsk.resize(C, N_commands);
         StateGainsk.setZero();
 
@@ -122,8 +125,9 @@ public:
       {
         std::lock_guard<std::mutex> locker(mu);
         Control error = -1 * StateGainsK[i] * (stateTrajectory.col(i+1) - getCurrentState());
+        Control pd = 1 * PDGain * (stateTrajectory.col(i+1).head(7) - getCurrentState().head(7));
 
-        u = controlBuffer.col(i) +  error;
+        u = pd + 0 * controlBuffer.col(i) +  0 * error;
         m_robotPlant->applyControl(u, stateTrajectory.col(i));
 
         // save the state
