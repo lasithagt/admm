@@ -46,7 +46,7 @@ public:
 	void getIK_random_initial(const Eigen::MatrixXd& Td, const Eigen::VectorXd& q_bar,
 		const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist_ret); 
 
-	void getRandomState(Eigen::VectorXd& randomState);
+	void getRandomState(Eigen::VectorXd& randomState, int elbow);
 	
 	void getRedundancyResolution(const Eigen::VectorXd& thetalist, Eigen::VectorXd* q_grad_ret);
 	

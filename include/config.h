@@ -4,8 +4,6 @@
 #include <Eigen/StdVector>
 #include <sys/time.h>
 
-// #include "utils.h"
-
 #define ENABLE_QPBOX 0
 #define DISABLE_QPBOX 1
 #define ENABLE_FULLDDP 0
@@ -21,11 +19,10 @@ const int commandSize = 7;
 const int fullstatecommandSize = 24;
 const int NDOF = 7;
 
-const double TimeHorizon = 10;
+const double TimeHorizon = 20;
 const double TimeStep = 0.01; // 0.01s works for soft contact dynamics
 
 const unsigned int NumberofKnotPt = TimeHorizon / TimeStep;
-const double InterpolationScale = 10;
 const int32_t kNumJoints = 7;
 
 

@@ -76,7 +76,7 @@ void IK_FIRST_ORDER::getIK_random_initial(const Eigen::MatrixXd& Td, const Eigen
     for (int i = 0;i < n_random_points;i++)
     {
         // get random joint vectors
-        getRandomState(initialRandomState);
+        getRandomState(initialRandomState, 1);
 
         getIK(Td, initialRandomState, thetalistd0, q_bar, qd_bar, true, rho, thetalist_ret);
 
@@ -98,15 +98,21 @@ void IK_FIRST_ORDER::getIK_random_initial(const Eigen::MatrixXd& Td, const Eigen
 }
 
 
-void IK_FIRST_ORDER::getRandomState(Eigen::VectorXd& randomState)
+void IK_FIRST_ORDER::getRandomState(Eigen::VectorXd& randomState, int elbow)
 {
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<> dis(-1.0, 1.0);
+    std::uniform_real_distribution<> dis(-1.0, 1.0); 
+    std::uniform_real_distribution<> dis_elbow(0.0, 1.0);
 
     for (int n = 0; n < randomState.rows(); n++) 
     {
         randomState(n) = dis(gen);
+    }
+
+    if (elbow == 1) 
+    {
+        for (auto i : {1,3,5}) {randomState(i) = dis_elbow(gen);}
     }
 }
 
