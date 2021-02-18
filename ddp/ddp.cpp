@@ -121,7 +121,7 @@ void DDP::run(stateVec_t xinit, stateVec_t xgoal, stateVecTab_t xtrack)
     lastTraj = solver.getLastSolvedTrajectory();
 
     /* ------------------------------------------------------------------- */
-
+    const int InterpolationScale = 10;
     /* post processing and save data */
     joint_state_traj.resize(stateSize, N + 1);
     joint_state_traj_interp.resize(stateSize, N * InterpolationScale + 1);
