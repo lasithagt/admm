@@ -1,7 +1,7 @@
 #ifndef ADMMPUBLIC_H
 #define ADMMPUBLIC_H  
 
-#include "DiffIKTrajectory.hpp"
+#include "differential_ik_trajectory.hpp"
 
 
   // data structure for saturation limits

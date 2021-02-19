@@ -9,20 +9,19 @@
 
 #include "config.h"
 #include "IterativeLinearQuadraticRegulatorADMM.hpp"
-#include "RobotDynamics.hpp"
-#include "SoftContactModel.h"
-#include "CostFunctionADMM.hpp"
+#include "robot_dynamics.hpp"
+#include "cost_function_admm.hpp"
 
 #include "modern_robotics.h"
-#include "DiffIKTrajectory.hpp"
-#include "DiffIKSolver.hpp"
+#include "differential_ik_trajectory.hpp"
+#include "differential_ik_solver.hpp"
 #include "KukaKinematicsScrews.hpp"
 
-#include "Curvature.hpp"
+#include "curvature.hpp"
 #include "cnpy.h"
 
-#include "ProjectionOperator.hpp"
-#include "admmPublic.hpp"
+#include "projection_operator.hpp"
+#include "admm_public.hpp"
 
 #include <unsupported/Eigen/CXX11/Tensor>
 

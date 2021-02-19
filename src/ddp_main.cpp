@@ -6,8 +6,8 @@
 
 // for IK
 #include "modern_robotics.h"
-#include "DiffIKTrajectory.hpp"
-#include "DiffIKSolver.hpp"
+#include "differential_ik_trajectory.hpp"
+#include "differential_ik_solver.hpp"
 #include "KukaKinematicsScrews.hpp"
 
 

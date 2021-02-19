@@ -1,5 +1,5 @@
 #include "ADMMTrajOptimizer.hpp"
-#include "RobotDynamics.hpp"
+#include "robot_dynamics.hpp"
 #include "eigenmvn.hpp"
 #include "cnpy.h"
 

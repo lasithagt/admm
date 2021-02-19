@@ -1,5 +1,5 @@
 
-#include "KukaModel.h"
+#include "kuka_model.h"
 
 
 KUKAModelKDL::KUKAModelKDL(const KDL::Chain& robotChain, const KUKAModelKDLInternalData& robotParams) : robotChain_(robotChain), robotParams_(robotParams) 

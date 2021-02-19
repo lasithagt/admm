@@ -3,7 +3,7 @@ find_package(ct_core)
 find_package(ct_rbd)
 find_package(ct_optcon)
 
-set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/KDL/KukaModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/RobCodGenModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/codegen/KUKASoftContactSystemLinearizedForward.cpp)
+set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/KDL/kuka_model.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/RobCodGenModel.cpp ${CMAKE_CURRENT_SOURCE_DIR}/RobCodGen/codegen/KUKASoftContactSystemLinearizedForward.cpp)
 add_library(kuka-models STATIC ${SOURCES})
 target_link_libraries(kuka-models ct_core ct_rbd ct_optcon)
 
@@ -43,11 +43,11 @@ install(TARGETS kuka-models
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
+        INCLUDES DESTINATION include/admm
 )
 
 # install header file
-install(FILES KDL/KukaModel.h KDL/models.h RobCodGen/RobCodGenModel.h Screws/KukaKinematicsScrews.hpp RobCodGen/KUKA.h DESTINATION include)
+install(FILES KDL/kuka_model.h KDL/models.h RobCodGen/RobCodGenModel.h Screws/KukaKinematicsScrews.hpp RobCodGen/KUKA.h DESTINATION include/admm/models)
 
 # generate and install export file
 install(EXPORT PlantModelTargets

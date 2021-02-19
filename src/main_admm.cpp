@@ -5,15 +5,13 @@
 #include "ADMMTrajOptimizer.hpp"
 
 #include "config.h"
-#include "KukaModel.h"
+#include "kuka_model.h"
 #include "models.h"
 #include "RobCodGenModel.h"
 
-#include "RobotPlant.hpp"
-#include "RobotDynamics.hpp"
+#include "robot_plant.hpp"
+#include "robot_dynamics.hpp"
 
-
-// void admm(const std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, std::vector<Eigen::MatrixXd>& cartesianPoses, optimizer::IterativeLinearQuadraticRegulatorADMM::traj& result);
 
 
 int main(int argc, char *argv[]) {

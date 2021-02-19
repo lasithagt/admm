@@ -2,8 +2,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include "modern_robotics.h"
-#include "DiffIKTrajectory.hpp"
-#include "DiffIKSolver.hpp"
+#include "differential_ik_trajectory.hpp"
+#include "differential_ik_solver.hpp"
 #include "KukaKinematicsScrews.hpp"
 #include <chrono>
 #include <ctime>

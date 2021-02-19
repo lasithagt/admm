@@ -8,7 +8,7 @@ Licensed under the BSD-2 license (see LICENSE file in main directory)
 #include <ct/rbd/systems/FixBaseSystemBase.h>
 #include <ct/rbd/robot/actuator/ActuatorDynamics.h>
 #include <ct/rbd/state/FixBaseRobotState.h>
-#include "SoftContactModel.h"
+#include "soft_contact_model.hpp"
 
 namespace ct {
 namespace rbd {

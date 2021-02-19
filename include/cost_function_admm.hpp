@@ -2,7 +2,7 @@
 #define COSTFUNCTION_H
 
 #include "config.h"
-#include "CostFunctionContact.hpp"
+#include "cost_function_contact.hpp"
 #include <memory>
 
 // template <class DynamicsT, class PlantT, class costFunctionT, class OptimizerT, class OptimizerResultT>

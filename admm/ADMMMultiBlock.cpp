@@ -5,12 +5,6 @@
 #include "ADMMMultiBlock.hpp"
 #include <chrono>
 
-using namespace Eigen;
-
-// ADMMMultiBlock::ADMMMultiBlock()
-// {
-//     std::cout << "Initialized the 3 Block Arch...." << std::endl;
-// }
 
 ADMMMultiBlock::ADMMMultiBlock(const std::shared_ptr<RobotAbstract>& kukaRobot, const std::shared_ptr<CostFunctionADMM>& costFunction, 
                                const std::shared_ptr<optimizer::IterativeLinearQuadraticRegulatorADMM>& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) : N(Time_steps), kukaRobot_(kukaRobot), 

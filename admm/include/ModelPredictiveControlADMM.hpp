@@ -4,11 +4,7 @@
 #include <memory>
 
 #include "config.h"
-#include "RobotDynamics.hpp"
-#include "SoftContactModel.h"
-#include "KukaModel.h"
-#include "models.h"
-
+#include "RobotAbstract.h"
 
 #include <iostream>
 #include <cmath>
@@ -23,15 +19,13 @@
 #include <condition_variable>
 
 #include "modern_robotics.h"
-#include "DiffIKTrajectory.hpp"
-#include "DiffIKSolver.hpp"
+#include "differential_ik_trajectory.hpp"
+#include "differential_ik_solver.hpp"
 #include "cnpy.h"
 
-#include "KukaKinematicsScrews.hpp"
-#include "admmPublic.hpp"
 #include "RobotPublisherMPC.hpp"
 #include "logger.hpp"
-#include "admmPublic.hpp"
+#include "admm_public.hpp"
 
 /* MPC algorithm wiith compute delay
 
@@ -68,7 +62,7 @@ void publishCommands(RobotPublisher& publisher, double dt)
 			// round up the delay to nearest time step
 			std::cout << "\nIn publisher thread..." << std::endl;
 			
-			double delay_approx = std::floor(delay_compute/10) + 20; //std::floor(delay_network/10);
+			double delay_approx = std::floor(delay_compute/10);// + 20; //std::floor(delay_network/10);
 			{
 				// if mpc comppute is not finished, keep publlishing the command
 				{
@@ -289,18 +283,11 @@ public:
 		        std::unique_lock<std::mutex> lk(mu_main);
 		        cv_main.wait(lk, []{return currentStateReceived;});
 
-		        // start = std::chrono::high_resolution_clock::now();
-		        xold = robotPublisher->getCurrentState();
+		        xold = robotPublisher->currentState;
 		        lk.unlock();
 		       	currentStateReceived = false;
 
-		       	// i = robotPublisher->getCurrentStep();
 		       	i = current_step;
-		       	// elapsed_command = std::chrono::high_resolution_clock::now() - start_;
-		       	// i = std::floor(static_cast<double>(elapsed_command.count()) / 10);
-		       	// if (i < 0 || i > 2000) {i = 0;}
-
-		       	temp_time = 10 * robotPublisher->getCurrentStep();
 		       	std::cout << "\nX_current" << xold.transpose() << std::endl;
 
 		       	std::cout << "\nCurrent step :" << robotPublisher->getCurrentStep() << " " << std::endl;
@@ -344,7 +331,7 @@ public:
 
 	        result = opt_.getLastSolvedTrajectory();
 
-        	/* ----------------------------- apply to the plant. call a child thread ----------------------------- */
+        	// apply to the plant. call a child thread 
         	// set the control trajectory
         	{
         		std::unique_lock<std::mutex> lk(mu_main);
@@ -357,11 +344,9 @@ public:
 				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
 
-			    // delay_network = (optimizer_iter < 2) ? 0.0 : static_cast<double>(elapsed_command.count()) - temp_time;
 		        delay_compute = (optimizer_iter == 1) ? 0.0 : static_cast<double>(elapsed.count());
 		        
 		        std::cout << "DELAY COMPUTE: " << delay_compute << std::endl;
-		        // std::cout << "DELAY NETWORK: " << delay_network << std::endl;
 
 		        start_ = std::chrono::high_resolution_clock::now();
 				// start publishing commands
@@ -388,9 +373,6 @@ public:
 	    }
 
 	    robotPublishThread.join();
-		// end_     = std::chrono::high_resolution_clock::now();
-		// elapsed_ = end_ - start_;
-		// std::cout << "Total Trajectory Time : " << static_cast<double>(elapsed_.count()) << std::endl;
 
 
 	    // save data

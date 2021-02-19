@@ -3,8 +3,8 @@
 #define ROBOTDYNAMICS_H
 
 #include "config.h"
-#include "SoftContactModel.h"
-#include "KukaModel.h"
+#include "soft_contact_model.hpp"
+#include "RobotAbstract.h"
 
 #include <chrono>
 
@@ -15,7 +15,7 @@
 #include "KUKASoftContactFDSystem.h"
 #include "RobCodGen/codegen/KUKASoftContactSystemLinearizedForward.h"
 
-#include "Dynamics.hpp"
+#include "dynamics.hpp"
 
 #include <mutex>
 
@@ -90,9 +90,6 @@ public:
     RobotDynamics(const RobotDynamics &other) {};
     RobotDynamics& operator=(const RobotDynamics &other) {};
 
-
-
-    // RobotDynamics(double dt, unsigned int N,  const std::shared_ptr<RobotAbstract>& robot, const ContactModel::SoftContactModel<double>& contact_model);
     const State& f(const stateVec_t& x, const commandVec_t& tau) override
     {
         std::lock_guard<std::mutex> lk(mu);
@@ -108,7 +105,7 @@ public:
         tau_ext = tau + dynamic_friction - 0 * manip_jacobian.transpose().block(0, 0, NDOF, 3) * force_current;
         m_kukaRobot->getForwardDynamics(q.data(), qd.data(), tau_ext, qdd);
 
-        /*  contact model dynamics */
+        // contact model dynamics
         if (CONTACT_EN)
         {
             // compute forward kinematics, velocity and accleration

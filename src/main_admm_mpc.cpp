@@ -3,11 +3,11 @@
 
 #include "config.h"
 #include "ADMMTrajOptimizerMPC.hpp"
-#include "RobotPlant.hpp"
-#include "RobotDynamics.hpp"
+#include "robot_plant.hpp"
+#include "robot_dynamics.hpp"
 #include "RobotPublisherMPC.hpp"
 #include "utils.h"
-
+#include "kuka_model.h"
 
 int main(int argc, char *argv[]) {
 
@@ -77,28 +77,29 @@ int main(int argc, char *argv[]) {
   cp.Kd = 10;
   ContactModel::SoftContactModel<double> contactModel(cp);
 
-  /*-----------------------------------------------------------------------------------------------------------------------*/
+  //
   double state_var   = 0.001;
   double control_var = 0.0001;
 
-  double dt      = TimeStep;
+  double dt          = TimeStep;
   unsigned int horizon_mpc = 100;          // make these loadable from a cfg file
 
 
   std::shared_ptr<RobotAbstract> kukaRobot_plant = std::shared_ptr<RobotAbstract>(new KUKAModelKDL(robot(), robotParams));
   kukaRobot_plant->initRobot();
   ContactModel::SoftContactModel<double> contactModel_plant;
-
   contactModel_plant = contactModel;
-  // Initialize Robot Model
-  std::shared_ptr<RobotDynamics> KukaModel_plant{new RobotDynamics(dt, horizon_mpc, kukaRobot_plant, contactModel_plant)};
 
-  using Plant_ = RobotPlant<RobotDynamics, stateSize, commandSize>;
+  using Dynamics = admm::Dynamics<RobotAbstract, stateSize, commandSize>;
+  // Initialize Robot Model
+  std::shared_ptr<Dynamics> KukaModel_plant{new RobotDynamics(dt, horizon_mpc, kukaRobot_plant, contactModel_plant)};
+
+  using Plant_ = RobotPlant<Dynamics, stateSize, commandSize>;
   std::shared_ptr<Plant_> plant{new Plant_(KukaModel_plant, dt, state_var, control_var)};
-  /*-----------------------------------------------------------------------------------------------------------------------*/
+  //
 
   // Initialize robot publisher
-  using RobotPublisher = RobotPublisherMPC<Plant<stateSize, commandSize>, stateSize, commandSize>;
+  using RobotPublisher = RobotPublisherMPC<Plant<Dynamics, stateSize, commandSize>, stateSize, commandSize>;
   std::shared_ptr<RobotPublisher> plantPublisher = std::shared_ptr<RobotPublisher>(new RobotPublisher(plant, static_cast<int>(horizon_mpc), static_cast<int>(NumberofKnotPt), dt));
 
 

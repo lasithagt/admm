@@ -14,9 +14,9 @@
 
 #include "config.h"
 #include "ilqrsolver.h"
-#include "RobotDynamics.hpp"
-#include "SoftContactModel.h"
-#include "KukaModel.h"
+#include "robot_dynamics.hpp"
+
+#include "kuka_model.h"
 #include "models.h"
 
 

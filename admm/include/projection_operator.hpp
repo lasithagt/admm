@@ -1,6 +1,6 @@
 #include <Eigen/Dense>
 #include "config.h"
-#include "admmPublic.hpp"
+#include "admm_public.hpp"
 
 // namespace ADMM {
 /* projection operator */

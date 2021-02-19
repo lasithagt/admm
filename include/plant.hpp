@@ -5,7 +5,7 @@
 #include <memory>
 
 
-template<int S, int C>
+template<class Dynamics, int S, int C>
 class Plant
 {
 public:
@@ -14,7 +14,7 @@ public:
     using State    = Eigen::Matrix<Scalar, StateSize, 1>;
     using Control  = Eigen::Matrix<Scalar, ControlSize, 1>;
 
-    // std::shared_ptr<Dynamics> m_plantDynamics;
+    std::shared_ptr<Dynamics> m_plantDynamics;
     Scalar dt;
     State currentState;
 
@@ -23,8 +23,8 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     Plant() = default;
-    Plant(Scalar TimeStep)
-    : dt(TimeStep) {currentState.setZero();}
+    Plant(const std::shared_ptr<Dynamics>& plantDynamics, Scalar TimeStep)
+    : m_plantDynamics(plantDynamics), dt(TimeStep) {currentState.setZero();}
 
     Plant(const Plant &other) = default;
     Plant(Plant &&other) = default;

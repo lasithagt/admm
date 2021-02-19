@@ -2,9 +2,8 @@
 #define ILQRSOLVER_H
 
 #include "config.h"
-#include "RobotDynamics.hpp"
-#include "CostFunctionADMM.hpp"
-#include "SoftContactModel.h"
+#include "robot_dynamics.hpp"
+#include "cost_function_admm.hpp"
 
 #include <numeric>
 #include <sys/time.h>

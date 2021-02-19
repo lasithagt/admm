@@ -1,8 +1,10 @@
 #include <iostream>
 #include <Eigen/Dense>
-#include <DiffIKSolver.hpp>
 #include <random>
 #include <utility>
+
+#include "differential_ik_solver.hpp"
+
 
 IK_FIRST_ORDER::IK_FIRST_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::MatrixXd& M_, const Eigen::MatrixXd& joint_limits_, 
     const double& eomg_, const double& ev_, const Eigen::VectorXd& rho_) 

@@ -13,14 +13,14 @@
 
 
 #include "ADMMMultiBlock.hpp"
-#include "Plant.hpp"
+#include "plant.hpp"
 
 #include "modern_robotics.h"
-#include "DiffIKTrajectory.hpp"
-#include "DiffIKSolver.hpp"
-#include "RobotDynamics.hpp"
+#include "differential_ik_trajectory.hpp"
+#include "differential_ik_solver.hpp"
+#include "robot_dynamics.hpp"
 #include "RobotPublisherMPC.hpp"
-#include "admmPublic.hpp"
+#include "admm_public.hpp"
 
 
 // using namespace std;
@@ -29,7 +29,9 @@ class ADMMTrajOptimizerMPC {
 
 public:
 	using State 		 = Eigen::Matrix<double, stateSize, 1>;
-	using PlantPublisher = RobotPublisherMPC<Plant<stateSize, commandSize>, stateSize, commandSize>;
+    using Dynamics       = admm::Dynamics<RobotAbstract, stateSize, commandSize>;
+	using PlantPublisher = RobotPublisherMPC<Plant<Dynamics, stateSize, commandSize>, stateSize, commandSize>;
+
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     ADMMTrajOptimizerMPC();

@@ -5,15 +5,13 @@
 #include <chrono>
 #include <cstdio>
 #include <iostream>
-#include <thread>         // std::thread
+#include <thread>       
 #include <math.h>
 #include <mutex>
 #include <condition_variable>
 
 // headers in this project
 #include "config.h"
-#include "models.h"
-#include "RobotDynamics.hpp"
 
 
 /**
@@ -61,6 +59,7 @@ public:
     Eigen::MatrixXd controlBuffer; // store command vector
     Eigen::MatrixXd stateBuffer; // store the states in buffer
     State currentState{}; // current state of the robot
+    State predictedState{};
 
     StateTrajectory stateTrajectory{};
     StateGainMatrix StateGainsK{};
@@ -98,36 +97,16 @@ public:
     RobotPublisherMPC& operator=(const RobotPublisherMPC &other) {}
     RobotPublisherMPC& operator=(RobotPublisherMPC &&other) = default;
 
-    // return the publisher thread
-    // std::thread publisherThread() {
-    //     return std::thread([=] { publishCommands(); });
-    // }
 
-    /**
-     * @brief   Pass information to the Plant in order to apply controls and obtain the new state.
-     *
-     * The user must provide an implementation that takes in the system state and the control calculated
-     * by the optimizer, applies one control to the system, performs any desired calculations or updates,
-     * and returns the new state of the system after the application of the control.
-     *
-     * Note that unlike the Dynamics functor, this function must return a STATE rather than a state transition.
-     * This is in the interests of compatibility with real robotic systems whose state estimators will usually
-     * return a state rather than a transition.
-     *
-     * @param x The state calculated by the optimizer for the current time window.
-     * @param u The control calculated by the optimizer for the current time window.
-     * @return  The new state of the system.
-     */
     virtual bool publishCommand(int i)
     {
-        // TODO
       if (!isTerminate())
       {
         std::lock_guard<std::mutex> locker(mu);
         Control error = -1 * StateGainsK[i] * (stateTrajectory.col(i+1) - getCurrentState());
-        Control pd = 1 * PDGain * (stateTrajectory.col(i+1).head(7) - getCurrentState().head(7));
+        Control pd    = 1 * PDGain * (stateTrajectory.col(i+1).head(7) - getCurrentState().head(7));
 
-        u = pd + 0 * controlBuffer.col(i) +  0 * error;
+        u = controlBuffer.col(i) +  error;
         m_robotPlant->applyControl(u, stateTrajectory.col(i));
 
         // save the state
@@ -137,6 +116,25 @@ public:
 
       return isTerminate();
     }
+
+    // predicts the future state by simulating the dynamics
+    const State& predictState(const State& currState, const Control& controlSequence, int time_steps_ahead) 
+    {
+      predictedState = currState;
+
+      for (int i=0;i < time_steps_ahead;i++)
+      {
+        State f1 = m_robotPlant->m_plantDynamics->f(currState, controlSequence.col(i));
+        State f2 = m_robotPlant->m_plantDynamics->f(currState + 0.5 * dt * f1, controlSequence.col(i));
+        State f3 = m_robotPlant->m_plantDynamics->f(currState + 0.5 * dt * f2, controlSequence.col(i));
+        State f4 = m_robotPlant->m_plantDynamics->f(currState + dt * f3, controlSequence.col(i));
+
+        predictedState = predictedState + (dt/6) * (f1 + 2 * f2 + 2 * f3 + f4);
+      }
+
+      return predictedState;
+    }
+
 
     virtual inline bool saveState() 
     {

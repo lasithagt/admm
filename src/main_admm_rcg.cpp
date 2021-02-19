@@ -6,8 +6,8 @@
 
 #include "config.h"
 #include "RobCodGenModel.h"
-#include "RobotPlant.hpp"
-#include "RobotDynamics.hpp"
+#include "robot_plant.hpp"
+#include "robot_dynamics.hpp"
 
 
 int main(int argc, char *argv[]) {

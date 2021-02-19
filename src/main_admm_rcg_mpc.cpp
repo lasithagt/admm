@@ -3,19 +3,14 @@
 
 #include "config.h"
 #include "ADMMTrajOptimizerMPC.hpp"
-#include "RobotPlant.hpp"
-#include "RobotDynamics.hpp"
+#include "robot_plant.hpp"
+#include "robot_dynamics.hpp"
 #include "RobCodGenModel.h"
-#include "admmPublic.hpp"
+#include "admm_public.hpp"
 #include "utils.h"
 
 int main(int argc, char *argv[]) {
 
-  //  orocos kdl robot initialization
-  KUKAModelKDLInternalData robotParams;
-  robotParams.numJoints = NDOF;
-  robotParams.Kv = Eigen::MatrixXd(7,7);
-  robotParams.Kp = Eigen::MatrixXd(7,7);
 
   // Define the robot and contact model
   std::shared_ptr<RobotAbstract> kukaRobot = std::shared_ptr<RobotAbstract>(new RobCodGenModel());
@@ -103,21 +98,19 @@ int main(int argc, char *argv[]) {
   ADMM_MPCconfig ADMM_MPC_CONFIG = ADMM_MPCconfig(ADMM_MPC_OPT, IK_OPT, dt, horizon_mpc);
 
 
-
-
   std::shared_ptr<RobotAbstract> kukaRobot_plant = std::shared_ptr<RobotAbstract>(new RobCodGenModel());
   kukaRobot_plant->initRobot();
   ContactModel::SoftContactModel<double> contactModel_plant;
 
   contactModel_plant = contactModel;
 
-  // Initialize Robot Model
+  // Initialize the Robot Dynamical Model
   using Dynamics = admm::Dynamics<RobotAbstract, stateSize, commandSize>;
   std::shared_ptr<Dynamics> KukaModel_plant{new RobotDynamics(dt, horizon_mpc, kukaRobot_plant, contactModel_plant)};
-  std::shared_ptr<Plant<stateSize, commandSize>> plant{new RobotPlant<Dynamics, stateSize, commandSize>(KukaModel_plant, dt, state_var, control_var)};
+  std::shared_ptr<Plant<Dynamics, stateSize, commandSize>> plant{new RobotPlant<Dynamics, stateSize, commandSize>(KukaModel_plant, dt, state_var, control_var)};
 
   // Initialize robot publisher
-  using RobotPublisher = RobotPublisherMPC<Plant<stateSize, commandSize>, stateSize, commandSize>;
+  using RobotPublisher = RobotPublisherMPC<Plant<Dynamics, stateSize, commandSize>, stateSize, commandSize>;
   std::shared_ptr<RobotPublisher> plantPublisher = std::shared_ptr<RobotPublisher>(new RobotPublisher(plant, static_cast<int>(horizon_mpc), static_cast<int>(NumberofKnotPt), dt));
 
 

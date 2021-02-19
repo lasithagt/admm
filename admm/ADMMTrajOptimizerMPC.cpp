@@ -29,7 +29,6 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
 
     // Initialize Robot Model
-    using Dynamics = admm::Dynamics<RobotAbstract, stateSize, commandSize>;
     std::shared_ptr<Dynamics> KukaDynModel = std::shared_ptr<Dynamics>(new RobotDynamics(dt, horizon_mpc, kukaRobot, contactModel));
 
     // Initialize Cost Function 

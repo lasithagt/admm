@@ -1,4 +1,4 @@
-#include "KukaModel.h"
+#include "kuka_model.h"
 #include "models.h"
 
 #include "RobCodGenModel.h"
