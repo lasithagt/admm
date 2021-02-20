@@ -118,7 +118,7 @@ public:
     }
 
     // predicts the future state by simulating the dynamics
-    const State& predictState(const State& currState, const Control& controlSequence, int time_steps_ahead) 
+    const State& predictState(const State& currState, const ControlTrajectory& controlSequence, int time_steps_ahead) 
     {
       predictedState = currState;
 
