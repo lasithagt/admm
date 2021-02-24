@@ -62,7 +62,7 @@ void publishCommands(RobotPublisher& publisher, double dt)
 			// round up the delay to nearest time step
 			std::cout << "\nIn publisher thread..." << std::endl;
 			
-			double delay_approx = std::floor(delay_compute/10);// + 20; //std::floor(delay_network/10);
+			double delay_approx = std::floor(delay_compute/10) + 20; //std::floor(delay_network/10);
 			{
 				// if mpc comppute is not finished, keep publlishing the command
 				{
@@ -307,10 +307,12 @@ public:
 		       	auto H_TRACK = H_MPC + 1;
 		       	if (i + H_TRACK > static_cast<int>(NumberofKnotPt) + 1) {H_TRACK = static_cast<int>(NumberofKnotPt) - i;}
 
+		       	actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist,xold.head(7));
+		       	cartesianTrack_mpc[0] = actual_cartesian_pose;
 
-		        for (int k = 0;k < H_TRACK;k++) 
+		        for (int k = 1;k < H_TRACK;k++) 
 		        {	
-		    		cartesianTrack_mpc[k] = cartesianTrack_[1 + i + k];
+		        	cartesianTrack_mpc[k] = cartesianTrack_[i + k];
 		    	}
 		    }
 

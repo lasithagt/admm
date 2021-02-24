@@ -53,7 +53,7 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     int iterations = 10;
 
     Eigen::VectorXd rho(5);
-    rho << 50, 0.1, 0.00001, 0, 2;
+    rho << 50, 0.01, 0.00001, 0, 2;
 
 
     commandVecTab_t u_0;
