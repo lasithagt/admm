@@ -52,6 +52,8 @@ double delay_compute{0.0};
 double delay_network{0.0};
 
 int current_step{0};
+int command_steps{0};
+int previous_command_steps{0};
 
 template <typename RobotPublisher>
 void publishCommands(RobotPublisher& publisher, double dt)
@@ -61,8 +63,8 @@ void publishCommands(RobotPublisher& publisher, double dt)
 		{
 			// round up the delay to nearest time step
 			std::cout << "\nIn publisher thread..." << std::endl;
-			
-			double delay_approx = std::round(delay_compute/10) ; //std::floor(delay_network/10);
+			std::cout << "Delay steps: " << previous_command_steps << std::endl;
+			double delay_approx =  std::round(delay_compute/10) ; // std::floor(delay_network/10);
 			{
 				// if mpc comppute is not finished, keep publlishing the command
 				{
@@ -82,24 +84,29 @@ void publishCommands(RobotPublisher& publisher, double dt)
 					}
 
 					// account for delay
-					int i  = static_cast<int>(delay_approx);
+					command_steps  = static_cast<int>(delay_approx);
+					// std::cout << "DELAY: " << command_steps << std::endl;
+					previous_command_steps = 0;
+					start_command = std::chrono::high_resolution_clock::now();
 
-					end_ = std::chrono::high_resolution_clock::now();
-					elapsed_ = end_ - start_;
-
-					while (mpcComputeFinished==false & i<publisher->getHorizonTimeSteps() & init)
+					while (mpcComputeFinished==false & command_steps<publisher->getHorizonTimeSteps() & init)
 					{
-						// std::call_once(command_start, [](){ start_ = std::chrono::high_resolution_clock::now(); });
 						{
 							std::lock_guard<std::mutex> lk(mu_main);
-							publisher->publishCommand(i);
-							std::cout << "Publishing Control Command..." << i << std::endl;	
+							publisher->publishCommand(command_steps);
+							std::cout << "Publishing Control Command..." << command_steps << std::endl;	
 						}
 
 						// wait for dt
 						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000)));
-						++i;  
+						++command_steps;  
+						++previous_command_steps;
 					}
+
+					end_command     = std::chrono::high_resolution_clock::now();
+					elapsed_command = end_command - start_command;
+					// std::cout << "DELAY TIME: " << static_cast<double>(elapsed_command.count()) << std::endl;
+					// std::cout << "DELAY STEPS: " << previous_command_steps << std::endl;
 
 					{
 				    	std::cout << "waiting for the new controls"  <<  std::endl;
@@ -151,8 +158,14 @@ public:
     Eigen::MatrixXd cartesian_mpc_logger;
     Eigen::MatrixXd cartesian_mpc_state_logger;
 
+	Eigen::MatrixXd actual_state;
+	Eigen::MatrixXd cartesian_actual_state;
+	Eigen::MatrixXd cartesian_desired_state;
+
     IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
     Eigen::MatrixXd actual_cartesian_pose;
+
+
 
 public:
     /**
@@ -179,6 +192,18 @@ public:
     	cartesian_desired_logger.resize(3, cartesianTrack_.size());
     	cartesian_mpc_logger.resize(3, cartesianTrack_.size());
     	cartesian_mpc_state_logger.resize(3, cartesianTrack_.size());
+
+ 
+		actual_state.resize(stateSize, cartesianTrack_.size());
+		actual_state.setZero();
+
+		cartesian_desired_state.resize(3, cartesianTrack_.size());
+		cartesian_desired_state.setZero();
+
+		cartesian_actual_state.resize(3, cartesianTrack_.size());
+		cartesian_actual_state.setZero();
+
+
 
     	cartesian_mpc_logger.setZero();
 
@@ -309,11 +334,14 @@ public:
 
 		       	actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist,xold.head(7));
 		       	cartesianTrack_mpc[0] = actual_cartesian_pose;
+				cartesian_actual_state.col(optimizer_iter) = actual_cartesian_pose.col(3).head(3);
+
 
 		        for (int k = 1;k < H_TRACK;k++) 
 		        {	
 		        	cartesianTrack_mpc[k] = cartesianTrack_[i + k];
 		    	}
+				cartesian_desired_state.col(optimizer_iter) = cartesianTrack_mpc.at(1).col(3).head(3);
 		    }
 
 	        // Run the optimizer to obtain the next control trajectory
@@ -346,13 +374,14 @@ public:
 				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
 
-		        delay_compute = (optimizer_iter == 1) ? 0.0 : static_cast<double>(elapsed.count()) + 100;
+		        delay_compute = (optimizer_iter == 1) ? 0.0 : previous_command_steps * 10; // + 200; // + 100;
 		        
 		        std::cout << "DELAY COMPUTE: " << delay_compute << std::endl;
 
-		        start_ = std::chrono::high_resolution_clock::now();
+		       
 				// start publishing commands
 				if (optimizer_iter == 1) {init = true;};
+				robotPublisher->terminate = terminate(robotPublisher->getCurrentStep(), x);
 				cv_main.notify_one();
         	}
         	
@@ -403,6 +432,10 @@ public:
 		
 		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_state_mpc.npy", cartesian_mpc_state_logger.data(),{1, static_cast<unsigned long>(cartesian_mpc_state_logger.cols()), static_cast<unsigned long>(cartesian_mpc_state_logger.rows())}, "w");
 		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_mpc_desired.npy", cartesian_desired_logger.data(),{1, static_cast<unsigned long>(cartesian_desired_logger.cols()), static_cast<unsigned long>(cartesian_desired_logger.rows())}, "w");
+		
+		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_actual_state.npy", cartesian_actual_state.data(),{1, static_cast<unsigned long>(cartesian_actual_state.cols()), static_cast<unsigned long>(cartesian_actual_state.rows())}, "w");
+		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_cartesian_desired.npy", cartesian_desired_state.data(),{1, static_cast<unsigned long>(cartesian_desired_state.cols()), static_cast<unsigned long>(cartesian_desired_state.rows())}, "w");
+
 		logger_->info("Saveds Data...\n");
 
 		#endif

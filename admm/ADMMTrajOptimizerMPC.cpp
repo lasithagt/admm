@@ -53,7 +53,7 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     int iterations = 10;
 
     Eigen::VectorXd rho(5);
-    rho << 50, 0.01, 0.00001, 0, 2;
+    rho << 50, 0.00, 0.00001, 0, 2;
 
 
     commandVecTab_t u_0;
@@ -86,7 +86,7 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
     auto termination =
     [&](int i, const StateRef &x)
     {
-        // auto N_ = 200  - i;
+        // auto N_ = 1800  - i;
         auto N_ = (int)NFullTrajectory  - i;
         if (N_ <= 0) {
             return 1;
@@ -105,7 +105,7 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
     std::cout << "MPC_ADMM Trajectory Generation Finished! " << std::endl;
 
-    delete(logger);
+    // delete(logger);
 
 }
 

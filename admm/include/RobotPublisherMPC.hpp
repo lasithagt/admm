@@ -145,7 +145,7 @@ public:
     bool isTerminate() 
     {
       std::lock_guard<std::mutex> locker(mu);
-      terminate = (command_step >  N_Trajectory) ? true : false;
+      // terminate = (command_step >  N_Trajectory) ? true : false;
       return terminate;
     }
 

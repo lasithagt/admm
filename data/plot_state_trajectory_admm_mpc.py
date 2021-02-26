@@ -9,6 +9,9 @@ if __name__ == "__main__":
 	data_des = np.load('./state_trajectory_admm_mpc_desired.npy')
 	data_mpc = np.load('./state_trajectory_admm_mpc.npy')
 	data_mpc_state = np.load('./state_trajectory_admm_state_mpc.npy')
+	data_cartesian_desired =  np.load('./state_trajectory_cartesian_desired.npy')
+	data_actual_state =  np.load('./state_trajectory_actual_state.npy')
+
 
 	
 	print(data_mpc.shape)
@@ -21,6 +24,13 @@ if __name__ == "__main__":
 
 	data_mpc_state = data_mpc_state.squeeze()
 	data_mpc_state = data_mpc_state.T
+
+	data_cartesian_desired = data_cartesian_desired.squeeze()
+	data_cartesian_desired = data_cartesian_desired.T
+
+	data_actual_state = data_actual_state.squeeze()
+	data_actual_state = data_actual_state.T
+
 
 
 	# line_c = ['b', 'g', 'r', 'c', 'k', 'm', 'y']
@@ -55,6 +65,20 @@ if __name__ == "__main__":
 
 	# ax.plot3D(xline, yline, zline, label='Actual_state')
 	# ax.scatter3D(xline[0], yline[0], zline[0], 'k+')
+
+	xline = data_actual_state[0,::]
+	yline = data_actual_state[1,::]
+	zline = data_actual_state[2,::]
+
+	# ax.scatter3D(xline, yline, zline, 'k+', label='actual_position')
+
+
+	xline = data_cartesian_desired[0,::]
+	yline = data_cartesian_desired[1,::]
+	zline = data_cartesian_desired[2,::]
+
+	# ax.scatter3D(xline, yline, zline, 'r+', label='desired_position')
+
 
 	plt.legend()
 
