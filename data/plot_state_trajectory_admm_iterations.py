@@ -10,6 +10,7 @@ if __name__ == "__main__":
 	data = data.squeeze()
 	data = data.T
 
+
 	fig1 = plt.figure(1)
 	ax = plt.axes(projection='3d')
 	# ax.set_aspect('equal')

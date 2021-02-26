@@ -69,7 +69,7 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
   // xinit = init_state;
 
   Eigen::VectorXd rho(5);
-  rho << 25, 0.1, 0.001, 0, 2;
+  rho << 50, 0.0, 0.001, 0, 2;
 
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);
@@ -110,30 +110,39 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
   // simulate trajectory with disurbances
   for (int i=0;i < N; i++)
   {
-    input = controlTrajectory.col(i) + 1*cdist_.samples(1) - KList[i] * (stateTrajectory.col(i) - currentState);
-    currentState += KukaDynModel->f(currentState, input) * TimeStep + 0.01*sdist_.samples(1);
+    input = controlTrajectory.col(i) + 0*cdist_.samples(1) - KList[i] * (stateTrajectory.col(i) - currentState);
+    currentState += KukaDynModel->f(currentState, input) * TimeStep + 0.0*sdist_.samples(1);
     stateTrajectoryDisturbances.col(i+1) = currentState;
   }
 
 
 
 
-  // Eigen::MatrixXd cartesian_mpc_disturbance_logger;
-  // cartesian_mpc_disturbance_logger.resize(3, N + 1);
+  Eigen::MatrixXd cartesian_mpc_disturbance_logger;
+  Eigen::MatrixXd cartesian_mpc_disturbance_logger_desired;
 
-  // // save data
-  // for (int i = 0; i < N+1; i++) 
-  // {
-  //   auto actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, stateTrajectoryDisturbances.col(i).head(7));
-  //   cartesian_mpc_disturbance_logger.col(i) = actual_cartesian_pose.col(3).head(3);
+  cartesian_mpc_disturbance_logger_desired.resize(3, N + 1);
+  cartesian_mpc_disturbance_logger.resize(3, N + 1);
 
-  // }
+  // save data
+  for (int i = 0; i < N+1; i++) 
+  {
+    auto actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, stateTrajectoryDisturbances.col(i).head(7));
+    cartesian_mpc_disturbance_logger.col(i) = actual_cartesian_pose.col(3).head(3);
+
+    cartesian_mpc_disturbance_logger_desired.col(i) = cartesianPoses.at(i).col(3).head(3); 
+
+
+  }
   
-  // cnpy::npy_save("./state_trajectory_admm_mpc_test.npy", cartesian_mpc_disturbance_logger.data(),
-  //                 {1, static_cast<unsigned long>(cartesian_mpc_disturbance_logger.cols()),
-  //                  static_cast<unsigned long>(cartesian_mpc_disturbance_logger.rows())}, "w");
+  cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_actual.npy", cartesian_mpc_disturbance_logger.data(),
+                  {1, static_cast<unsigned long>(cartesian_mpc_disturbance_logger.cols()),
+                   static_cast<unsigned long>(cartesian_mpc_disturbance_logger.rows())}, "w");
     
-
+  cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_desired.npy", cartesian_mpc_disturbance_logger_desired.data(),
+                  {1, static_cast<unsigned long>(cartesian_mpc_disturbance_logger_desired.cols()),
+                   static_cast<unsigned long>(cartesian_mpc_disturbance_logger_desired.rows())}, "w");
+    
 
 
 

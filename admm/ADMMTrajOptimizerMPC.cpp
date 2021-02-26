@@ -105,7 +105,8 @@ void ADMMTrajOptimizerMPC::run(const std::shared_ptr<RobotAbstract>& kukaRobot, 
 
     std::cout << "MPC_ADMM Trajectory Generation Finished! " << std::endl;
 
-    // delete(logger);
+    delete(logger);
+    std::cout << "deleted logger" << std::endl;
 
 }
 

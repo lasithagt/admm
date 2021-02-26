@@ -70,14 +70,14 @@ if __name__ == "__main__":
 	yline = data_actual_state[1,::]
 	zline = data_actual_state[2,::]
 
-	# ax.scatter3D(xline, yline, zline, 'k+', label='actual_position')
+	ax.scatter3D(xline, yline, zline, 'k+', label='actual_position')
 
 
 	xline = data_cartesian_desired[0,::]
 	yline = data_cartesian_desired[1,::]
 	zline = data_cartesian_desired[2,::]
 
-	# ax.scatter3D(xline, yline, zline, 'r+', label='desired_position')
+	ax.scatter3D(xline, yline, zline, 'r+', label='desired_position')
 
 
 	plt.legend()

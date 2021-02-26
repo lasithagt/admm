@@ -203,13 +203,7 @@ public:
 		cartesian_actual_state.resize(3, cartesianTrack_.size());
 		cartesian_actual_state.setZero();
 
-
-
     	cartesian_mpc_logger.setZero();
-
-    	for (int i=0;i<cartesianTrack_.size();i++) 
-    	{
-    	}
 
     	actual_cartesian_pose.resize(4,4);
     }
@@ -374,7 +368,7 @@ public:
 				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
 
-		        delay_compute = (optimizer_iter == 1) ? 0.0 : previous_command_steps * 10; // + 200; // + 100;
+		        delay_compute = (optimizer_iter == 1) ? 0.0 : previous_command_steps * 10 ; // + 200; // + 100;
 		        
 		        std::cout << "DELAY COMPUTE: " << delay_compute << std::endl;
 
