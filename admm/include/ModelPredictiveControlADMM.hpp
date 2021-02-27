@@ -98,7 +98,7 @@ void publishCommands(RobotPublisher& publisher, double dt)
 						}
 
 						// wait for dt
-						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000)));
+						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000) - 1));
 						++command_steps;  
 						++previous_command_steps;
 					}
@@ -368,7 +368,7 @@ public:
 				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
 
-		        delay_compute = (optimizer_iter == 1) ? 0.0 : previous_command_steps * 10 ; // + 200; // + 100;
+		        delay_compute = (optimizer_iter == 1) ? 0.0 : previous_command_steps * 10 + 10; // + 200; // + 100;
 		        
 		        std::cout << "DELAY COMPUTE: " << delay_compute << std::endl;
 
