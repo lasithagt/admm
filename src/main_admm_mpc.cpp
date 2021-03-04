@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
   ADMM_MPCconfig ADMM_MPC_CONFIG = ADMM_MPCconfig(ADMM_MPC_OPT, IK_OPT, dt, horizon_mpc);
 
   // 
-  ADMMTrajOptimizerMPC optimizerADMM;
+   ADMMTrajOptimizerMPC<RobotAbstract, RobotAbstract, stateSize, commandSize> optimizerADMM;
   optimizerADMM.run(kukaRobot, plantPublisher, xinit, contactModel, ADMM_MPC_CONFIG, desiredTrajectory, result);
 
   return 0;

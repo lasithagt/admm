@@ -315,7 +315,7 @@ public:
 	        /* Slide down the control trajectory */
 	        // control_trajectory.leftCols(H_ - 1) = result.uList.rightCols(H_ - 1);
 	        // control_trajectory = result.uList;
-	        if (optimizer_iter > 1)
+	        if (optimizer_iter > 0)
 	        {
 	        	if(verbose_) logger_->info("Slide down the control trajectory\n");
 		        control_trajectory = initial_control_trajectory;
@@ -330,12 +330,17 @@ public:
 		       	cartesianTrack_mpc[0] = actual_cartesian_pose;
 				cartesian_actual_state.col(optimizer_iter) = actual_cartesian_pose.col(3).head(3);
 
-
+				std::cout << "H_TRACK " << H_MPC << std::endl;
 		        for (int k = 1;k < H_TRACK;k++) 
 		        {	
-		        	cartesianTrack_mpc[k] = cartesianTrack_[i + k];
+		        	cartesianTrack_mpc[k] = cartesianTrack_[1 + i + k];
 		    	}
-				cartesian_desired_state.col(optimizer_iter) = cartesianTrack_mpc.at(1).col(3).head(3);
+
+		    	for (int p = 0;p < H_TRACK;p++) 
+		    	{
+		    		cartesian_desired_state.col(i + p) = cartesianTrack_mpc.at(p).col(3).head(3);
+		    	}
+				
 		    }
 
 	        // Run the optimizer to obtain the next control trajectory
@@ -368,7 +373,7 @@ public:
 				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
 
-		        delay_compute = (optimizer_iter == 1) ? 0.0 : previous_command_steps * 10 + 10; // + 200; // + 100;
+		        delay_compute = (optimizer_iter < 2) ? 0.0 : previous_command_steps * 10 + 10; // + 200; // + 100;
 		        
 		        std::cout << "DELAY COMPUTE: " << delay_compute << std::endl;
 

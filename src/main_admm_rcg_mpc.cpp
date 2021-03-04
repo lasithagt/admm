@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
   xinit.head(7) = thetalist_ret;
 
 
-  ADMMTrajOptimizerMPC optimizerADMM;
+  ADMMTrajOptimizerMPC<RobotAbstract, RobotAbstract, stateSize, commandSize> optimizerADMM;
   optimizerADMM.run(kukaRobot, plantPublisher, xinit, contactModel, ADMM_MPC_CONFIG, desiredTrajectory, result);
 
   return 0;

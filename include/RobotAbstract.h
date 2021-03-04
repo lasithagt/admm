@@ -3,24 +3,21 @@
 
 #include <Eigen/Dense>
 
-/* structure for the active robot */
-struct RobotAbstractInternalData {
-	
-};
+// structure for the active robot 
+struct RobotAbstractInternalData {};
 
-/* abstract class for a serial robot */
+// abstract class for a serial robot 
 class RobotAbstract
 {	
 public:
-	RobotAbstractInternalData m_data;
+	RobotAbstractInternalData* m_data;
 
 	RobotAbstract() = default;
 	virtual ~RobotAbstract(){}
 
 	virtual int initRobot() = 0;
-	virtual void getForwardKinematics(double* q, double* qd, double *qdd, Eigen::Matrix<double,3,3>& poseM, Eigen::Vector3d& poseP, Eigen::Vector3d& vel, Eigen::Vector3d& accel, bool computeOther) = 0;
-	
-	// given q, qdot, qddot, outputs torque output
+	virtual void getForwardKinematics(double* q, double* qd, double *qdd, Eigen::Matrix3d& poseM, Eigen::Vector3d& poseP, Eigen::Vector3d& vel, Eigen::Vector3d& accel, bool computeOther) = 0;
+	virtual void getJointStates(double* q, double* qd) {};
 	virtual void getInverseDynamics(double* q, double* qd, double* qdd, Eigen::VectorXd& torque) = 0;
 	virtual void getForwardDynamics(double* q, double* qd, const Eigen::VectorXd& force_ext, Eigen::VectorXd& qdd) = 0;
 	virtual void getForceTorque() {}

@@ -36,7 +36,7 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
 
 
   // admm optimizer
-  ADMMMultiBlock optimizerADMM(kukaRobot, costFunction_admm, solverDDP, ADMM_OPTS, IK_OPT, N);
+  ADMMMultiBlock<RobotAbstract, RobotAbstract, stateSize, commandSize> optimizerADMM(kukaRobot, costFunction_admm, solverDDP, ADMM_OPTS, IK_OPT, N);
   
 
 
@@ -69,7 +69,7 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
   // xinit = init_state;
 
   Eigen::VectorXd rho(5);
-  rho << 50, 0.0, 0.001, 0, 2;
+  rho << 50, 0.1, 0.001, 0, 2;
 
   commandVecTab_t u_0;
   u_0.resize(commandSize, N);

@@ -78,7 +78,7 @@ if __name__ == "__main__":
 	zline = data_cartesian_desired[2,::]
 
 	ax.scatter3D(xline, yline, zline, 'r+', label='desired_position')
-
+	ax.plot3D(xline, yline, zline, 'r',label='desired_pos')
 
 	plt.legend()
 
