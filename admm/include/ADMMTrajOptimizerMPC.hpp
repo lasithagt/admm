@@ -8,7 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 
 

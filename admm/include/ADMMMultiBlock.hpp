@@ -4,8 +4,9 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <utility>
 #include <vector>
-#include <stdio.h>
+#include <cstdio>
 
 #include "config.h"
 #include "IterativeLinearQuadraticRegulatorADMM.hpp"
@@ -26,19 +27,17 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 
 template<typename RobotModelOptimizer, typename RobotModel, int StateSize, int ControlSize>
-class ADMMMultiBlock 
+class ADMMMultiBlock
 {
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
-  ADMMMultiBlock(const std::shared_ptr<RobotModelOptimizer>& kukaRobot, const std::shared_ptr<CostFunctionADMM>& costFunction, 
-    const std::shared_ptr<optimizer::IterativeLinearQuadraticRegulatorADMM>& solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) : 
-    N(Time_steps), kukaRobot_(kukaRobot), ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(costFunction), solver_(solver)
+  ADMMMultiBlock(const std::shared_ptr<RobotModelOptimizer>& kukaRobot, std::shared_ptr<CostFunctionADMM>  costFunction,
+    std::shared_ptr<optimizer::IterativeLinearQuadraticRegulatorADMM>  solver, const ADMMopt& ADMM_opt, const IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_opt, unsigned int Time_steps) :
+    N(Time_steps), kukaRobot_(kukaRobot), ADMM_OPTS(ADMM_opt), IK_OPT(IK_opt), costFunction_(std::move(costFunction)), solver_(std::move(solver))
   {
-
-      /* Initalize Primal and Dual variables */
-
+    /* Initialize Primal and Dual variables */
     // primal parameters
     xnew.resize(StateSize, N + 1);
     qnew.resize(7, N + 1);
@@ -400,7 +399,7 @@ protected:
   std::shared_ptr<RobotModelOptimizer> kukaRobot_;
   std::shared_ptr<CostFunctionADMM> costFunction_;
   std::shared_ptr<optimizer::IterativeLinearQuadraticRegulatorADMM> solver_;
-  ProjectionOperator m_projectionOperator;
+  ProjectionOperator m_projectionOperator{};
 
   Curvature curve;
   Saturation projectionLimits;
@@ -469,7 +468,7 @@ protected:
   Eigen::Tensor<double, 3> data_store;
 
   std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-  std::chrono::duration<float, std::milli> elapsed;
+  std::chrono::duration<float, std::milli> elapsed{};
 
 };
 

@@ -62,13 +62,12 @@ void publishCommands(RobotPublisher& publisher, double dt)
 	while (!publisher->terminate) {
 		{
 			// round up the delay to nearest time step
-			std::cout << "\nIn publisher thread..." << std::endl;
-			std::cout << "Delay steps: " << previous_command_steps << std::endl;
-			double delay_approx =  std::round(delay_compute/10) ; // std::floor(delay_network/10);
+			std::cout << "PUBLISHING THREAD: Delay steps: " << previous_command_steps << std::endl;
+			double delay_approx =  std::round(delay_compute/10); 
 			{
 				// if mpc comppute is not finished, keep publlishing the command
 				{
-					std::cout << "Reciving the current state in thread publisher..." <<  std::endl;
+					std::cout << "PUBLISHING THREAD: Reciving the current state..." <<  std::endl;
 					// get current state
 					
 					// store the states
@@ -80,12 +79,11 @@ void publishCommands(RobotPublisher& publisher, double dt)
 						lk.unlock();
 						cv_main.notify_one();
 						mpcComputeFinished = false;
-						std::cout << "notified: state was recived\n" << std::endl;
+						std::cout << "PUBLISHING THREAD: notified, state was recived\n" << std::endl;
 					}
 
 					// account for delay
 					command_steps  = static_cast<int>(delay_approx);
-					// std::cout << "DELAY: " << command_steps << std::endl;
 					previous_command_steps = 0;
 					start_command = std::chrono::high_resolution_clock::now();
 
@@ -94,27 +92,26 @@ void publishCommands(RobotPublisher& publisher, double dt)
 						{
 							std::lock_guard<std::mutex> lk(mu_main);
 							publisher->publishCommand(command_steps);
-							std::cout << "Publishing Control Command..." << command_steps << std::endl;	
+							std::cout << "PUBLISHING THREAD: Publishing Control Command..." << command_steps << std::endl;	
 						}
 
 						// wait for dt
-						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000) - 1));
+						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000) - 3));
 						++command_steps;  
 						++previous_command_steps;
 					}
 
 					end_command     = std::chrono::high_resolution_clock::now();
 					elapsed_command = end_command - start_command;
-					// std::cout << "DELAY TIME: " << static_cast<double>(elapsed_command.count()) << std::endl;
-					// std::cout << "DELAY STEPS: " << previous_command_steps << std::endl;
+
 
 					{
-				    	std::cout << "waiting for the new controls"  <<  std::endl;
+				    	std::cout << "PUBLISHING THREAD: waiting for the new controls"  <<  std::endl;
 				        std::unique_lock<std::mutex> lk(mu_main);
 				        auto now = std::chrono::system_clock::now();
 				        cv_main.wait_until(lk, now + std::chrono::milliseconds(4), []{return newControlTrajectorySet;});
 				        lk.unlock();
-				        std::cout << "existing publishing..." << std::endl;
+				        std::cout << "PUBLISHING THREAD: waiting for the new controls..." << std::endl;
 				        newControlTrajectorySet = false;
 				    }
 				} 
@@ -243,10 +240,20 @@ public:
 	    Eigen::MatrixXd x_track_mpc;
 	    std::vector<Eigen::MatrixXd> cartesianTrack_mpc;
 	    cartesianTrack_mpc.resize(H_MPC + 1);
+	    actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist,xold.head(7));
 
-	    for (int k = 0;k < H_MPC + 1;k++) {
+	    cartesianTrack_mpc[0] = actual_cartesian_pose;
+	    cartesian_actual_state.col(0) = actual_cartesian_pose.col(3).head(3);
+
+
+	    for (int k = 1;k < H_MPC + 1;k++) {
 	    	cartesianTrack_mpc[k] = cartesianTrack_[k];
 	    }
+
+    	for (int p = 0;p < H_MPC + 1;p++) 
+    	{
+    		cartesian_desired_state.col(p) = cartesianTrack_mpc.at(p).col(3).head(3);
+    	}
 
 	    x_track_mpc.resize(stateSize, H_MPC + 1);
 	    x_track_mpc = x_track_.block(0, 0, stateSize, H_MPC + 1);
@@ -285,20 +292,20 @@ public:
 	    {
 	        std::cout << "MPC loop started..." << std::endl;
 
-	        if(verbose_)
-	        {
-	            if(i > 0)
-	            {
-	                end = std::chrono::high_resolution_clock::now();
-	                elapsed = end - start;
-	                logger_->info("Completed MPC loop for time step %d in %d ms\n", i - 1, static_cast<int>(elapsed.count()));
-	            }
-	            logger_->info("Entered MPC loop for time step %d\n", i);
-	            start = std::chrono::high_resolution_clock::now();
-	        }
+	        // if(verbose_)
+	        // {
+	        //     if(i > 0)
+	        //     {
+	        //         end = std::chrono::high_resolution_clock::now();
+	        //         elapsed = end - start;
+	        //         logger_->info("Completed MPC loop for time step %d in %d ms\n", i - 1, static_cast<int>(elapsed.count()));
+	        //     }
+	        //     logger_->info("Entered MPC loop for time step %d\n", i);
+	        //     start = std::chrono::high_resolution_clock::now();
+	        // }
 	       	
 		    {
-		    	std::cout << "waiting for the current state in MPC thread"  <<  std::endl;
+		    	std::cout << "MPC THREAD: waiting for the current state"  <<  std::endl;
 		        std::unique_lock<std::mutex> lk(mu_main);
 		        cv_main.wait(lk, []{return currentStateReceived;});
 
@@ -307,9 +314,9 @@ public:
 		       	currentStateReceived = false;
 
 		       	i = current_step;
-		       	std::cout << "\nX_current" << xold.transpose() << std::endl;
+		       	std::cout << "\nMPC THREAD : x_current" << xold.transpose() << std::endl;
 
-		       	std::cout << "\nCurrent step :" << robotPublisher->getCurrentStep() << " " << std::endl;
+		       	std::cout << "\nMPC THREAD : current step :" << robotPublisher->getCurrentStep() << " " << std::endl;
 		    }
 
 	        /* Slide down the control trajectory */
@@ -330,9 +337,9 @@ public:
 		       	cartesianTrack_mpc[0] = actual_cartesian_pose;
 				cartesian_actual_state.col(optimizer_iter) = actual_cartesian_pose.col(3).head(3);
 
-				std::cout << "H_TRACK " << H_MPC << std::endl;
 		        for (int k = 1;k < H_TRACK;k++) 
 		        {	
+		        	// move here. check
 		        	cartesianTrack_mpc[k] = cartesianTrack_[1 + i + k];
 		    	}
 
@@ -362,10 +369,11 @@ public:
 
         	// apply to the plant. call a child thread 
         	// set the control trajectory
+
         	{
         		std::unique_lock<std::mutex> lk(mu_main);
         		control_trajectory = result.uList;
-        		std::cout << "set publisher controls" << std::endl;
+        		std::cout << "MPC THREAD: setting new controls" << std::endl;
         		robotPublisher->setControlBuffer(control_trajectory);
 				newControlTrajectorySet = true;
 		
@@ -373,10 +381,8 @@ public:
 				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
 
-		        delay_compute = (optimizer_iter < 2) ? 0.0 : previous_command_steps * 10 + 10; // + 200; // + 100;
+		        delay_compute = (optimizer_iter == 1) ? 0.0 : previous_command_steps * 10 + 10; // + 200; // + 100;
 		        
-		        std::cout << "DELAY COMPUTE: " << delay_compute << std::endl;
-
 		       
 				// start publishing commands
 				if (optimizer_iter == 1) {init = true;};
@@ -387,17 +393,17 @@ public:
         	
         	robotPublisher->setOptimizerStatesGains(result.xList, std::move(result.KList), result.kList);
 
-	        if(verbose_)
-	        {
-	            logger_->info("Received new state from plant: ");
-	            for(int n = 0; n < x.rows(); ++n) { logger_->info("%f ", x(n)); }
-	            logger_->info("\n");
-	        }
+	        // if(verbose_)
+	        // {
+	        //     logger_->info("Received new state from plant: ");
+	        //     for(int n = 0; n < x.rows(); ++n) { logger_->info("%f ", x(n)); }
+	        //     logger_->info("\n");
+	        // }
 
 	        // Calculate the true cost for this time step
 	        true_cost = cost_function_->cost_func_expre(0, xold, u, x_track_.col(i));
 
-	        if(verbose_) logger_->info("True cost for time step %d: %f\n", i, true_cost);	
+	        // if(verbose_) logger_->info("True cost for time step %d: %f\n", i, true_cost);	
 	  
 
 	    }

@@ -19,7 +19,7 @@ const int commandSize = 7;
 const int fullstatecommandSize = 24;
 const int NDOF = 7;
 
-const double TimeHorizon = 30;
+const double TimeHorizon = 50;
 const double TimeStep = 0.01; // 0.01s works for soft contact dynamics
 
 const unsigned int NumberofKnotPt = TimeHorizon / TimeStep;

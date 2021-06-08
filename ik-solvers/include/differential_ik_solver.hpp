@@ -27,30 +27,30 @@ private:
 protected:
 	Eigen::MatrixXd Slist;
 	Eigen::MatrixXd M;
-	double ev;
-	double eomg;
+	double ev{};
+	double eomg{};
 };
 
 /* First order IK solution */
 class IK_FIRST_ORDER : public InverseKinematics {
 
 public:
-	IK_FIRST_ORDER() {}
-	~IK_FIRST_ORDER() {}
-	IK_FIRST_ORDER(const Eigen::MatrixXd& Slist, const Eigen::MatrixXd& M, const Eigen::MatrixXd& joint_limits, const double& eomg, const double& ev, const Eigen::VectorXd& rho);
+	IK_FIRST_ORDER() = default;
+	~IK_FIRST_ORDER() = default;
+	IK_FIRST_ORDER(const Eigen::MatrixXd& Slist, const Eigen::MatrixXd& M, const Eigen::MatrixXd& jointLimits, const double& eomg, const double& ev, const Eigen::VectorXd& rho);
 
 	void getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& thetalist0, const Eigen::VectorXd& thetalistd0, const Eigen::VectorXd& q_bar, const Eigen::VectorXd& qd_bar, 
-		bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist);
+		bool initial, const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist) override;
 
 
 	void getIK_random_initial(const Eigen::MatrixXd& Td, const Eigen::VectorXd& q_bar,
 		const Eigen::VectorXd& rho, Eigen::VectorXd& thetalist_ret); 
 
-	void getRandomState(Eigen::VectorXd& randomState, int elbow);
+	static void getRandomState(Eigen::VectorXd& randomState, int elbow);
 	
-	void getRedundancyResolution(const Eigen::VectorXd& thetalist, Eigen::VectorXd* q_grad_ret);
+	void getRedundancyResolution(const Eigen::VectorXd& thetalist, Eigen::VectorXd* q_grad_ret) override;
 	
-	int maxIterations;
+	int maxIterations{};
 	Eigen::Matrix<double, 4, 4> Tsb;
 	Eigen::Matrix<double, 6, 1> Vs;
 	Eigen::VectorXd rho;

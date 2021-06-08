@@ -1,4 +1,3 @@
-#include <iostream>
 #include <Eigen/Dense>
 #include <random>
 #include <utility>
@@ -6,8 +5,8 @@
 #include "differential_ik_solver.hpp"
 
 
-IK_FIRST_ORDER::IK_FIRST_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::MatrixXd& M_, const Eigen::MatrixXd& joint_limits_, 
-    const double& eomg_, const double& ev_, const Eigen::VectorXd& rho_) 
+IK_FIRST_ORDER::IK_FIRST_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::MatrixXd& M_, const Eigen::MatrixXd& jointLimits,
+    const double& eomg_, const double& ev_, const Eigen::VectorXd& rho_)
 {
     
     eomg = eomg_;
@@ -17,10 +16,10 @@ IK_FIRST_ORDER::IK_FIRST_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::Matri
     Slist = Slist_;
     M = M_;
     cod.setThreshold(0.035);
-    joint_limits = joint_limits_;
+    joint_limits = jointLimits;
 
-    q_range =  joint_limits_.row(1) - joint_limits_.row(0);
-    q_mid   =  joint_limits_.row(1) / 2 + joint_limits_.row(0) / 2;
+    q_range = jointLimits.row(1) - jointLimits.row(0);
+    q_mid   = jointLimits.row(1) / 2 + jointLimits.row(0) / 2;
 }
 
 
@@ -84,7 +83,7 @@ void IK_FIRST_ORDER::getIK_random_initial(const Eigen::MatrixXd& Td, const Eigen
 
         // check how far from desired
         double diff = (mr::FKinSpace(M, Slist, thetalist_ret) - Td).norm(); 
-        diff_store.push_back({diff, thetalist_ret});
+        diff_store.emplace_back(diff, thetalist_ret);
         if (diff < 0.001)
         {
             break;
@@ -126,8 +125,7 @@ void IK_FIRST_ORDER::getRedundancyResolution(const Eigen::VectorXd& thetalist, E
 }
 
 
-/* Second order motion ploicies */
-
+/* Second order motion policies */
 IK_SECOND_ORDER::IK_SECOND_ORDER(const Eigen::MatrixXd& Slist_, const Eigen::MatrixXd& M_, const Eigen::MatrixXd& joint_limits_, const double& eomg_, const double& ev_, const Eigen::VectorXd& rho_) {
     
     eomg = eomg_;

@@ -24,25 +24,21 @@ protected:
     StateWeights Qf;
     ControlWeights R;
 
-    State x_w;
-    State xf_w;
-    Control u_w;
-
     StateTrajectory cx_new;
     ControlTrajectory cu_new; 
 
     stateMatTab_t cxx_new; 
     ControlStateJacobian cux_new; 
     commandMatTab_t cuu_new;
-    Scalar c_new;
-    int N;
+    Scalar c_new{};
+    int N{};
 
     // kuka model to get forward kinematics for te cost
     std::shared_ptr<RobotAbstract> plant;
 
     // structure to compute contact terms
     // std::shared_ptr<ContactTerms<double, stateSize, commandSize>> m_contactCost;
-    ContactTerms<double, stateSize, commandSize>* m_contactCost;
+    ContactTerms<double, stateSize, commandSize>* m_contactCost{};
 
     Eigen::Matrix<double, stateSize, 1> m_;
     Eigen::Matrix<double, stateSize, 1> n_;
@@ -61,19 +57,19 @@ public:
 
     CostFunctionADMM(int time_steps,  const std::shared_ptr<RobotAbstract>& robotModel) : N(time_steps), plant(robotModel) {
 
-        Eigen::VectorXd x_w(stateSize);
-        Eigen::VectorXd xf_w(stateSize);
-        Eigen::VectorXd u_w(commandSize);
+        Eigen::VectorXd xW(stateSize);
+        Eigen::VectorXd xfW(stateSize);
+        Eigen::VectorXd uW(commandSize);
 
         /* for consensus admm. read it from te main file as a dynamic parameters passing */
-        x_w  << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.0, 0.0, 0.5;
-        xf_w << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.0, 0.0, 0.5;
-        u_w  << 1E-4, 1E-4, 1E-4, 1E-4, 1E-4, 1E-4, 1E-4;
+        xW << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.0, 0.0, 0.5;
+        xfW << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.0, 0.0, 0.5;
+        uW << 1E-4, 1E-4, 1E-4, 1E-4, 1E-4, 1E-4, 1E-4;
 
         
-        Q  = x_w.asDiagonal();
-        Qf = xf_w.asDiagonal();
-        R  = u_w.asDiagonal();
+        Q  = xW.asDiagonal();
+        Qf = xfW.asDiagonal();
+        R  = uW.asDiagonal();
         
         cx_new.resize(stateSize, N + 1);
         cu_new.resize(commandSize, N + 1);
@@ -125,11 +121,11 @@ public:
         {
             cost  = 0.5 * (x_k.transpose() - x_track.transpose()) * Qf * (x_k - x_track); 
             cost += 0.5 * rho(4) * (x_k.head(7).transpose() - thetaList_bar.transpose()) * (x_k.head(7) - thetaList_bar);
-            
+
             if (CONTACT_EN)
             {
                 cost += 0.5 * rho(2) * (contact_terms.head(2).transpose() - c_bar.transpose()) * (contact_terms.head(2) - c_bar); // temp
-            }  
+            }
             cost += 0.5 * rho(0) * (x_k.head(7).transpose() - x_bar.head(7).transpose()) * (x_k - x_bar).head(7);
 
         } else {
@@ -141,14 +137,14 @@ public:
             cost += 0.5 * rho(1) * (u_k.transpose() - u_bar.transpose()) * (u_k - u_bar);
 
 
-            // compute the contact term 
+            // compute the contact term
             if (CONTACT_EN)
             {
                 cost += 0.5 * rho(2) * (contact_terms.head(2).transpose() - c_bar.transpose()) * (contact_terms.head(2) - c_bar); // temp
-            }   
+            }
 
             cost += 0.5 * rho(4) * (x_k.head(7).transpose() - thetaList_bar.transpose()) * (x_k.head(7) - thetaList_bar);
-            
+
         }
 
         return cost;
@@ -221,8 +217,7 @@ public:
 	const stateMatTab_t& getcxx() const {return cxx_new;};
 	const ControlStateJacobian& getcux() const {return cux_new;};
 	const commandMatTab_t& getcuu() const {return cuu_new;};
-	Scalar getc() const {return c_new;};
 
 };
 
-#endif // COSTFUNCTION_H
+#endif

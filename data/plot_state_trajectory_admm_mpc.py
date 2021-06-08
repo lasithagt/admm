@@ -56,6 +56,7 @@ if __name__ == "__main__":
 	zline = data_mpc[2,::]
 
 	ax.plot3D(xline, yline, zline, label='Actual')
+
 	ax.scatter3D(xline[0], yline[0], zline[0], 'b+')
 
 
@@ -81,5 +82,7 @@ if __name__ == "__main__":
 	ax.plot3D(xline, yline, zline, 'r',label='desired_pos')
 
 	plt.legend()
+	ax.set_xlim([-0.1, 0.1])
+	ax.set_ylim([-0.05, 0.05])
 
 	plt.show()

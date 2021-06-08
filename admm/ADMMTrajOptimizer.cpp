@@ -6,7 +6,7 @@
 
 ADMMTrajOptimizer::ADMMTrajOptimizer(unsigned int N_, double dt_) : N(N_), dt(dt_) {}
 
-ADMMTrajOptimizer::~ADMMTrajOptimizer() {}
+ADMMTrajOptimizer::~ADMMTrajOptimizer() = default;
 
 void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::IterativeLinearQuadraticRegulatorADMM::OptSet& solverOptions, ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
  Saturation& LIMITS, ContactModel::ContactParams<double>& cp, std::vector<Eigen::MatrixXd>& cartesianPoses) 
