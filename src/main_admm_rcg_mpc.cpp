@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
   stateVecTab_t xtrack;
   xtrack.resize(stateSize, NumberofKnotPt + 1);
 
-  int ADMMiterMax = 4;
+  int ADMMiterMax = 6;
   unsigned int ddpIter = 10;
   ADMMopt ADMM_OPTS(TimeStep, 1e-7, 1e-7, ddpIter, ADMMiterMax);
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
   double z_depth = 1.17;
   double r       = 0.05;
 
-  std::vector<Eigen::MatrixXd> cartesianPoses = admm::utils::generateLissajousTrajectories(R, z_depth, 1, 3, r, r, NumberofKnotPt, Tf);
+  std::vector<Eigen::MatrixXd> cartesianPoses = admm::utils::generateLissajousTrajectories(R, z_depth, 1, 1, r, r, NumberofKnotPt, Tf);
 
   desiredTrajectory.cartesianTrajectory     = cartesianPoses;
   desiredTrajectory.stateTrajectory.row(16) = 0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1);
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
   ContactModel::SoftContactModel<double> contactModel(cp);
 
   /*-----------------------------------------------------------------------------------------------------------------------*/
-  double state_var         = 0.001;
+  double state_var         = 0.000001;
   double control_var       = 0.0001;
 
   double dt                = TimeStep;
@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<Dynamics> KukaModel_plant{new RobotDynamics(dt, horizon_mpc, kukaRobot_plant, contactModel_plant)};
   std::shared_ptr<Plant<Dynamics, stateSize, commandSize>> plant{new RobotPlant<Dynamics, stateSize, commandSize>(KukaModel_plant, dt, state_var, control_var)};
 
+
   // Initialize robot publisher
   using RobotPublisher = RobotPublisherMPC<Plant<Dynamics, stateSize, commandSize>, stateSize, commandSize>;
   std::shared_ptr<RobotPublisher> plantPublisher = std::shared_ptr<RobotPublisher>(new RobotPublisher(plant, static_cast<int>(horizon_mpc), static_cast<int>(NumberofKnotPt), dt));
@@ -124,10 +125,9 @@ int main(int argc, char *argv[]) {
   IK_FIRST_ORDER IK = IK_FIRST_ORDER(IK_OPT.Slist,  IK_OPT.M, IK_OPT.joint_limits, IK_OPT.eomg, IK_OPT.ev, rho_init);
 
   IK.getIK_random_initial(desiredTrajectory.cartesianTrajectory.at(0), q_bar,rho_init, thetalist_ret);
-  std::cout << thetalist_ret << std::endl;
 
   xinit.head(7) = thetalist_ret;
-
+  plant->setInitialState(xinit); 
 
   ADMMTrajOptimizerMPC<RobotAbstract, RobotAbstract, stateSize, commandSize> optimizerADMM;
   optimizerADMM.run(kukaRobot, plantPublisher, xinit, contactModel, ADMM_MPC_CONFIG, desiredTrajectory, result);

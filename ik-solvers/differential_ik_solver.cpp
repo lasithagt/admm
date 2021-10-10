@@ -36,7 +36,7 @@ void IK_FIRST_ORDER::getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& the
     if (initial == 1) {
         maxIterations = 50;
     } else {
-        maxIterations = 4;
+        maxIterations = 10;
     }
 
     int i = 0;
@@ -47,7 +47,7 @@ void IK_FIRST_ORDER::getIK(const Eigen::MatrixXd& Td, const Eigen::VectorXd& the
         J = mr::JacobianSpace(Slist, thetalist);
         cod.compute(J);
             
-        thetalist = thetalist + 0.5 * cod.solve(Vs) - 0.5 * rho(4) * (thetalist - q_bar);
+        thetalist = thetalist + 0.5 * cod.solve(Vs) - 0*0.5 * rho(4) * (thetalist - q_bar);
 
         Tsb = mr::FKinSpace(M, Slist, thetalist);
         Vs  = mr::Adjoint(Tsb) * mr::se3ToVec(mr::MatrixLog6(mr::TransInv(Tsb) * Td));

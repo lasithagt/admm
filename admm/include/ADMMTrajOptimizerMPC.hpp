@@ -115,7 +115,7 @@ public:
         auto termination =
         [&](int i, const StateRef &x)
         {
-            auto N_ = 2700  - i;
+            auto N_ = 4700  - i;
             // auto N_ = (int)NFullTrajectory  - i;
             if (N_ <= 0) {
                 return 1;
@@ -129,6 +129,7 @@ public:
 
 
         // run MPC
+        std::cout << xinit << std::endl;
         mpc_admm.run(xinit, u_0, plant_publisher, joint_state_traj, termination, rho, LIMITS);
 
 

@@ -42,7 +42,6 @@ protected:
     using ControlTrajectory = commandVecTab_t;
     using StateGainMatrix   = commandR_stateC_tab_t;
 
-    std::shared_ptr<Plant> m_robotPlant{};
     int command_step{0};
     int N_commands{}; // length of the MPC trajectory commands
     int N_Trajectory{};
@@ -52,6 +51,8 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     // storing variable
+    std::shared_ptr<Plant> m_robotPlant{};
+
     commandVec_t u_scratch;
     stateVec_t  x_scratch;
     Scalar dt;
@@ -110,7 +111,7 @@ public:
         m_robotPlant->applyControl(u, stateTrajectory.col(i));
 
         // save the state
-        saveState();
+        saveState(i);
         command_step++;
       }
 
@@ -136,9 +137,9 @@ public:
     }
 
 
-    virtual inline bool saveState() 
+    virtual inline bool saveState(int i) 
     {
-      stateBuffer.col(command_step) = getCurrentState();
+      stateBuffer.col(command_step) = stateTrajectory.col(i);
     }
 
 
@@ -151,19 +152,20 @@ public:
 
 
     // set the control buffer from MPC optimizer
-    bool setControlBuffer(const Eigen::MatrixXd &u)
+    bool setControlBuffer(const Eigen::Ref<const StateTrajectory> &x, const Eigen::MatrixXd &u)
     {
-        std::lock_guard<std::mutex> locker(mu);
+        // std::lock_guard<std::mutex> locker(mu);
+        stateTrajectory = x;
         controlBuffer = u;
         return true;
     }
 
 
-    bool setOptimizerStatesGains(const Eigen::Ref<const StateTrajectory> &X, StateGainMatrix&& K, const commandVecTab_t& k)
+    bool setOptimizerStatesGains(StateGainMatrix&& K, const commandVecTab_t& k)
     {
+        std::lock_guard<std::mutex> locker(mu);
         StateGainsK = K;
         StateGainsk = k;
-        stateTrajectory = X;
     }
 
 
@@ -183,6 +185,8 @@ public:
     virtual const State& getCurrentState() 
     {
         return m_robotPlant->getCurrentState();
+        // this->currentState = this->stateBuffer.col(command_step-1);
+        // return this->currentState;
     }
 
     int getHorizonTimeSteps() const

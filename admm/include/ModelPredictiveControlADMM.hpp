@@ -38,6 +38,7 @@ bool mpcComputeFinished = false;
 bool currentStateReceived = false;
 bool newControlTrajectorySet = false;
 bool init = false;
+bool init_publisher = false;
 int NMPC{};
 
 std::once_flag command_start;
@@ -59,7 +60,7 @@ template <typename RobotPublisher>
 void publishCommands(RobotPublisher& publisher, double dt)
 {
 	// run until optimizer is publishing
-	while (!publisher->terminate) {
+	while (!publisher->terminate & init_publisher) {
 		{
 			// round up the delay to nearest time step
 			std::cout << "PUBLISHING THREAD: Delay steps: " << previous_command_steps << std::endl;
@@ -72,6 +73,9 @@ void publishCommands(RobotPublisher& publisher, double dt)
 					
 					// store the states
 					publisher->currentState = publisher->getCurrentState();
+					// std::cout << publisher->currentState << std::endl;
+				 //    Eigen:MatrixXd temp(2,2);
+				 //    temp(3,0) = 0;
 					current_step            = publisher->getCurrentStep();
 					{
 						std::unique_lock<std::mutex> lk(mu_main);
@@ -96,7 +100,7 @@ void publishCommands(RobotPublisher& publisher, double dt)
 						}
 
 						// wait for dt
-						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000) - 3));
+						std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(dt * 1000) ));
 						++command_steps;  
 						++previous_command_steps;
 					}
@@ -138,7 +142,7 @@ public:
     using StateGainMatrix   	= commandR_stateC_tab_t;
     using RobotPublisher 	 	= std::shared_ptr<RobotPublisherT>;
     using Result                = OptimizerResultT;            ///< Type of result returned by the optimizer
-    using TerminationCondition =
+    using TerminationCondition  =
         std::function<bool(int, State)>;     ///< Type of termination condition function
 
     static const int MPC_BAD_CONTROL_TRAJECTORY = -1;
@@ -160,7 +164,7 @@ public:
 	Eigen::MatrixXd cartesian_desired_state;
 
     IKTrajectory<IK_FIRST_ORDER>::IKopt IK_OPT;
-    Eigen::MatrixXd actual_cartesian_pose;
+    Eigen::MatrixXd cartesian_pose;
 
 
 
@@ -189,7 +193,6 @@ public:
     	cartesian_desired_logger.resize(3, cartesianTrack_.size());
     	cartesian_mpc_logger.resize(3, cartesianTrack_.size());
     	cartesian_mpc_state_logger.resize(3, cartesianTrack_.size());
-
  
 		actual_state.resize(stateSize, cartesianTrack_.size());
 		actual_state.setZero();
@@ -202,7 +205,7 @@ public:
 
     	cartesian_mpc_logger.setZero();
 
-    	actual_cartesian_pose.resize(4,4);
+    	cartesian_pose.resize(4,4);
     }
 
     /**
@@ -240,10 +243,10 @@ public:
 	    Eigen::MatrixXd x_track_mpc;
 	    std::vector<Eigen::MatrixXd> cartesianTrack_mpc;
 	    cartesianTrack_mpc.resize(H_MPC + 1);
-	    actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist,xold.head(7));
+	    cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, xold.head(7));
 
-	    cartesianTrack_mpc[0] = actual_cartesian_pose;
-	    cartesian_actual_state.col(0) = actual_cartesian_pose.col(3).head(3);
+	    cartesianTrack_mpc[0] = cartesian_pose;
+	    cartesian_actual_state.col(0) = cartesian_pose.col(3).head(3);
 
 
 	    for (int k = 1;k < H_MPC + 1;k++) {
@@ -274,7 +277,9 @@ public:
 	    Eigen::MatrixXd& stateTrajectory = robotPublisher->getStateTrajectory();
 
     	// to store the state evolution
-    	robotPublisher->setInitialState(initial_state);
+    	robotPublisher->setInitialState(robotPublisher->m_robotPlant->getCurrentState());
+    	std::cout << "MPC thread initialied..." << std::endl;
+    	init_publisher = true;
 
     	// call the thread
 		std::thread robotPublishThread(publishCommands<RobotPublisher>, std::ref(robotPublisher), dt_);
@@ -333,19 +338,14 @@ public:
 		       	auto H_TRACK = H_MPC + 1;
 		       	if (i + H_TRACK > static_cast<int>(NumberofKnotPt) + 1) {H_TRACK = static_cast<int>(NumberofKnotPt) - i;}
 
-		       	actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist,xold.head(7));
-		       	cartesianTrack_mpc[0] = actual_cartesian_pose;
-				cartesian_actual_state.col(optimizer_iter) = actual_cartesian_pose.col(3).head(3);
+		       	cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist,xold.head(7));
+		       	cartesianTrack_mpc[0] = cartesian_pose;
+				cartesian_actual_state.col(optimizer_iter) = cartesian_pose.col(3).head(3);
 
 		        for (int k = 1;k < H_TRACK;k++) 
 		        {	
 		        	// move here. check
 		        	cartesianTrack_mpc[k] = cartesianTrack_[1 + i + k];
-		    	}
-
-		    	for (int p = 0;p < H_TRACK;p++) 
-		    	{
-		    		cartesian_desired_state.col(i + p) = cartesianTrack_mpc.at(p).col(3).head(3);
 		    	}
 				
 		    }
@@ -374,9 +374,9 @@ public:
         		std::unique_lock<std::mutex> lk(mu_main);
         		control_trajectory = result.uList;
         		std::cout << "MPC THREAD: setting new controls" << std::endl;
-        		robotPublisher->setControlBuffer(control_trajectory);
+        		robotPublisher->setControlBuffer(result.xList, control_trajectory);
 				newControlTrajectorySet = true;
-		
+				robotPublisher->setOptimizerStatesGains(std::move(result.KList), result.kList);
 				lk.unlock();
 				end = std::chrono::high_resolution_clock::now();
 			    elapsed = end - start;
@@ -391,23 +391,20 @@ public:
         	}
         	
         	
-        	robotPublisher->setOptimizerStatesGains(result.xList, std::move(result.KList), result.kList);
-
-	        // if(verbose_)
-	        // {
-	        //     logger_->info("Received new state from plant: ");
-	        //     for(int n = 0; n < x.rows(); ++n) { logger_->info("%f ", x(n)); }
-	        //     logger_->info("\n");
-	        // }
-
 	        // Calculate the true cost for this time step
 	        true_cost = cost_function_->cost_func_expre(0, xold, u, x_track_.col(i));
 
 	        // if(verbose_) logger_->info("True cost for time step %d: %f\n", i, true_cost);	
-	  
 
+	    	for (int p = 0;p < H_MPC;p++) 
+	    	{
+	    		cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, result.xList.col(p + static_cast<int>(0*delay_compute/10)).head(7));
+	    		cartesian_desired_state.col(i + p) = cartesian_pose.col(3).head(3);
+	    	}
+				
 	    }
 
+	    std::cout << "optmizer iterations " << optimizer_iter << std::endl;
 	    robotPublishThread.join();
 
 
@@ -417,16 +414,17 @@ public:
         for (int i = 0; i < static_cast<int>(NumberofKnotPt)+1; i++) 
         {
 	    	cartesian_desired_logger.col(i) = cartesianTrack_.at(i).col(3).head(3);
-			actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, stateTrajectory.col(i).head(7));
-			cartesian_mpc_logger.col(i) = actual_cartesian_pose.col(3).head(3);
+
+			cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, stateTrajectory.col(i).head(7));
+			cartesian_mpc_logger.col(i) = cartesian_pose.col(3).head(3);
 
 		}
 
-        for (int i = 0; i < static_cast<int>(static_cast<int>(H_MPC) + 1); i++) 
+        for (int i = 0; i < static_cast<int>(NumberofKnotPt) + 1; i++) 
         {
 
-			actual_cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, result.xList.col(i).head(7));
-			cartesian_mpc_state_logger.col(i) = actual_cartesian_pose.col(3).head(3);
+			cartesian_pose = mr::FKinSpace(IK_OPT.M, IK_OPT.Slist, robotPublisher->stateBuffer.col(i).head(7));
+			cartesian_mpc_state_logger.col(i) = cartesian_pose.col(3).head(3);
 
 		}
 	    #endif
@@ -441,9 +439,10 @@ public:
 		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_actual_state.npy", cartesian_actual_state.data(),{1, static_cast<unsigned long>(cartesian_actual_state.cols()), static_cast<unsigned long>(cartesian_actual_state.rows())}, "w");
 		cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_cartesian_desired.npy", cartesian_desired_state.data(),{1, static_cast<unsigned long>(cartesian_desired_state.cols()), static_cast<unsigned long>(cartesian_desired_state.rows())}, "w");
 
-		logger_->info("Saveds Data...\n");
+		logger_->info("Saved Data...\n");
 
 		#endif
+
 
 		logger_->info("Finished the main thread...\n");
 

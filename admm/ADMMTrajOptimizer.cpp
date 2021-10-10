@@ -9,10 +9,8 @@ ADMMTrajOptimizer::ADMMTrajOptimizer(unsigned int N_, double dt_) : N(N_), dt(dt
 ADMMTrajOptimizer::~ADMMTrajOptimizer() = default;
 
 void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, stateVec_t init_state, optimizer::IterativeLinearQuadraticRegulatorADMM::OptSet& solverOptions, ADMMopt& ADMM_OPTS, IKTrajectory<IK_FIRST_ORDER>::IKopt& IK_OPT, \
- Saturation& LIMITS, ContactModel::ContactParams<double>& cp, std::vector<Eigen::MatrixXd>& cartesianPoses) 
-
+ Saturation& LIMITS, ContactModel::ContactParams<double>& cp, std::vector<Eigen::MatrixXd>& cartesianPoses)
 {
-  
   // parameters for ADMM, penelty terms. initial
   Eigen::VectorXd rho_init(5);
   rho_init << 0, 0, 0, 0, 0;
@@ -37,8 +35,6 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
 
   // admm optimizer
   ADMMMultiBlock<RobotAbstract, RobotAbstract, stateSize, commandSize> optimizerADMM(kukaRobot, costFunction_admm, solverDDP, ADMM_OPTS, IK_OPT, N);
-  
-
 
   stateVec_t xinit;
   stateVecTab_t xtrack;
@@ -46,7 +42,7 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
   xtrack.row(16) = 0 * Eigen::VectorXd::Ones(NumberofKnotPt + 1); 
 
 
-  /* initialize xinit, xgoal, xtrack - for the hozizon*/
+  /* initialize xinit, xgoal, xtrack - for the  horizon*/
   Eigen::VectorXd thetalist0(7);
   Eigen::VectorXd thetalistd0(7);
   Eigen::VectorXd q_bar(7);
@@ -90,10 +86,7 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
   Eigen::EigenMultivariateNormal<double, stateSize> sdist_(State::Zero(), 0.001 * StateNoiseVariance::Identity());
   Eigen::EigenMultivariateNormal<double, commandSize> cdist_(Control::Zero(), 0.001 * ControlNoiseVariance::Identity());
 
-
-
-
-  /* simulate with disturbance on the open loop trjacetory */
+  /* simulate with disturbance on the open loop trajectory */
   auto controlTrajectory = resultTrajectory.uList;
   auto stateTrajectory = resultTrajectory.xList;
 
@@ -107,14 +100,13 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
   currentState = stateTrajectory.col(0);
   stateTrajectoryDisturbances.col(0) = currentState;
 
-  // simulate trajectory with disurbances
+  // simulate trajectory with disturbances
   for (int i=0;i < N; i++)
   {
     input = controlTrajectory.col(i) + 0*cdist_.samples(1) - KList[i] * (stateTrajectory.col(i) - currentState);
     currentState += KukaDynModel->f(currentState, input) * TimeStep + 0.0*sdist_.samples(1);
     stateTrajectoryDisturbances.col(i+1) = currentState;
   }
-
 
 
 
@@ -142,9 +134,6 @@ void ADMMTrajOptimizer::run(const std::shared_ptr<RobotAbstract>& kukaRobot, sta
   cnpy::npy_save("/home/lasitha/Documents/Github/bullet/examples/KUKAEnv/ddp_contact/standalone/data/state_trajectory_admm_desired.npy", cartesian_mpc_disturbance_logger_desired.data(),
                   {1, static_cast<unsigned long>(cartesian_mpc_disturbance_logger_desired.cols()),
                    static_cast<unsigned long>(cartesian_mpc_disturbance_logger_desired.rows())}, "w");
-    
-
-
 
 }
 

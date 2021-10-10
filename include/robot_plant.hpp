@@ -50,7 +50,7 @@ public:
         State f3 = this->m_plantDynamics->f(currentState + 0.5 * dt * f2, u_noisy);
         State f4 = this->m_plantDynamics->f(currentState + dt * f3, u_noisy);
 
-        currentState = currentState + (dt/6) * (f1 + 2 * f2 + 2 * f3 + f4) + 0.0*sdist_.samples(1);
+        currentState = currentState + (dt/6) * (f1 + 2 * f2 + 2 * f3 + f4) + sdist_.samples(1);
         return true;
     }
 

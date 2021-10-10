@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
   // double z_depth = 1.161;
   double z_depth = 1.17;
   double r       = 0.05;
-  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 3, r, r, NumberofKnotPt, Tf);
+  std::vector<Eigen::MatrixXd> cartesianPoses = IK_traj.generateLissajousTrajectories(R, z_depth, 1, 1, r, r, NumberofKnotPt, Tf);
 
 
 
