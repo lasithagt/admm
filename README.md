@@ -1,6 +1,6 @@
 # Real-Time Deformable-Contact-Aware Model Predictive Control for Force-Modulated Manipulation
 <div align='center'>
-<img src="misc/demo_gif.gif" style="display: inline; border-width: 0px;" width=500px></img>
+<img src="misc/demo_gif.gif" style="display: inline; border-width: 0px;" width=800px></img>
 </div>
 
 This code is primarily uses DDP as the optimizer with autodiff for real-time implementation. The analytical model is derived using RobCoGen. [control-toolbox](https://github.com/ethz-adrl/control-toolbox.git) is used to use Autodiff functionality for real-time implentation. <br>
