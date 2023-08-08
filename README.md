@@ -46,10 +46,11 @@ Ziyi Zhou - *zhouziyi@gatech.edu*
 
 ## Citation
 ```
-@article{wijayarathne2022real,
+@article{wijayarathne2023real,
   title={Real-Time Deformable-Contact-Aware Model Predictive Control for Force-Modulated Manipulation},
-  author={Wijayarathne, Lasitha and Zhou, Ziyi and Zhao, Ye and Hammond III, Frank L},
-  journal={arXiv preprint arXiv:2212.09234},
-  year={2022}
+  author={Wijayarathne, Lasitha and Zhou, Ziyi and Zhao, Ye and Hammond, Frank L},
+  journal={IEEE Transactions on Robotics},
+  year={2023},
+  publisher={IEEE}
 }
 ```
